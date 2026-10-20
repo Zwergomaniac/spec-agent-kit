@@ -4,8 +4,10 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 `apps/dashboard-api` und `apps/dashboard-web` als Workspace-Pakete. Den Mock `server.js` entfernen. Abhängigkeit auf `@sak/contracts` (workspace).
-- [ ] T002 [P] Vite, Tailwind und shadcn-Grundgerüst; Dark Mode; Hash-Router auf Basis der Deep-Link-Helfer.
+- [X] T001 `apps/dashboard-api` und `apps/dashboard-web` als Workspace-Pakete. Den Mock `server.js` entfernen. Abhängigkeit auf `@sak/contracts` (workspace).
+  - Anmerkung: Die API wird mit esbuild gebündelt (`scripts/build.mjs`) statt mit `tsc`, weil `@sak/contracts` TypeScript-Quellen exportiert. `tsc` läuft als `lint` (Typprüfung). Paketnamen: `@sak/dashboard-api`, `@sak/dashboard-web`.
+- [X] T002 [P] Vite, Tailwind und shadcn-Grundgerüst; Dark Mode; Hash-Router auf Basis der Deep-Link-Helfer.
+  - Anmerkung: Tailwind v4 (`@tailwindcss/vite`), daher entfallen `tailwind.config.ts` und `postcss.config.js`; die Tokens stehen in `src/index.css`. Die shadcn-Bausteine sind im shadcn-Stil von Hand unter `src/components/ui` eingecheckt (new-york, zinc).
 
 ## Phase 2: Grundlagen API
 

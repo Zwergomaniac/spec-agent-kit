@@ -1,12 +1,30 @@
 {
-  "name": "@spec-agent-kit/dashboard-api",
+  "name": "@sak/dashboard-api",
   "version": "0.2.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "build": "echo build dashboard-api",
-    "start": "node src/server.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "node scripts/build.mjs",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json",
+    "hash-password": "node dist/cli/hash-password.js",
+    "project": "node dist/cli/project.js"
   },
   "dependencies": {
-    "hono": "^4.6.10"
+    "@hono/node-server": "^2.1.5",
+    "@sak/contracts": "workspace:*",
+    "better-sqlite3": "^13.0.3",
+    "hono": "^4.13.13",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }
