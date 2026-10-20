@@ -1,3 +1,4 @@
+import { vocabulary } from '@sak/contracts'
 import type { Db } from '../db.js'
 import { listProjects, type ProjectRow } from './projects.js'
 import { getBoard, type BoardRun } from './runs.js'
@@ -27,6 +28,15 @@ export interface PortfolioProject {
   escalation: { run_id: string; spec: string; reason: string | null } | null
   attention_count: number
   in_progress: number
+  /** Specs je Station (ohne zurückgestellte), alle Stationen des Vokabulars sind gesetzt. */
+  stage_counts: Record<string, number>
+  /** Fertige Specs laut Board-Metrik. */
+  done: number
+  /** Die ersten 3 Aufmerksamkeitseinträge (Art und Spec). */
+  attention_preview: Array<{ kind: string; spec: string | null }>
+  attention_total: number
+  /** Jüngster Deploy- oder Verified-Marker. */
+  last_marker: { kind: string; ts: string; specs: number[] } | null
   warnings: PortfolioWarning[]
 }
 
@@ -42,6 +52,21 @@ function maxTs(values: Array<string | null | undefined>): string | null {
     if (best === null || Date.parse(v) > Date.parse(best)) best = v
   }
   return best
+}
+
+function stageCounts(board: { specs: Array<{ stage: string | null; descoped?: boolean }> } | undefined): Record<string, number> {
+  const counts: Record<string, number> = Object.fromEntries(vocabulary.levels.stage.map((st) => [st, 0]))
+  for (const spec of board?.specs ?? []) {
+    if (spec.descoped || spec.stage === null || !(spec.stage in counts)) continue
+    counts[spec.stage]! += 1
+  }
+  return counts
+}
+
+function lastMarker(markers: Array<{ kind: string; ts: string; specs: number[] }> | undefined): PortfolioProject['last_marker'] {
+  let best: { kind: string; ts: string; specs: number[] } | null = null
+  for (const m of markers ?? []) if (best === null || Date.parse(m.ts) > Date.parse(best.ts)) best = m
+  return best ? { kind: best.kind, ts: best.ts, specs: best.specs } : null
 }
 
 function summarize(db: Db, project: ProjectRow, nowMs: number): PortfolioProject {
@@ -86,6 +111,11 @@ function summarize(db: Db, project: ProjectRow, nowMs: number): PortfolioProject
       : null,
     attention_count: board?.attention.length ?? 0,
     in_progress: board?.metrics.in_progress ?? 0,
+    stage_counts: stageCounts(board),
+    done: board?.metrics.done ?? 0,
+    attention_preview: (board?.attention ?? []).slice(0, 3).map((a) => ({ kind: a.kind, spec: a.spec ?? null })),
+    attention_total: board?.attention.length ?? 0,
+    last_marker: lastMarker(board?.markers),
     warnings
   }
 }
