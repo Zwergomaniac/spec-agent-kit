@@ -21,8 +21,8 @@
 
 ## Phase 2: US1 – Vokabular und Labels (Spec 001)
 
-- [ ] T005 [US1] `packages/contracts/schema/vocabulary.json` mit allen Ebenen und Werten aus Spec 001: FR-006, FR-010, FR-015, FR-016 (station_state), FR-017, FR-018, FR-020, FR-021, FR-022, FR-025. Dazu `run_source`, `marker_kind`, `ticker_kind`.
-- [ ] T006 [US1] `packages/contracts/schema/labels/de.json` vollständig.
+- [X] T005 [US1] `packages/contracts/schema/vocabulary.json` mit allen Ebenen und Werten aus Spec 001: FR-006, FR-010, FR-015, FR-016 (station_state), FR-017, FR-018, FR-020, FR-021, FR-022, FR-025. Dazu `run_source`, `marker_kind`, `ticker_kind`.
+- [X] T006 [US1] `packages/contracts/schema/labels/de.json` vollständig.
 
 ## Phase 3: US1–US3 – Schemas
 

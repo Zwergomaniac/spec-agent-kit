@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "levels": {
+    "stage": ["specified", "clarified", "planned", "tasked", "implementing", "implemented", "deployed", "verified"],
+    "run_state": ["building", "reviewing", "approved", "escalated", "paused", "merged", "reviewed", "aborted"],
+    "run_kind": ["pipeline", "review_only", "manual"],
+    "verdict": ["approve", "changes_requested", "needs_human"],
+    "severity": ["must", "may"],
+    "attention_kind": ["escalation", "approval", "clarification", "blocker", "decision", "operator_task", "stale_run"],
+    "event_type": [
+      "run.started",
+      "round.started",
+      "station.started",
+      "station.finished",
+      "verdict.recorded",
+      "run.escalated",
+      "run.released",
+      "run.returned",
+      "run.approved",
+      "run.paused",
+      "run.resumed",
+      "run.merged",
+      "run.reviewed",
+      "run.aborted",
+      "run.taken_over"
+    ],
+    "diag_event_type": ["diag.hook"],
+    "role": ["builder", "code_review", "ui_review", "security_review", "docs", "integrator"],
+    "gate": ["start_approval", "protected_paths", "review_integrity", "round_limit", "release", "deploy_approval"],
+    "station_state": ["running", "finished"],
+    "run_source": ["local", "cloud"],
+    "marker_kind": ["deploy", "verified"],
+    "ticker_kind": ["commit", "deploy", "verified"],
+    "board_source": ["live", "snapshot"],
+    "hook_phase": ["start", "stop"]
+  }
+}
