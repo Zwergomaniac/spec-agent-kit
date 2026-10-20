@@ -11,8 +11,9 @@
 
 ## Phase 2: Grundlagen API
 
-- [ ] T003 `env.ts` (Pflicht-Secrets), `db.ts` und `migrations.ts` (WAL, Schema aus plan.md).
-- [ ] T004 `auth/password.ts` (scrypt), `auth/session.ts` (HMAC-Cookie), `auth/rate-limit.ts`, Login-Sperre. `cli/hash-password.ts`.
+- [X] T003 `env.ts` (Pflicht-Secrets), `db.ts` und `migrations.ts` (WAL, Schema aus plan.md).
+- [X] T004 `auth/password.ts` (scrypt), `auth/session.ts` (HMAC-Cookie), `auth/rate-limit.ts`, Login-Sperre. `cli/hash-password.ts`.
+  - Anmerkung: Der Passwort-Hash hat das Format `scrypt:N:r:p:salt:hash` (base64url, ohne `$`), damit er ohne Escaping in `.env`/Compose steht. Das Passwort wird nie per Argument übergeben, nur interaktiv oder über stdin (mindestens 12 Zeichen). Die Login-Sperre zählt jeden Versuch vorab als Fehlversuch (Schutz gegen parallele Versuche) und löscht die Einträge bei Erfolg.
 - [ ] T005 `app.ts` mit Fehlerbehandlung (JSON-Fehler, kein Stacktrace nach außen), `/healthz`, Auth-Routen und Auth-Middleware.
 
 ## Phase 3: US4 – Ingest
