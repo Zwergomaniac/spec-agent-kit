@@ -1,0 +1,32 @@
+#!/bin/sh
+# Starter fuer das Spec Agent Kit (vom Kit verwaltet, siehe .spec-agent/lock.json).
+# Sucht uv: SAK_UV, PATH, dann bekannte Orte. Reicht den Exit-Code von sak durch.
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 127
+
+uv=""
+if [ -n "${SAK_UV:-}" ]; then
+    if [ -x "$SAK_UV" ]; then
+        uv=$SAK_UV
+    else
+        echo "sak: SAK_UV zeigt auf keine ausfuehrbare Datei: $SAK_UV" >&2
+        exit 127
+    fi
+fi
+if [ -z "$uv" ]; then
+    uv=$(command -v uv 2>/dev/null) || uv=""
+fi
+if [ -z "$uv" ]; then
+    for candidate in "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv" /opt/homebrew/bin/uv /usr/local/bin/uv; do
+        if [ -x "$candidate" ]; then
+            uv=$candidate
+            break
+        fi
+    done
+fi
+if [ -z "$uv" ]; then
+    echo "sak: uv wurde nicht gefunden. Installation: curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+    echo "sak: alternativ SAK_UV auf den Pfad von uv setzen." >&2
+    exit 127
+fi
+
+exec "$uv" run --project "$here/engine" sak "$@"

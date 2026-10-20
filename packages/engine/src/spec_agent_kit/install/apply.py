@@ -14,7 +14,13 @@ from typing import Any, Final
 
 from spec_agent_kit.config.check import check as check_config
 from spec_agent_kit.install import InstallError
-from spec_agent_kit.install.kit import ENGINE_TARGET, LOCK_TARGET, sha256_of
+from spec_agent_kit.install.kit import (
+    ENGINE_TARGET,
+    LAUNCHER_CMD_TARGET,
+    LAUNCHER_SH_TARGET,
+    LOCK_TARGET,
+    sha256_of,
+)
 from spec_agent_kit.install.plan import (
     CONFLICT,
     CREATE,
@@ -65,6 +71,21 @@ def _precheck(plan: Plan) -> None:
                 )
 
 
+def _launcher_bytes(path: str, data: bytes) -> bytes:
+    """Starter: ``sak.cmd`` mit CRLF (Labels in Batch), ``sak`` mit LF. Der Hash bleibt gleich."""
+    text = data.replace(b"\r\n", b"\n")
+    if path == LAUNCHER_CMD_TARGET:
+        return text.replace(b"\n", b"\r\n")
+    return text
+
+
+def ensure_launcher_mode(target: Path) -> None:
+    """Setzt das Ausführbar-Bit des POSIX-Starters (unter Windows ohne Wirkung, nicht im Lock)."""
+    launcher = target / LAUNCHER_SH_TARGET
+    if os.name != "nt" and launcher.is_file():
+        launcher.chmod(launcher.stat().st_mode | 0o111)
+
+
 def _write_action(plan: Plan, action: Action) -> None:
     destination = plan.target / action.path
     if action.kind == DELETE:
@@ -72,10 +93,13 @@ def _write_action(plan: Plan, action: Action) -> None:
         _prune_empty_parents(plan.target, action.path)
     elif action.kind == CONFLICT:
         assert action.content is not None
-        _atomic_write(destination.with_name(destination.name + SAK_NEW_SUFFIX), action.content)
+        _atomic_write(
+            destination.with_name(destination.name + SAK_NEW_SUFFIX),
+            _launcher_bytes(action.path, action.content),
+        )
     elif action.kind in {CREATE, MERGE, REPLACE}:
         assert action.content is not None
-        _atomic_write(destination, action.content)
+        _atomic_write(destination, _launcher_bytes(action.path, action.content))
 
 
 def _uv_executable() -> str | None:
@@ -130,6 +154,7 @@ def apply_plan(plan: Plan, *, sync: bool = True) -> dict[str, Any]:
     for action in plan.actions:
         if action.path == LOCK_TARGET:
             _write_action(plan, action)  # Lockfile zuletzt
+    ensure_launcher_mode(plan.target)
 
     report: dict[str, Any] = plan.to_dict()
     report["mode"] = "applied"

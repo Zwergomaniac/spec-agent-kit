@@ -14,6 +14,8 @@ TEMPLATES_RELATIVE: Final[str] = "packages/agent-blueprint/templates"
 ENGINE_RELATIVE: Final[str] = "packages/engine"
 ENGINE_TARGET: Final[str] = ".spec-agent/engine"
 GITIGNORE_TARGET: Final[str] = ".spec-agent/.gitignore"
+LAUNCHER_CMD_TARGET: Final[str] = ".spec-agent/sak.cmd"
+LAUNCHER_SH_TARGET: Final[str] = ".spec-agent/sak"
 LOCK_TARGET: Final[str] = ".spec-agent/lock.json"
 CONFIG_TARGET: Final[str] = ".spec-agent/config.yml"
 SETTINGS_TARGET: Final[str] = ".claude/settings.json"
@@ -112,6 +114,10 @@ class Kit:
         gitignore = self.templates / "spec-agent" / "gitignore"
         if gitignore.is_file():
             files[GITIGNORE_TARGET] = gitignore
+        for name, target in (("sak.cmd", LAUNCHER_CMD_TARGET), ("sak", LAUNCHER_SH_TARGET)):
+            launcher = self.templates / "spec-agent" / name
+            if launcher.is_file():
+                files[target] = launcher
         return dict(sorted(files.items()))
 
 

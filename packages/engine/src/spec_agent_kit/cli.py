@@ -7,9 +7,12 @@ Konventionen (docs/architecture.md): JSON auf stdout; Exit 0 bei Erfolg,
 from __future__ import annotations
 
 import argparse
+import contextlib
+import getpass
 import json
 import subprocess
 import sys
+import webbrowser
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -17,10 +20,12 @@ from typing import Any
 from spec_agent_kit import __version__
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
-from spec_agent_kit.board.serve import DEFAULT_PORT, make_server
+from spec_agent_kit.board.serve import DEFAULT_PORT, FALLBACK_LAST_PORT, bind_server
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
+from spec_agent_kit.dashboard import connect as dashboard_connect
+from spec_agent_kit.dashboard import status as dashboard_status
 from spec_agent_kit.install import InstallError
 from spec_agent_kit.install.apply import apply_plan
 from spec_agent_kit.install.doctor import run_doctor
@@ -164,17 +169,35 @@ def _board_serve(args: argparse.Namespace) -> int:
         return _not_initialized()
     except ConfigError as exc:
         return _reject(exc.errors)
-    if not 0 <= args.port <= 65535:
+    if args.port is not None and not 0 <= args.port <= 65535:
         _emit({"ok": False, "error": f"ungültiger Port: {args.port}"})
         return EXIT_USAGE
     try:
-        server = make_server(root, args.port)
+        server, moved_from = bind_server(root, args.port)
     except OSError as exc:
-        _emit({"ok": False, "error": f"Port {args.port} nicht nutzbar: {exc}"})
+        if args.port is None:
+            message = (
+                f"kein freier Port zwischen {DEFAULT_PORT} und {FALLBACK_LAST_PORT}: {exc}. "
+                "Mit --port einen anderen Port wählen."
+            )
+        else:
+            message = (
+                f"Port {args.port} nicht nutzbar: {exc}. Bei ausdrücklichem --port wird nicht "
+                "ausgewichen; ohne --port wählt sak einen freien Port."
+            )
+        _emit({"ok": False, "error": message})
         return EXIT_USAGE
     host, port = server.server_address[:2]
-    _emit({"ok": True, "url": f"http://{host}:{port}", "hint": "Strg+C beendet"})
+    url = f"http://{host}:{port}"
+    result: dict[str, Any] = {"ok": True, "url": url, "hint": "Strg+C beendet"}
+    if moved_from is not None:
+        result["port_busy"] = moved_from
+        result["note"] = f"Port {moved_from} ist belegt; ausgewichen auf {port}"
+    _emit(result)
     sys.stdout.flush()
+    if args.open:
+        with contextlib.suppress(Exception):
+            webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -203,6 +226,55 @@ def _push(args: argparse.Namespace) -> int:
     if not args.quiet:
         _emit(result)
     return code
+
+
+def _dashboard(args: argparse.Namespace) -> int:
+    """``sak dashboard connect|status`` (Spec 009 US4). Der Schlüssel erscheint nie in Ausgaben."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    if args.dashboard_command == "status":
+        code, result = dashboard_status(root)
+        _emit(result)
+        return code
+
+    def read_key() -> str:
+        if args.key_stdin:
+            return sys.stdin.readline(256)
+        if not sys.stdin.isatty():
+            raise UsageError("kein Terminal: den Schlüssel per --key-stdin übergeben")
+        return getpass.getpass("Projekt-Schlüssel (Eingabe bleibt verdeckt): ")
+
+    try:
+        code, result = dashboard_connect(
+            root,
+            args.url,
+            yes=args.yes,
+            force=args.force,
+            read_key=read_key,
+            key_from_stdin=args.key_stdin,
+            test_push=not args.no_test_push,
+        )
+    except UsageError as exc:
+        _emit({"ok": False, "error": str(exc)})
+        return EXIT_USAGE
+    _emit(result)
+    if result.get("mode") == "plan":
+        sys.stderr.write(_plan_text(result) + _NL)
+    return code
+
+
+def _plan_text(plan: dict[str, Any]) -> str:
+    config = plan["config"]
+    key_action = "ersetzt" if plan["key_file"]["action"] == "replace" else "neu angelegt"
+    return _NL.join(
+        [
+            "sak dashboard connect (Plan, nichts geschrieben)",
+            f"  Config: dashboard.url {config['url_from']} -> {config['url_to']}",
+            f"  Schlüsseldatei {plan['key_file']['path']}: {key_action}",
+            f"  {plan['next']}",
+        ]
+    )
 
 
 def _install(args: argparse.Namespace) -> int:
@@ -263,12 +335,30 @@ def _build_parser() -> argparse.ArgumentParser:
     shape.add_argument("--text", action="store_true", help="Kurzfassung, höchstens 40 Zeilen")
     board_sub = board.add_subparsers(dest="board_command")
     serve = board_sub.add_parser("serve", help="Lokale Ansicht auf 127.0.0.1 (ohne Netz)")
-    serve.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port (Default 5192)")
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help=f"Port; ohne Angabe {DEFAULT_PORT} und bei Belegung der nächste freie bis "
+        f"{FALLBACK_LAST_PORT}",
+    )
+    serve.add_argument("--open", action="store_true", help="Browser mit der URL öffnen")
     pushp = sub.add_parser("push", help="Events und Board ans Dashboard senden (Spec 006)")
     pushp.add_argument("--quiet", action="store_true", help="Keine Ausgabe")
     pushp.add_argument(
         "--background", action="store_true", help="Losgelöst starten und sofort zurückkehren"
     )
+    dash = sub.add_parser("dashboard", help="Projekt ans Dashboard anbinden (Spec 009)")
+    dash_sub = dash.add_subparsers(dest="dashboard_command", required=True)
+    connect = dash_sub.add_parser(
+        "connect", help="URL eintragen und Schlüssel ablegen (ohne --yes nur der Plan)"
+    )
+    connect.add_argument("--url", required=True, help="https://… (http nur für localhost)")
+    connect.add_argument("--key-stdin", action="store_true", help="Schlüssel von stdin lesen")
+    connect.add_argument("--yes", action="store_true", help="Plan umsetzen")
+    connect.add_argument("--force", action="store_true", help="vorhandene dashboard.key ersetzen")
+    connect.add_argument("--no-test-push", action="store_true", help="Test-Push überspringen")
+    dash_sub.add_parser("status", help="URL, Schlüssel vorhanden, Push-Modus, Cursor")
     _add_install_parsers(sub)
     add_parsers(sub)
     return parser
@@ -318,6 +408,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _install(args)
     if args.command == "doctor":
         return _doctor(args)
+    if args.command == "dashboard":
+        return _dashboard(args)
     if args.command == "push":
         return _push(args)
     if args.command in {"run", "event"}:
