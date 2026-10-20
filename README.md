@@ -33,9 +33,9 @@ Dieses Repo ist absichtlich ein **Mixed Repo**. Blueprint und Dashboard werden g
 | Upgrade-CLI | Konzept | — |
 | Agent-Skill spec-agent-init | Konzept | packages/agent-blueprint/templates/root/.claude/skills |
 | Collector / Ingest | Konzept | — |
-| Dashboard-API | Mock (feste Beispieldaten, ungeschützter In-Memory-Ingest, kein Server-Start) | apps/dashboard-api |
-| Dashboard-Web | Konzept (Deep-Link-Helfer liegen in @sak/contracts) | apps/dashboard-web |
-| Deployment (Container) | Konzept (kein Dockerfile) | deploy/dashboard |
+| Dashboard-API | implementiert (Hono + SQLite, Admin-Login, authentifizierter Ingest mit Contracts-Validierung, Lese-API, Retention, CLI; API-Vertragstests; Spec 007) | apps/dashboard-api |
+| Dashboard-Web | implementiert (React/Vite/Tailwind/shadcn: Portfolio, Projekt-Board, Lauf-Ansicht, Admin, Dark Mode, Deep Links; Playwright-E2E und Screenshot-Smoke; Spec 007) | apps/dashboard-web |
+| Deployment (Container) | Dockerfile, Compose-Snippet und Caddy-Beispiel vorhanden, `docker build` noch nicht ausgeführt (kein Docker verfügbar) | deploy/dashboard |
 | Tests / CI | teilweise (Tests für Contracts und Engine-Gerüst in TS und Python; CI-Workflow vorhanden, noch nicht auf einem Remote gelaufen) | .github/workflows/ci.yml |
 
 ## Dokumente

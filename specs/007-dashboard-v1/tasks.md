@@ -56,5 +56,7 @@
 
 ## Phase 7: Tests und Abschluss
 
-- [ ] T020 Playwright-E2E: Login-Rücksprung und jede Deep-Link-Form (SC-001); Screenshot-Smoke des Pilot-Boards (SC-004) bei 1440×900 und 390×844.
-- [ ] T021 Alles grün (`pnpm -r test`, Build). `docker build` nur, wenn Docker verfügbar ist; sonst im Bericht vermerken. README-Statusmatrix: Dashboard-API, Dashboard-Web und Deployment aktualisieren.
+- [X] T020 Playwright-E2E: Login-Rücksprung und jede Deep-Link-Form (SC-001); Screenshot-Smoke des Pilot-Boards (SC-004) bei 1440×900 und 390×844.
+  - Anmerkung: Ausführen mit `pnpm -r build` und danach `pnpm --filter @sak/dashboard-web e2e` (startet den Server auf Port 3100 mit frischer DB und Test-Secrets). Die E2E-Tests laufen nicht in `pnpm -r test` und noch nicht in der CI (dort fehlt die Browser-Installation). Screenshots: `apps/dashboard-web/e2e/screenshots/` (nicht eingecheckt).
+- [X] T021 Alles grün (`pnpm -r test`, Build). `docker build` nur, wenn Docker verfügbar ist; sonst im Bericht vermerken. README-Statusmatrix: Dashboard-API, Dashboard-Web und Deployment aktualisieren.
+  - Anmerkung: `docker build` nicht ausgeführt (Docker nicht installiert). SC-003 (Start unter 5 s, RAM unter 150 MB) wurde nicht gemessen.
