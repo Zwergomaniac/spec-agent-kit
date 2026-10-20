@@ -3,6 +3,8 @@ export interface Env {
   nodeEnv: string
   /** Cookie-Flag Secure; nur bei NODE_ENV=development aus (Spec 007, Annahmen). */
   secureCookie: boolean
+  /** Bind-Adresse. Default 0.0.0.0 (Container); der lokale Modus setzt 127.0.0.1. */
+  host: string
   port: number
   adminPasswordHash: string
   sessionSecret: string
@@ -60,6 +62,7 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
   return {
     nodeEnv,
     secureCookie: nodeEnv !== 'development',
+    host: source.HOST || '0.0.0.0',
     port,
     adminPasswordHash,
     sessionSecret,

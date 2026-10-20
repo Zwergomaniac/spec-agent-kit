@@ -11,6 +11,8 @@
     "dev": "echo 'Run apps individually'",
     "lint": "pnpm -r lint && uv run --project packages/engine ruff check packages/engine",
     "test": "pnpm -r test && uv run --project packages/engine pytest",
+    "dashboard:local": "node apps/dashboard-api/scripts/local.mjs",
+    "dashboard:project": "node apps/dashboard-api/scripts/local.mjs project",
     "contracts:gen": "pnpm --filter @sak/contracts run gen",
     "contracts:check": "pnpm --filter @sak/contracts run check"
   }

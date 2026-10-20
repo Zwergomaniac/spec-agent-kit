@@ -58,6 +58,27 @@ describe('Lese-API mit dem Pilot-Board', () => {
     expect(leer).toMatchObject({ has_board: false, active_run: null, escalation: null, attention_count: 0, in_progress: 0 })
   })
 
+  it('GET /api/portfolio: Stationsverteilung, fertige Specs, Aufmerksamkeitsvorschau und letzter Marker', async () => {
+    const body = await json<{ projects: Array<Record<string, any>> }>(await ctx.request('/api/portfolio', { cookie }))
+    const immo = body.projects.find((p) => p.key === 'immo-agent')!
+    const board = pilotBoard()
+
+    // Alle Stationen des Vokabulars sind gesetzt; zurückgestellte Specs zählen nicht mit.
+    expect(Object.keys(immo.stage_counts)).toEqual([...vocabulary.levels.stage])
+    expect(immo.stage_counts).toEqual({ specified: 1, clarified: 1, planned: 1, tasked: 1, implementing: 3, implemented: 1, deployed: 1, verified: 2 })
+    expect(Object.values(immo.stage_counts).reduce((a: number, b) => a + (b as number), 0)).toBe(board.specs.filter((s) => !s.descoped).length)
+
+    expect(immo.done).toBe(board.metrics.done)
+    expect(immo.attention_total).toBe(board.attention.length)
+    expect(immo.attention_preview).toHaveLength(Math.min(3, board.attention.length))
+    expect(immo.attention_preview[0]).toEqual({ kind: board.attention[0]!.kind, spec: board.attention[0]!.spec })
+    expect(immo.last_marker).toMatchObject({ kind: 'deploy', specs: [66] })
+
+    const leer = body.projects.find((p) => p.key === 'leer')!
+    expect(leer).toMatchObject({ done: 0, attention_preview: [], attention_total: 0, last_marker: null })
+    expect(Object.values(leer.stage_counts).every((n) => n === 0)).toBe(true)
+  })
+
   it('Portfolio: Warnung no_push_24h erscheint nach 24 h ohne Einlieferung', async () => {
     ctx.clock.now += 25 * 3600 * 1000
     cookie = await ctx.login() // die alte Session ist nach 12 h abgelaufen

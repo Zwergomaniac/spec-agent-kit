@@ -6,7 +6,7 @@ import { rmSync } from 'node:fs'
 rmSync(new URL('../dist', import.meta.url), { recursive: true, force: true })
 
 await build({
-  entryPoints: ['src/server.ts', 'src/cli/hash-password.ts', 'src/cli/project.ts'],
+  entryPoints: ['src/server.ts', 'src/cli/hash-password.ts', 'src/cli/project.ts', 'src/cli/local.ts'],
   outdir: 'dist',
   outbase: 'src',
   bundle: true,

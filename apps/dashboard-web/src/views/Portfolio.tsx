@@ -40,7 +40,7 @@ export function Portfolio() {
       ) : null}
 
       {data && projects.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))]" data-testid="portfolio-grid">
           {sorted.map((p) => (
             <ProjectCard key={p.key} project={p} />
           ))}
