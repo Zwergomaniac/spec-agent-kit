@@ -46,10 +46,14 @@
 
 ## Phase 5: Tests
 
-- [ ] T016 Die 40 Fälle aus `ImmoAgent/tests/unit/specify/test_pipeline.py` portieren und auf das neue Modell abbilden. In einer Tabelle im Test-Modul-Docstring steht, welcher alte Test welchem neuen entspricht und welche entfallen, mit Grund.
-- [ ] T017 [P] Neue Tests für pause, resume, takeover, review-only, merge (inklusive Konflikt), Hooks und Locale-Urteile.
-- [ ] T018 [P] `test_e2e_pilot.py`: 066 (2 Runden → merged), 084 (needs_human → escalated → pause), 088 (Unterbrechung → pause → resume → merged).
-- [ ] T019 [P] `test_no_project_hardcodes.py`: grep über Engine und Vorlagen nach `immoagent`, `owner_id`, `graphify`, `.venv/Scripts`, `PYTHONIOENCODING`, `bypassPermissions`.
+- [X] T016 Die 40 Fälle aus `ImmoAgent/tests/unit/specify/test_pipeline.py` portieren und auf das neue Modell abbilden. In einer Tabelle im Test-Modul-Docstring steht, welcher alte Test welchem neuen entspricht und welche entfallen, mit Grund.
+  - Anmerkung: Die Tabelle steht im Docstring von `tests/pipeline/test_reference_port.py`: 40 von 40 Fällen (43 Testfälle mit Parametrisierung) übernommen, keiner ersatzlos entfallen. Eine Anforderung entfällt: Auf dem Spec-Branch ist `--base` nicht mehr Pflicht, der Default kommt aus der Config; der Test prüft das neue Verhalten. Angepasst sind außerdem die Hook-Tests (`diag.hook` statt `hook_debug`, nur bei fehlendem Agent-Typ) und `combine` (fehlendes Urteil wird abgelehnt).
+- [X] T017 [P] Neue Tests für pause, resume, takeover, review-only, merge (inklusive Konflikt), Hooks und Locale-Urteile.
+  - Anmerkung: Neu: `test_states.py`, `test_preflight.py`, `test_guard_snapshot.py`, `test_verdict.py` (en/de, cp1252-Konsole), `test_combine.py`, `test_hooks.py`, `test_pause_resume_takeover.py`, `test_review_only.py`, `test_merge.py` (Konflikt, kein Push).
+- [X] T018 [P] `test_e2e_pilot.py`: 066 (2 Runden → merged), 084 (needs_human → escalated → pause), 088 (Unterbrechung → pause → resume → merged).
+  - Anmerkung: `test_e2e_pilot.py` spielt 066, 084, 088 nach; zusätzlich 085 als Eskalation durch geschützten Pfad ohne Prüfer. Die Fälle laufen als Skript der Orchestrator-Befehle mit vorgefertigten Prüfer-Antworten gegen ein Fixture-Repo.
+- [X] T019 [P] `test_no_project_hardcodes.py`: grep über Engine und Vorlagen nach `immoagent`, `owner_id`, `graphify`, `.venv/Scripts`, `PYTHONIOENCODING`, `bypassPermissions`.
+  - Anmerkung: Prüft Engine-Quellen, `templates/claude/` und die kommentierte `templates/config/config.yml`; die Beispiel-Configs unter `templates/config/examples/` gehören je einem Projekt und sind ausgenommen.
 
 ## Phase 6: Vorlagen
 

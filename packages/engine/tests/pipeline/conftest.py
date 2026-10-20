@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import io
 import json
+import shutil
 import subprocess
 import sys
-from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 import yaml
 
+from spec_agent_kit import contracts
 from spec_agent_kit.cli import main
 from spec_agent_kit.pipeline import runs
 
@@ -59,7 +60,6 @@ class Repo:
         self.path = path
         self._monkeypatch = monkeypatch
         self._capsys = capsys
-        monkeypatch.chdir(path)
 
     def git(self, *args: str) -> str:
         out = subprocess.run(
@@ -85,10 +85,8 @@ class Repo:
     def branch(self) -> str:
         return self.git("branch", "--show-current").strip()
 
-    def sak(
-        self, *argv: str, stdin: str = "", strict: bool = True
-    ) -> tuple[int, dict[str, Any]]:
-        """Ruft ``sak`` auf. Ein verworfenes Event (Hinweis in ``warnings``) lässt den Test fallen."""
+    def sak(self, *argv: str, stdin: str = "", strict: bool = True) -> tuple[int, dict[str, Any]]:
+        """Ruft ``sak`` auf. Ein verworfenes Event (``warnings``) lässt den Test scheitern."""
         self._monkeypatch.setattr(sys, "stdin", io.StringIO(stdin))
         self._capsys.readouterr()
         code = main(list(argv))
@@ -104,6 +102,8 @@ class Repo:
         if not path.is_file():
             return []
         found = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        for event in found:
+            assert contracts.validate_event(event) == [], event
         return [e for e in found if run_id is None or e.get("run_id") == run_id]
 
     def types(self, run_id: str | None = None) -> list[str]:
@@ -128,6 +128,7 @@ class Repo:
     def set_config(self, **sections: Any) -> None:
         config = json.loads(json.dumps(CONFIG))
         config.update(sections)
+        config = {k: v for k, v in config.items() if v is not None}
         self.write(".spec-agent/config.yml", yaml.safe_dump(config, allow_unicode=True))
         self.commit("config")
 
@@ -136,13 +137,15 @@ class Repo:
         self.commit(f"spec {name}")
 
 
-@pytest.fixture
-def repo(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> Repo:
-    fx = Repo(tmp_path, monkeypatch, capsys)
+@pytest.fixture(scope="session")
+def repo_template(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Einmal gebautes Fixture-Repo; jeder Test arbeitet auf einer Kopie (spart Git-Aufrufe)."""
+    path = tmp_path_factory.mktemp("template")
+    fx = Repo(path, pytest.MonkeyPatch(), None)
     fx.git("init", "-q", "-b", "main")
-    fx.write(".gitignore", ".spec-agent/state/\n")
+    fx.git("config", "user.name", "Test")
+    fx.git("config", "user.email", "test@example.org")
+    fx.write(".gitignore", ".spec-agent/state/\ntool-out/\n")
     fx.write(".spec-agent/config.yml", yaml.safe_dump(CONFIG, allow_unicode=True))
     for name, (model, effort) in AGENTS.items():
         fx.write(
@@ -152,7 +155,20 @@ def repo(
     fx.write("specs/001-demo/tasks.md", "- [ ] T001 x\n")
     fx.write("src/payments/pay.py", "x = 1\n")
     fx.commit("init")
-    return fx
+    return path
+
+
+@pytest.fixture
+def repo(
+    repo_template: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> Repo:
+    target = tmp_path / "work"
+    shutil.copytree(repo_template, target)
+    monkeypatch.chdir(target)
+    return Repo(target, monkeypatch, capsys)
 
 
 @pytest.fixture
@@ -160,15 +176,3 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     fake = Clock()
     monkeypatch.setattr(runs, "utcnow", fake)
     return fake
-
-
-@pytest.fixture
-def judged() -> Callable[[Repo, str, str, str], None]:
-    """Legt je ein Urteil für code_review und ui_review ab (Text je Rolle)."""
-
-    def _judge(repo: Repo, run_id: str, code_text: str, ui_text: str) -> None:
-        for role, text in (("code_review", code_text), ("ui_review", ui_text)):
-            code, out = repo.verdict(run_id, role, text, name=f"{role}.md")
-            assert code == 0, out
-
-    return _judge
