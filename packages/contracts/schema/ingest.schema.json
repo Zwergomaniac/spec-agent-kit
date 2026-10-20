@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/ingest.schema.json",
+  "title": "sak.ingest/1",
+  "$comment": "Entscheidung: eine Datei mit zwei $defs (request, result) und Top-Level anyOf; die Konstante \"schema\" unterscheidet die Zweige. Request höchstens 2 MB (LIMITS.INGEST_MAX_BYTES). Das Schema beschreibt den streng gültigen Request; der Empfänger darf Events einzeln prüfen und nur das betroffene Event in rejected[] melden (Spec 002, Randfälle).",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/result"
+    }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.ingest/1"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "sent_at": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "event.schema.json"
+          },
+          "maxItems": 500
+        },
+        "board": {
+          "$ref": "board.schema.json"
+        }
+      },
+      "required": [
+        "schema",
+        "project",
+        "sent_at",
+        "events"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.ingest_result/1"
+        },
+        "accepted": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "duplicates": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "rejected": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "event_id": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "error": {
+                "$ref": "common.schema.json#/$defs/reason"
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        },
+        "board_accepted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema",
+        "accepted",
+        "duplicates",
+        "rejected",
+        "board_accepted"
+      ]
+    }
+  }
+}

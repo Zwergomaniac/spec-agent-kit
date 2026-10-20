@@ -1,0 +1,397 @@
+{
+  "schema": "sak.board/1",
+  "generated_at": "2026-10-20T10:20:00+02:00",
+  "source": "live",
+  "kit_version": "0.1.0",
+  "project": {
+    "key": "immo-agent",
+    "name": "ImmoAgent",
+    "base_branch": "main"
+  },
+  "specs": [
+    {
+      "number": 60,
+      "dir": "060-grundrisse-export",
+      "title": "Grundrisse exportieren",
+      "stage": "verified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 12,
+        "open": 0
+      },
+      "started_at": "2026-09-28T09:00:00+02:00",
+      "finished_at": "2026-10-02T16:30:00+02:00",
+      "updated_at": "2026-10-03T08:00:00+02:00",
+      "lead_time_days": 4.3
+    },
+    {
+      "number": 66,
+      "dir": "066-objekt-import",
+      "title": "Objekt-Import",
+      "stage": "deployed",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 14,
+        "open": 0
+      },
+      "started_at": "2026-10-05T09:00:00+02:00",
+      "finished_at": "2026-10-08T11:00:00+02:00",
+      "updated_at": "2026-10-08T12:00:00+02:00",
+      "lead_time_days": 3.1
+    },
+    {
+      "number": 75,
+      "dir": "075-altes-feature",
+      "title": "Altes Feature (zurückgestellt)",
+      "stage": null,
+      "descoped": true,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 0,
+        "open": 5
+      }
+    },
+    {
+      "number": 79,
+      "dir": "079-suche-filter",
+      "title": "Suche und Filter",
+      "stage": "verified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 9,
+        "open": 0
+      },
+      "finished_at": "2026-09-20T15:00:00+02:00",
+      "lead_time_days": 2.8
+    },
+    {
+      "number": 84,
+      "dir": "084-benachrichtigungen",
+      "title": "Benachrichtigungen",
+      "stage": "implementing",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 6,
+        "open": 3
+      },
+      "started_at": "2026-10-14T13:30:00+02:00",
+      "updated_at": "2026-10-15T09:10:00+02:00"
+    },
+    {
+      "number": 85,
+      "dir": "085-export-csv",
+      "title": "CSV-Export",
+      "stage": "implemented",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 8,
+        "open": 0
+      },
+      "finished_at": "2026-10-16T17:00:00+02:00",
+      "lead_time_days": 2.2
+    },
+    {
+      "number": 87,
+      "dir": "087-mail-versand",
+      "title": "Mail-Versand",
+      "stage": "implementing",
+      "descoped": false,
+      "blocked": true,
+      "waiting": null,
+      "tasks": {
+        "done": 2,
+        "open": 6
+      }
+    },
+    {
+      "number": 88,
+      "dir": "088-kartenansicht",
+      "title": "Kartenansicht",
+      "stage": "implementing",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 5,
+        "open": 4
+      },
+      "started_at": "2026-10-19T10:15:00+02:00",
+      "updated_at": "2026-10-19T12:40:00+02:00"
+    },
+    {
+      "number": 90,
+      "dir": "090-rechte-rollen",
+      "title": "Rechte und Rollen",
+      "stage": "tasked",
+      "descoped": false,
+      "blocked": false,
+      "waiting": "approval",
+      "tasks": {
+        "done": 0,
+        "open": 9
+      }
+    },
+    {
+      "number": 91,
+      "dir": "091-dokumenten-ablage",
+      "title": "Dokumenten-Ablage",
+      "stage": "planned",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "number": 92,
+      "dir": "092-dev-dashboard",
+      "title": "Entwickler-Dashboard",
+      "stage": "clarified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": "clarification",
+      "tasks": {
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "number": 93,
+      "dir": "093-agent-pipeline",
+      "title": "Agenten-Pipeline",
+      "stage": "specified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 0,
+        "open": 0
+      }
+    }
+  ],
+  "attention": [
+    {
+      "kind": "escalation",
+      "spec": "088-kartenansicht",
+      "reason": "Rundenlimit erreicht, offene Muss-Befunde",
+      "source": "run:088-20261019-101500"
+    },
+    {
+      "kind": "approval",
+      "spec": "090-rechte-rollen",
+      "reason": "Taskliste fertig, kein \"umsetzen\"",
+      "source": "specs/090-rechte-rollen/tasks.md"
+    },
+    {
+      "kind": "clarification",
+      "spec": "092-dev-dashboard",
+      "reason": "Offene Klärungsmarker in der Spec",
+      "source": "specs/092-dev-dashboard/spec.md"
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "088-20261019-101500",
+      "spec": "088-kartenansicht",
+      "kind": "pipeline",
+      "state": "escalated",
+      "round": 2,
+      "max_rounds": 2,
+      "active": true,
+      "started_at": "2026-10-19T10:15:00+02:00",
+      "updated_at": "2026-10-19T12:40:00+02:00",
+      "last_event_at": "2026-10-19T12:40:00+02:00",
+      "idle": true,
+      "stale": false,
+      "origin": {
+        "machine": "dev-laptop",
+        "branch": "main",
+        "source": "local"
+      },
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "pipeline-builder",
+          "model": "opus",
+          "state": "finished",
+          "started_at": "2026-10-19T10:15:10+02:00",
+          "duration_s": 1260
+        },
+        {
+          "round": 1,
+          "role": "code_review",
+          "agent": "pipeline-code-reviewer",
+          "model": "sonnet",
+          "state": "finished",
+          "started_at": "2026-10-19T10:36:20+02:00",
+          "duration_s": 240,
+          "verdict": "changes_requested",
+          "must_count": 2,
+          "may_count": 1
+        },
+        {
+          "round": 1,
+          "role": "ui_review",
+          "agent": "pipeline-ui-reviewer",
+          "model": "sonnet",
+          "state": "finished",
+          "started_at": "2026-10-19T10:36:20+02:00",
+          "duration_s": 300,
+          "verdict": "approve",
+          "must_count": 0,
+          "may_count": 1
+        },
+        {
+          "round": 2,
+          "role": "builder",
+          "agent": "pipeline-builder",
+          "model": "opus",
+          "state": "finished",
+          "started_at": "2026-10-19T10:45:00+02:00",
+          "duration_s": 900
+        },
+        {
+          "round": 2,
+          "role": "code_review",
+          "agent": "pipeline-code-reviewer",
+          "model": "sonnet",
+          "state": "finished",
+          "started_at": "2026-10-19T11:00:30+02:00",
+          "duration_s": 200,
+          "verdict": "changes_requested",
+          "must_count": 1,
+          "may_count": 0
+        }
+      ],
+      "escalations": [
+        {
+          "ts": "2026-10-19T12:40:00+02:00",
+          "round": 2,
+          "gate": "round_limit",
+          "reason": "Rundenlimit erreicht, offene Muss-Befunde",
+          "open": true
+        }
+      ]
+    },
+    {
+      "run_id": "084-20261014-133000",
+      "spec": "084-benachrichtigungen",
+      "kind": "pipeline",
+      "state": "paused",
+      "round": 1,
+      "max_rounds": 2,
+      "active": false,
+      "started_at": "2026-10-14T13:30:00+02:00",
+      "updated_at": "2026-10-15T09:10:00+02:00",
+      "last_event_at": "2026-10-15T09:10:00+02:00",
+      "idle": false,
+      "stale": false,
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "pipeline-builder",
+          "state": "finished",
+          "started_at": "2026-10-14T13:30:10+02:00",
+          "duration_s": 1500
+        }
+      ],
+      "escalations": []
+    },
+    {
+      "run_id": "066-20261008-091500",
+      "spec": "066-objekt-import",
+      "kind": "pipeline",
+      "state": "merged",
+      "round": 2,
+      "max_rounds": 2,
+      "active": false,
+      "started_at": "2026-10-08T09:15:00+02:00",
+      "updated_at": "2026-10-08T11:00:00+02:00",
+      "last_event_at": "2026-10-08T11:00:00+02:00",
+      "idle": false,
+      "stale": false,
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "pipeline-builder",
+          "state": "finished",
+          "started_at": "2026-10-08T09:15:10+02:00",
+          "duration_s": 1100
+        },
+        {
+          "round": 1,
+          "role": "code_review",
+          "agent": "pipeline-code-reviewer",
+          "state": "finished",
+          "started_at": "2026-10-08T09:34:00+02:00",
+          "duration_s": 210,
+          "verdict": "approve",
+          "must_count": 0,
+          "may_count": 2
+        }
+      ],
+      "escalations": []
+    }
+  ],
+  "markers": [
+    {
+      "kind": "deploy",
+      "specs": [
+        66
+      ],
+      "ts": "2026-10-08T12:00:00+02:00",
+      "commit": "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334"
+    },
+    {
+      "kind": "verified",
+      "specs": [
+        60,
+        79
+      ],
+      "ts": "2026-10-03T08:00:00+02:00",
+      "commit": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    }
+  ],
+  "ticker": [
+    {
+      "ts": "2026-10-19T12:40:00+02:00",
+      "spec": "088-kartenansicht",
+      "kind": "commit",
+      "text": "feat(088): Kartenlayer umschalten"
+    },
+    {
+      "ts": "2026-10-16T17:00:00+02:00",
+      "spec": "085-export-csv",
+      "kind": "commit"
+    },
+    {
+      "ts": "2026-10-08T12:00:00+02:00",
+      "spec": "066-objekt-import",
+      "kind": "deploy"
+    },
+    {
+      "ts": "2026-10-03T08:00:00+02:00",
+      "spec": "060-grundrisse-export",
+      "kind": "verified"
+    }
+  ],
+  "notes": [
+    "Datei specs/075-altes-feature/tasks.md nicht lesbar"
+  ]
+}

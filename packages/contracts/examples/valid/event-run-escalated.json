@@ -1,0 +1,14 @@
+{
+  "schema": "sak.event/1",
+  "event_id": "01K8M3Q7R50000000000000008",
+  "type": "run.escalated",
+  "ts": "2026-10-19T10:15:00+02:00",
+  "project": "immo-agent",
+  "run_id": "088-20261019-101500",
+  "spec": "088-kartenansicht",
+  "data": {
+    "round": 2,
+    "gate": "round_limit",
+    "reason": "Rundenlimit erreicht, offene Muss-Befunde"
+  }
+}

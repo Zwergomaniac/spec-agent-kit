@@ -26,11 +26,11 @@
 
 ## Phase 3: US1–US3 – Schemas
 
-- [ ] T007 [US1] `common.schema.json` mit den `$defs` aus plan.md.
-- [ ] T008 [US2] `event.schema.json` gemäß Spec 002 FR-004 und FR-005.
-- [ ] T009 [US3] `board.schema.json` gemäß FR-006.
-- [ ] T010 [US2] `ingest.schema.json` gemäß FR-007 (Anfrage und Ergebnis als zwei `$defs` plus Top-Level `oneOf`, oder zwei Dateien; Entscheidung im Code kommentieren).
-- [ ] T011 [P] `examples/valid/` und `examples/invalid/`: mindestens ein gültiges Beispiel je Event-Typ, das Pilot-Board (FR-010) und eine Ingest-Anfrage. Ungültig: unbekanntes Feld, falscher Enum-Wert, `ts` ohne Zeitzone, `run_id` fehlt bei `run.started`, falscher projectKey, `reason` mit 501 Zeichen, `changes_requested`-Event mit falschem Typ von `must_count`.
+- [X] T007 [US1] `common.schema.json` mit den `$defs` aus plan.md.
+- [X] T008 [US2] `event.schema.json` gemäß Spec 002 FR-004 und FR-005.
+- [X] T009 [US3] `board.schema.json` gemäß FR-006.
+- [X] T010 [US2] `ingest.schema.json` gemäß FR-007 (Anfrage und Ergebnis als zwei `$defs` plus Top-Level `oneOf`, oder zwei Dateien; Entscheidung im Code kommentieren).
+- [X] T011 [P] `examples/valid/` und `examples/invalid/`: mindestens ein gültiges Beispiel je Event-Typ, das Pilot-Board (FR-010) und eine Ingest-Anfrage. Ungültig: unbekanntes Feld, falscher Enum-Wert, `ts` ohne Zeitzone, `run_id` fehlt bei `run.started`, falscher projectKey, `reason` mit 501 Zeichen, `changes_requested`-Event mit falschem Typ von `must_count`.
 
 ## Phase 4: Generierung und Python-Seite
 

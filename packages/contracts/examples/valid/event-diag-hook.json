@@ -1,0 +1,14 @@
+{
+  "schema": "sak.event/1",
+  "event_id": "01K8M3Q7R50000000000000019",
+  "type": "diag.hook",
+  "ts": "2026-10-19T10:15:00Z",
+  "project": "immo-agent",
+  "data": {
+    "phase": "start",
+    "keys": [
+      "session_id",
+      "agent_type"
+    ]
+  }
+}

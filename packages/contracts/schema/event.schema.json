@@ -1,0 +1,717 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/event.schema.json",
+  "title": "sak.event/1",
+  "$comment": "Entscheidung: Top-Level anyOf statt oneOf. Die Zweige schließen sich über die Konstante bzw. das Enum von \"type\" gegenseitig aus; anyOf lässt sich verlustfrei in eine typisierte Zod-Union überführen. Ein Event ist serialisiert höchstens 8 KB groß (LIMITS.EVENT_MAX_BYTES).",
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "run.started"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_run_started"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "round.started"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_round_started"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "station.started"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_station_started"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "station.finished"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_station_finished"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "verdict.recorded"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_verdict_recorded"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "run.escalated"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_run_escalated"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "enum": [
+            "run.released",
+            "run.returned",
+            "run.paused",
+            "run.aborted"
+          ],
+          "x-vocab": "event_type",
+          "x-vocab-subset": true
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_reason_optional"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "enum": [
+            "run.resumed",
+            "run.approved",
+            "run.reviewed"
+          ],
+          "x-vocab": "event_type",
+          "x-vocab-subset": true
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_empty"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "run.merged"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_run_merged"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "run.taken_over"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_run_taken_over"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
+          "const": "diag.hook"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_diag_hook"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "data"
+      ]
+    }
+  ],
+  "$defs": {
+    "data_run_started": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "common.schema.json#/$defs/runKind"
+        },
+        "base_branch": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "base_commit": {
+          "$ref": "common.schema.json#/$defs/sha40"
+        },
+        "max_rounds": {
+          "$ref": "common.schema.json#/$defs/round"
+        }
+      },
+      "required": [
+        "kind",
+        "base_branch",
+        "base_commit",
+        "max_rounds"
+      ]
+    },
+    "data_round_started": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        }
+      },
+      "required": [
+        "round"
+      ]
+    },
+    "data_station_started": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "role": {
+          "$ref": "common.schema.json#/$defs/role"
+        },
+        "agent": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "model": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "effort": {
+          "$ref": "common.schema.json#/$defs/name"
+        }
+      },
+      "required": [
+        "round",
+        "role",
+        "agent"
+      ]
+    },
+    "data_station_finished": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "role": {
+          "$ref": "common.schema.json#/$defs/role"
+        },
+        "agent": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "round",
+        "role",
+        "agent",
+        "duration_s"
+      ]
+    },
+    "data_verdict_recorded": {
+      "$comment": "Spec 001 FR-018: changes_requested ohne Muss-Befund ist ungültig.",
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "$ref": "common.schema.json#/$defs/round"
+            },
+            "role": {
+              "$ref": "common.schema.json#/$defs/role"
+            },
+            "verdict": {
+              "enum": [
+                "approve",
+                "needs_human"
+              ],
+              "x-vocab": "verdict",
+              "x-vocab-subset": true
+            },
+            "must_count": {
+              "$ref": "common.schema.json#/$defs/count"
+            },
+            "may_count": {
+              "$ref": "common.schema.json#/$defs/count"
+            }
+          },
+          "required": [
+            "round",
+            "role",
+            "verdict",
+            "must_count",
+            "may_count"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "round": {
+              "$ref": "common.schema.json#/$defs/round"
+            },
+            "role": {
+              "$ref": "common.schema.json#/$defs/role"
+            },
+            "verdict": {
+              "const": "changes_requested"
+            },
+            "must_count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "may_count": {
+              "$ref": "common.schema.json#/$defs/count"
+            }
+          },
+          "required": [
+            "round",
+            "role",
+            "verdict",
+            "must_count",
+            "may_count"
+          ]
+        }
+      ]
+    },
+    "data_run_escalated": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "gate": {
+          "$ref": "common.schema.json#/$defs/gate"
+        },
+        "reason": {
+          "$ref": "common.schema.json#/$defs/reason"
+        }
+      },
+      "required": [
+        "round",
+        "reason"
+      ]
+    },
+    "data_reason_optional": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "$ref": "common.schema.json#/$defs/reason"
+        }
+      }
+    },
+    "data_empty": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "data_run_merged": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "merge_commit": {
+          "$ref": "common.schema.json#/$defs/sha40"
+        }
+      }
+    },
+    "data_run_taken_over": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "$ref": "common.schema.json#/$defs/reason"
+        },
+        "previous_state": {
+          "$ref": "common.schema.json#/$defs/runState"
+        }
+      },
+      "required": [
+        "reason",
+        "previous_state"
+      ]
+    },
+    "data_diag_hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "$ref": "common.schema.json#/$defs/hookPhase"
+        },
+        "keys": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      },
+      "required": [
+        "phase",
+        "keys"
+      ]
+    }
+  }
+}

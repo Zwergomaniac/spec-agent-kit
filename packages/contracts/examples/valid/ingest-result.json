@@ -1,0 +1,12 @@
+{
+  "schema": "sak.ingest_result/1",
+  "accepted": 1,
+  "duplicates": 1,
+  "rejected": [
+    {
+      "event_id": "01K8M3Q7R59000000000000003",
+      "error": "Event größer als 8 KB"
+    }
+  ],
+  "board_accepted": true
+}

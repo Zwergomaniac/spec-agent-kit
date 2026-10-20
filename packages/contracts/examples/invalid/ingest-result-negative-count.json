@@ -1,0 +1,7 @@
+{
+  "schema": "sak.ingest_result/1",
+  "accepted": -1,
+  "duplicates": 0,
+  "rejected": [],
+  "board_accepted": false
+}

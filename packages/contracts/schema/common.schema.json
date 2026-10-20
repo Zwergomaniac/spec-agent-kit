@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/common.schema.json",
+  "title": "sak common",
+  "$comment": "Gemeinsame Bausteine. Enum-Werte müssen mit vocabulary.json übereinstimmen (Test).",
+  "$defs": {
+    "projectKey": {
+      "type": "string",
+      "pattern": "^[a-z](?:[a-z0-9-]{0,38}[a-z0-9])$",
+      "description": "Spec 001 FR-004: 2 bis 40 Zeichen."
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9]{3}-[0-9]{8}-[0-9]{6}(?:-[a-z0-9]{1,8})?$",
+      "description": "Spec 001 FR-009: NNN-YYYYMMDD-HHMMSS, optionaler Suffix für späteren Parallelbetrieb."
+    },
+    "specDir": {
+      "type": "string",
+      "pattern": "^[0-9]{3}-[a-z0-9][a-z0-9-]{0,80}$",
+      "description": "Spec-Verzeichnis NNN-slug."
+    },
+    "specNumber": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 999
+    },
+    "ulid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID, Crockford Base32."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$",
+      "description": "RFC 3339, Zeitzone ist Pflicht."
+    },
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "machine": {
+          "$ref": "#/$defs/name"
+        },
+        "worktree": {
+          "$ref": "#/$defs/name"
+        },
+        "branch": {
+          "$ref": "#/$defs/name"
+        },
+        "source": {
+          "$ref": "#/$defs/runSource"
+        }
+      }
+    },
+    "stage": {
+      "enum": [
+        "specified",
+        "clarified",
+        "planned",
+        "tasked",
+        "implementing",
+        "implemented",
+        "deployed",
+        "verified"
+      ],
+      "x-vocab": "stage"
+    },
+    "runState": {
+      "enum": [
+        "building",
+        "reviewing",
+        "approved",
+        "escalated",
+        "paused",
+        "merged",
+        "reviewed",
+        "aborted"
+      ],
+      "x-vocab": "run_state"
+    },
+    "runKind": {
+      "enum": [
+        "pipeline",
+        "review_only",
+        "manual"
+      ],
+      "x-vocab": "run_kind"
+    },
+    "verdict": {
+      "enum": [
+        "approve",
+        "changes_requested",
+        "needs_human"
+      ],
+      "x-vocab": "verdict"
+    },
+    "severity": {
+      "enum": [
+        "must",
+        "may"
+      ],
+      "x-vocab": "severity"
+    },
+    "attentionKind": {
+      "enum": [
+        "escalation",
+        "approval",
+        "clarification",
+        "blocker",
+        "decision",
+        "operator_task",
+        "stale_run"
+      ],
+      "x-vocab": "attention_kind"
+    },
+    "eventType": {
+      "enum": [
+        "run.started",
+        "round.started",
+        "station.started",
+        "station.finished",
+        "verdict.recorded",
+        "run.escalated",
+        "run.released",
+        "run.returned",
+        "run.approved",
+        "run.paused",
+        "run.resumed",
+        "run.merged",
+        "run.reviewed",
+        "run.aborted",
+        "run.taken_over"
+      ],
+      "x-vocab": "event_type"
+    },
+    "diagEventType": {
+      "enum": [
+        "diag.hook"
+      ],
+      "x-vocab": "diag_event_type"
+    },
+    "role": {
+      "enum": [
+        "builder",
+        "code_review",
+        "ui_review",
+        "security_review",
+        "docs",
+        "integrator"
+      ],
+      "x-vocab": "role"
+    },
+    "gate": {
+      "enum": [
+        "start_approval",
+        "protected_paths",
+        "review_integrity",
+        "round_limit",
+        "release",
+        "deploy_approval"
+      ],
+      "x-vocab": "gate"
+    },
+    "stationState": {
+      "enum": [
+        "running",
+        "finished"
+      ],
+      "x-vocab": "station_state"
+    },
+    "runSource": {
+      "enum": [
+        "local",
+        "cloud"
+      ],
+      "x-vocab": "run_source"
+    },
+    "markerKind": {
+      "enum": [
+        "deploy",
+        "verified"
+      ],
+      "x-vocab": "marker_kind"
+    },
+    "tickerKind": {
+      "enum": [
+        "commit",
+        "deploy",
+        "verified"
+      ],
+      "x-vocab": "ticker_kind"
+    },
+    "boardSource": {
+      "enum": [
+        "live",
+        "snapshot"
+      ],
+      "x-vocab": "board_source"
+    },
+    "hookPhase": {
+      "enum": [
+        "start",
+        "stop"
+      ],
+      "x-vocab": "hook_phase"
+    }
+  }
+}
