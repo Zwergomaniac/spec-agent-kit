@@ -39,4 +39,5 @@
 
 ## Phase 5: Abschluss
 
-- [ ] T014 Optionaler Test `SAK_IMMOAGENT_SPECS=<pfad>` (SC-001). Alles grün. README-Statusmatrix: Collector/Ingest → implementiert (Collector-Seite).
+- [X] T014 Optionaler Test `SAK_IMMOAGENT_SPECS=<pfad>` (SC-001). Alles grün. README-Statusmatrix: Collector/Ingest → implementiert (Collector-Seite).
+  - Anmerkung: Der Test erwartet das Projekt-Repo (nicht nur `specs/`) und liest es ohne Schreibzugriff (In-Memory-Config, `git status` vor und nach dem Lauf identisch). Lokaler Lauf gegen ImmoAgent: 94 Specs, gültiges Board ohne Ausnahme und ohne Hinweise.

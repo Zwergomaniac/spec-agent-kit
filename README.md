@@ -33,7 +33,7 @@ Dieses Repo ist absichtlich ein **Mixed Repo**. Blueprint und Dashboard werden g
 | Init-Skript | Mock (kopiert 5 Template-Dateien, ohne Validierung/Überschreibschutz) | scripts/init-project.mjs |
 | Upgrade-CLI | Konzept | — |
 | Agent-Skill spec-agent-init | Konzept | packages/agent-blueprint/templates/root/.claude/skills |
-| Collector / Ingest | Konzept | — |
+| Collector / Ingest | implementiert (Collector-Seite, Spec 006: `sak board` mit `--json`/`--text`, lokale Ansicht `sak board serve` auf 127.0.0.1, ausfallsicherer `sak push` mit Cursor, Sperre und losgelöstem Hintergrundstart bei `push: auto`; Golden-File- und Push-Tests gegen einen lokalen Test-Server; die Ingest-Seite ist die Dashboard-API, Spec 007) | packages/engine/src/spec_agent_kit/board, packages/engine/src/spec_agent_kit/push |
 | Dashboard-API | implementiert (Hono + SQLite, Admin-Login, authentifizierter Ingest mit Contracts-Validierung, Lese-API, Retention, CLI; API-Vertragstests; Spec 007) | apps/dashboard-api |
 | Dashboard-Web | implementiert (React/Vite/Tailwind/shadcn: Portfolio, Projekt-Board, Lauf-Ansicht, Admin, Dark Mode, Deep Links; Playwright-E2E und Screenshot-Smoke; Spec 007) | apps/dashboard-web |
 | Deployment (Container) | Dockerfile, Compose-Snippet und Caddy-Beispiel vorhanden, `docker build` noch nicht ausgeführt (kein Docker verfügbar) | deploy/dashboard |
