@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import getpass
 import json
 import subprocess
 import sys
@@ -23,6 +24,8 @@ from spec_agent_kit.board.serve import DEFAULT_PORT, FALLBACK_LAST_PORT, bind_se
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
+from spec_agent_kit.dashboard import connect as dashboard_connect
+from spec_agent_kit.dashboard import status as dashboard_status
 from spec_agent_kit.install import InstallError
 from spec_agent_kit.install.apply import apply_plan
 from spec_agent_kit.install.doctor import run_doctor
@@ -225,6 +228,55 @@ def _push(args: argparse.Namespace) -> int:
     return code
 
 
+def _dashboard(args: argparse.Namespace) -> int:
+    """``sak dashboard connect|status`` (Spec 009 US4). Der Schlüssel erscheint nie in Ausgaben."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    if args.dashboard_command == "status":
+        code, result = dashboard_status(root)
+        _emit(result)
+        return code
+
+    def read_key() -> str:
+        if args.key_stdin:
+            return sys.stdin.readline(256)
+        if not sys.stdin.isatty():
+            raise UsageError("kein Terminal: den Schlüssel per --key-stdin übergeben")
+        return getpass.getpass("Projekt-Schlüssel (Eingabe bleibt verdeckt): ")
+
+    try:
+        code, result = dashboard_connect(
+            root,
+            args.url,
+            yes=args.yes,
+            force=args.force,
+            read_key=read_key,
+            key_from_stdin=args.key_stdin,
+            test_push=not args.no_test_push,
+        )
+    except UsageError as exc:
+        _emit({"ok": False, "error": str(exc)})
+        return EXIT_USAGE
+    _emit(result)
+    if result.get("mode") == "plan":
+        sys.stderr.write(_plan_text(result) + _NL)
+    return code
+
+
+def _plan_text(plan: dict[str, Any]) -> str:
+    config = plan["config"]
+    key_action = "ersetzt" if plan["key_file"]["action"] == "replace" else "neu angelegt"
+    return _NL.join(
+        [
+            "sak dashboard connect (Plan, nichts geschrieben)",
+            f"  Config: dashboard.url {config['url_from']} -> {config['url_to']}",
+            f"  Schlüsseldatei {plan['key_file']['path']}: {key_action}",
+            f"  {plan['next']}",
+        ]
+    )
+
+
 def _install(args: argparse.Namespace) -> int:
     """``sak init`` und ``sak upgrade`` (Spec 005): ohne ``--apply`` nur der Plan."""
     target = Path(args.target)
@@ -296,6 +348,17 @@ def _build_parser() -> argparse.ArgumentParser:
     pushp.add_argument(
         "--background", action="store_true", help="Losgelöst starten und sofort zurückkehren"
     )
+    dash = sub.add_parser("dashboard", help="Projekt ans Dashboard anbinden (Spec 009)")
+    dash_sub = dash.add_subparsers(dest="dashboard_command", required=True)
+    connect = dash_sub.add_parser(
+        "connect", help="URL eintragen und Schlüssel ablegen (ohne --yes nur der Plan)"
+    )
+    connect.add_argument("--url", required=True, help="https://… (http nur für localhost)")
+    connect.add_argument("--key-stdin", action="store_true", help="Schlüssel von stdin lesen")
+    connect.add_argument("--yes", action="store_true", help="Plan umsetzen")
+    connect.add_argument("--force", action="store_true", help="vorhandene dashboard.key ersetzen")
+    connect.add_argument("--no-test-push", action="store_true", help="Test-Push überspringen")
+    dash_sub.add_parser("status", help="URL, Schlüssel vorhanden, Push-Modus, Cursor")
     _add_install_parsers(sub)
     add_parsers(sub)
     return parser
@@ -345,6 +408,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _install(args)
     if args.command == "doctor":
         return _doctor(args)
+    if args.command == "dashboard":
+        return _dashboard(args)
     if args.command == "push":
         return _push(args)
     if args.command in {"run", "event"}:

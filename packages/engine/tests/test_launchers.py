@@ -74,7 +74,7 @@ def _make_cmd_home(base: Path, *, link_engine: bool) -> Path:
 
 def _cmd_env(tmp_path: Path, **extra: str) -> dict[str, str]:
     """Leerer PATH (nur System32), leere Benutzerordner: nichts Bekanntes wird gefunden."""
-    system = os.environ.get("SystemRoot", r"C:\Windows")
+    system = os.environ.get("SYSTEMROOT", r"C:\Windows")
     home = tmp_path / "home"
     (home / "local").mkdir(parents=True, exist_ok=True)
     env = {
@@ -93,9 +93,7 @@ def _cmd_env(tmp_path: Path, **extra: str) -> dict[str, str]:
     return env
 
 
-def _run_cmd(
-    folder: Path, env: dict[str, str], *args: str
-) -> subprocess.CompletedProcess[str]:
+def _run_cmd(folder: Path, env: dict[str, str], *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["cmd", "/c", str(folder / "sak.cmd"), *args],
         cwd=folder.parent,
@@ -209,7 +207,7 @@ def _sh_env(tmp_path: Path, **extra: str) -> dict[str, str]:
     assert sh is not None
     env = {"HOME": (tmp_path / "home").as_posix(), "PATH": str(Path(sh).parent)}
     if IS_WINDOWS:
-        env["SystemRoot"] = os.environ.get("SystemRoot", r"C:\Windows")
+        env["SystemRoot"] = os.environ.get("SYSTEMROOT", r"C:\Windows")
     env.update(extra)
     return env
 
