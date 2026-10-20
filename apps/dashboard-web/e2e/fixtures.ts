@@ -70,3 +70,25 @@ export function secondBoard(base: Board): Board {
     notes: []
   }
 }
+
+/** Weitere Projekte, damit das Portfolio-Raster auf breiten Fenstern mehrere Karten je Zeile zeigt. */
+export const EXTRA_PROJECTS = [
+  { key: 'ai-forge', name: 'AI Forge', specs: 8 },
+  { key: 'kundenportal', name: 'Kundenportal', specs: 5 },
+  { key: 'specboard', name: 'Specboard', specs: 10 },
+  { key: 'docs-hub', name: 'Docs Hub', specs: 6 },
+  { key: 'infra-tools', name: 'Infra Tools', specs: 9 }
+] as const
+
+export function extraBoard(base: Board, key: string, name: string, specs: number): Board {
+  return {
+    ...base,
+    project: { key, name, base_branch: 'main' },
+    metrics: { ...base.metrics, in_progress: 2, done: specs - 3, blocked: 0 },
+    specs: base.specs.filter((s) => !s.descoped).slice(0, specs),
+    attention: base.attention.slice(0, 1),
+    runs: [],
+    ticker: [],
+    notes: []
+  }
+}

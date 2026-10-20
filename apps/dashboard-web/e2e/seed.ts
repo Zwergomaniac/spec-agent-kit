@@ -1,5 +1,5 @@
 import type { Board, SakEvent } from '@sak/contracts'
-import { ADMIN_PASSWORD, BASE_URL, PILOT_KEY, SECOND_KEY, pilotBoard, pilotEvents, secondBoard } from './fixtures'
+import { ADMIN_PASSWORD, BASE_URL, EXTRA_PROJECTS, PILOT_KEY, SECOND_KEY, extraBoard, pilotBoard, pilotEvents, secondBoard } from './fixtures'
 
 async function post(path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> {
   return fetch(`${BASE_URL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) })
@@ -34,4 +34,9 @@ export async function seed(): Promise<void> {
 
   const secondToken = await create(SECOND_KEY, 'Spec Agent Kit')
   await ingest(secondToken, SECOND_KEY, [], secondBoard(base))
+
+  for (const p of EXTRA_PROJECTS) {
+    const token = await create(p.key, p.name)
+    await ingest(token, p.key, [], extraBoard(base, p.key, p.name, p.specs))
+  }
 }

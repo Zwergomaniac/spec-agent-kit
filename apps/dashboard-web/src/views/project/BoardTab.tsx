@@ -32,7 +32,7 @@ export function BoardTab({ projectKey, board }: { projectKey: string; board: Boa
       </div>
 
       <section aria-label="Board" className="min-w-0">
-        <div className="flex flex-col gap-3 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]" data-testid="board-columns">
+        <div className="flex flex-col gap-3 min-[900px]:grid min-[900px]:grid-cols-[repeat(auto-fill,minmax(190px,1fr))]" data-testid="board-columns">
           <StageColumn id="human" title="Mensch prüft / entscheidet" count={board.attention.length} highlight={board.attention.length > 0}>
             <AttentionList items={board.attention} compact />
           </StageColumn>

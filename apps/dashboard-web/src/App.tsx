@@ -48,7 +48,7 @@ function Shell({ children, authenticated }: { children: React.ReactNode; authent
         Zum Inhalt springen
       </a>
       <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-[2400px] items-center gap-3 px-4 sm:px-6 lg:px-10">
           <a href={links.portfolio()} className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground" aria-hidden>
               <LayoutGrid className="size-4" />
@@ -77,7 +77,7 @@ function Shell({ children, authenticated }: { children: React.ReactNode; authent
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 sm:px-6">
+      <main id="main" className="mx-auto w-full max-w-[2400px] flex-1 px-4 py-6 sm:px-6 lg:px-10">
         {children}
       </main>
       {authenticated ? <Footer /> : null}

@@ -29,6 +29,12 @@ export interface PortfolioProject {
   escalation: { run_id: string; spec: string; reason: string | null } | null
   attention_count: number
   in_progress: number
+  /** Specs je Station (ohne zurückgestellte); alle Stationen des Vokabulars sind gesetzt. */
+  stage_counts: Record<string, number>
+  done: number
+  attention_preview: Array<{ kind: string; spec: string | null }>
+  attention_total: number
+  last_marker: { kind: string; ts: string; specs: number[] } | null
   warnings: PortfolioWarning[]
 }
 
