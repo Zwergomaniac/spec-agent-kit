@@ -19,6 +19,8 @@ from spec_agent_kit.board.build import build_board
 from spec_agent_kit.config import EffectiveConfig, load_config
 
 DEFAULT_PORT: Final[int] = 5192
+FALLBACK_LAST_PORT: Final[int] = 5212
+"""Ohne ausdrückliches ``--port`` wird 5192 bis 5212 der Reihe nach versucht (Spec 009 US2)."""
 LOOPBACK_HOSTS: Final[frozenset[str]] = frozenset({"127.0.0.1", "localhost", "::1"})
 PAGE: Final[Path] = Path(__file__).resolve().parent / "static" / "board.html"
 _PLACEHOLDER: Final[str] = "__LABELS__"
@@ -107,3 +109,30 @@ def make_server(root: Path, port: int = DEFAULT_PORT) -> ThreadingHTTPServer:
         do_POST = do_PUT = do_DELETE = do_PATCH = do_OPTIONS = do_HEAD = _method_not_allowed
 
     return _LoopbackServer(("127.0.0.1", port), Handler)
+
+
+def bind_server(
+    root: Path,
+    port: int | None,
+    *,
+    first: int = DEFAULT_PORT,
+    last: int = FALLBACK_LAST_PORT,
+) -> tuple[ThreadingHTTPServer, int | None]:
+    """Server binden. Gibt ``(server, ausgewichen_von)`` zurück.
+
+    ``port=None``: erster freier Port von ``DEFAULT_PORT`` bis ``FALLBACK_LAST_PORT``;
+    ``ausgewichen_von`` ist dann ``first``, wenn ausgewichen wurde. Ein ausdrücklicher
+    Port weicht nie aus: ``OSError`` wird weitergereicht.
+    """
+    if port is not None:
+        return make_server(root, port), None
+    failure: OSError | None = None
+    for candidate in range(first, last + 1):
+        try:
+            server = make_server(root, candidate)
+        except OSError as exc:
+            failure = exc
+            continue
+        return server, (first if candidate != first else None)
+    assert failure is not None
+    raise failure

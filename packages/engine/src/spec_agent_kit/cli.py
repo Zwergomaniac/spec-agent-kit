@@ -7,9 +7,11 @@ Konventionen (docs/architecture.md): JSON auf stdout; Exit 0 bei Erfolg,
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
+import webbrowser
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -17,7 +19,7 @@ from typing import Any
 from spec_agent_kit import __version__
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
-from spec_agent_kit.board.serve import DEFAULT_PORT, make_server
+from spec_agent_kit.board.serve import DEFAULT_PORT, FALLBACK_LAST_PORT, bind_server
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
@@ -164,17 +166,35 @@ def _board_serve(args: argparse.Namespace) -> int:
         return _not_initialized()
     except ConfigError as exc:
         return _reject(exc.errors)
-    if not 0 <= args.port <= 65535:
+    if args.port is not None and not 0 <= args.port <= 65535:
         _emit({"ok": False, "error": f"ungültiger Port: {args.port}"})
         return EXIT_USAGE
     try:
-        server = make_server(root, args.port)
+        server, moved_from = bind_server(root, args.port)
     except OSError as exc:
-        _emit({"ok": False, "error": f"Port {args.port} nicht nutzbar: {exc}"})
+        if args.port is None:
+            message = (
+                f"kein freier Port zwischen {DEFAULT_PORT} und {FALLBACK_LAST_PORT}: {exc}. "
+                "Mit --port einen anderen Port wählen."
+            )
+        else:
+            message = (
+                f"Port {args.port} nicht nutzbar: {exc}. Bei ausdrücklichem --port wird nicht "
+                "ausgewichen; ohne --port wählt sak einen freien Port."
+            )
+        _emit({"ok": False, "error": message})
         return EXIT_USAGE
     host, port = server.server_address[:2]
-    _emit({"ok": True, "url": f"http://{host}:{port}", "hint": "Strg+C beendet"})
+    url = f"http://{host}:{port}"
+    result: dict[str, Any] = {"ok": True, "url": url, "hint": "Strg+C beendet"}
+    if moved_from is not None:
+        result["port_busy"] = moved_from
+        result["note"] = f"Port {moved_from} ist belegt; ausgewichen auf {port}"
+    _emit(result)
     sys.stdout.flush()
+    if args.open:
+        with contextlib.suppress(Exception):
+            webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -263,7 +283,14 @@ def _build_parser() -> argparse.ArgumentParser:
     shape.add_argument("--text", action="store_true", help="Kurzfassung, höchstens 40 Zeilen")
     board_sub = board.add_subparsers(dest="board_command")
     serve = board_sub.add_parser("serve", help="Lokale Ansicht auf 127.0.0.1 (ohne Netz)")
-    serve.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port (Default 5192)")
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help=f"Port; ohne Angabe {DEFAULT_PORT} und bei Belegung der nächste freie bis "
+        f"{FALLBACK_LAST_PORT}",
+    )
+    serve.add_argument("--open", action="store_true", help="Browser mit der URL öffnen")
     pushp = sub.add_parser("push", help="Events und Board ans Dashboard senden (Spec 006)")
     pushp.add_argument("--quiet", action="store_true", help="Keine Ausgabe")
     pushp.add_argument(
