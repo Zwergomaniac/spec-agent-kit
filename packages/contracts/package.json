@@ -1,0 +1,27 @@
+{
+  "name": "@sak/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "gen": "node scripts/gen-zod.mjs && node scripts/sync-python.mjs",
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/gen-zod.mjs && node scripts/sync-python.mjs && tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "json-schema-to-zod": "^2.8.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

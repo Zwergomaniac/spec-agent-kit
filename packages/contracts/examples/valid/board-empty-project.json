@@ -1,0 +1,24 @@
+{
+  "schema": "sak.board/1",
+  "generated_at": "2026-10-20T10:20:00Z",
+  "source": "snapshot",
+  "kit_version": "0.1.0",
+  "project": {
+    "key": "ai-forge",
+    "name": "AI-Forge",
+    "base_branch": "main"
+  },
+  "metrics": {
+    "in_progress": 0,
+    "done": 0,
+    "blocked": 0,
+    "waiting": 0,
+    "mean_lead_time_days": null
+  },
+  "specs": [],
+  "attention": [],
+  "runs": [],
+  "markers": [],
+  "ticker": [],
+  "notes": []
+}

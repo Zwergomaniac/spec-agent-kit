@@ -1,0 +1,22 @@
+{
+  "schema": "sak.event/1",
+  "event_id": "01K8M3Q7R50000000000000001",
+  "type": "run.started",
+  "ts": "2026-10-19T10:15:00+02:00",
+  "project": "immo-agent",
+  "run_id": "088-20261019-101500",
+  "spec": "088-kartenansicht",
+  "data": {
+    "kind": "pipeline",
+    "base_branch": "main",
+    "base_commit": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "max_rounds": 2,
+    "prompt": "geheim"
+  },
+  "origin": {
+    "machine": "dev-laptop",
+    "worktree": "main",
+    "branch": "main",
+    "source": "local"
+  }
+}

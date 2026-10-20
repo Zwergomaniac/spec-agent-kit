@@ -1,0 +1,519 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/board.schema.json",
+  "title": "sak.board/1",
+  "$comment": "Board-Dokument. Gesamtgröße höchstens 512 KB (LIMITS.BOARD_MAX_BYTES). ticker[].text nur, wenn das Projekt es per Config erlaubt (Spec 004).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "sak.board/1"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "source": {
+      "$ref": "common.schema.json#/$defs/boardSource"
+    },
+    "kit_version": {
+      "$ref": "common.schema.json#/$defs/name"
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "name": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "base_branch": {
+          "$ref": "common.schema.json#/$defs/name"
+        }
+      },
+      "required": [
+        "key",
+        "name",
+        "base_branch"
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "in_progress": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "done": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "blocked": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "waiting": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "mean_lead_time_days": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "in_progress",
+        "done",
+        "blocked",
+        "waiting",
+        "mean_lead_time_days"
+      ]
+    },
+    "specs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/spec"
+      }
+    },
+    "attention": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attention"
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      },
+      "maxItems": 20
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/marker"
+      }
+    },
+    "ticker": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ticker_entry"
+      },
+      "maxItems": 30
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      },
+      "maxItems": 20
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "source",
+    "kit_version",
+    "project",
+    "metrics",
+    "specs",
+    "attention",
+    "runs",
+    "markers",
+    "ticker",
+    "notes"
+  ],
+  "$defs": {
+    "spec": {
+      "$comment": "Spec 001 FR-007: Eine Spec mit descoped=true hat keine Station (stage=null).",
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "$ref": "common.schema.json#/$defs/specNumber"
+            },
+            "dir": {
+              "$ref": "common.schema.json#/$defs/specDir"
+            },
+            "title": {
+              "$ref": "common.schema.json#/$defs/title"
+            },
+            "descoped": {
+              "const": false
+            },
+            "blocked": {
+              "type": "boolean"
+            },
+            "waiting": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "approval",
+                    "clarification"
+                  ],
+                  "x-vocab": "attention_kind",
+                  "x-vocab-subset": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tasks": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "done": {
+                  "$ref": "common.schema.json#/$defs/count"
+                },
+                "open": {
+                  "$ref": "common.schema.json#/$defs/count"
+                }
+              },
+              "required": [
+                "done",
+                "open"
+              ]
+            },
+            "started_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "finished_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "updated_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "lead_time_days": {
+              "type": "number",
+              "minimum": 0
+            },
+            "stage": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/stage"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "number",
+            "dir",
+            "title",
+            "stage",
+            "descoped",
+            "blocked",
+            "waiting",
+            "tasks"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "$ref": "common.schema.json#/$defs/specNumber"
+            },
+            "dir": {
+              "$ref": "common.schema.json#/$defs/specDir"
+            },
+            "title": {
+              "$ref": "common.schema.json#/$defs/title"
+            },
+            "descoped": {
+              "const": true
+            },
+            "blocked": {
+              "type": "boolean"
+            },
+            "waiting": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "approval",
+                    "clarification"
+                  ],
+                  "x-vocab": "attention_kind",
+                  "x-vocab-subset": true
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "tasks": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "done": {
+                  "$ref": "common.schema.json#/$defs/count"
+                },
+                "open": {
+                  "$ref": "common.schema.json#/$defs/count"
+                }
+              },
+              "required": [
+                "done",
+                "open"
+              ]
+            },
+            "started_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "finished_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "updated_at": {
+              "$ref": "common.schema.json#/$defs/timestamp"
+            },
+            "lead_time_days": {
+              "type": "number",
+              "minimum": 0
+            },
+            "stage": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "number",
+            "dir",
+            "title",
+            "stage",
+            "descoped",
+            "blocked",
+            "waiting",
+            "tasks"
+          ]
+        }
+      ]
+    },
+    "attention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "common.schema.json#/$defs/attentionKind"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "reason": {
+          "$ref": "common.schema.json#/$defs/reason"
+        },
+        "source": {
+          "$ref": "common.schema.json#/$defs/name"
+        }
+      },
+      "required": [
+        "kind",
+        "reason",
+        "source"
+      ]
+    },
+    "station": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "role": {
+          "$ref": "common.schema.json#/$defs/role"
+        },
+        "agent": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "model": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "state": {
+          "$ref": "common.schema.json#/$defs/stationState"
+        },
+        "started_at": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "verdict": {
+          "$ref": "common.schema.json#/$defs/verdict"
+        },
+        "must_count": {
+          "$ref": "common.schema.json#/$defs/count"
+        },
+        "may_count": {
+          "$ref": "common.schema.json#/$defs/count"
+        }
+      },
+      "required": [
+        "round",
+        "role",
+        "agent",
+        "state",
+        "started_at"
+      ]
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "gate": {
+          "$ref": "common.schema.json#/$defs/gate"
+        },
+        "reason": {
+          "$ref": "common.schema.json#/$defs/reason"
+        },
+        "open": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ts",
+        "round",
+        "reason",
+        "open"
+      ]
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "kind": {
+          "$ref": "common.schema.json#/$defs/runKind"
+        },
+        "state": {
+          "$ref": "common.schema.json#/$defs/runState"
+        },
+        "round": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "max_rounds": {
+          "$ref": "common.schema.json#/$defs/round"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "started_at": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "updated_at": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "last_event_at": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "idle": {
+          "type": "boolean"
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "stations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/station"
+          }
+        },
+        "escalations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/escalation"
+          }
+        }
+      },
+      "required": [
+        "run_id",
+        "spec",
+        "kind",
+        "state",
+        "round",
+        "max_rounds",
+        "active",
+        "started_at",
+        "updated_at",
+        "last_event_at",
+        "idle",
+        "stale",
+        "stations",
+        "escalations"
+      ]
+    },
+    "marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "common.schema.json#/$defs/markerKind"
+        },
+        "specs": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/specNumber"
+          }
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "commit": {
+          "$ref": "common.schema.json#/$defs/sha40"
+        }
+      },
+      "required": [
+        "kind",
+        "specs",
+        "ts",
+        "commit"
+      ]
+    },
+    "ticker_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "kind": {
+          "$ref": "common.schema.json#/$defs/tickerKind"
+        },
+        "text": {
+          "$ref": "common.schema.json#/$defs/title"
+        }
+      },
+      "required": [
+        "ts",
+        "kind"
+      ]
+    }
+  }
+}

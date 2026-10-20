@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "event_max_bytes": 8192,
+  "board_max_bytes": 524288,
+  "ingest_max_bytes": 2097152,
+  "ingest_max_events": 500,
+  "reason_max_chars": 500,
+  "origin_field_max_chars": 100,
+  "runs_max": 20,
+  "ticker_max": 30,
+  "notes_max": 20
+}

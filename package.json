@@ -3,11 +3,16 @@
   "private": true,
   "version": "0.2.0",
   "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "pnpm -r build",
     "dev": "echo 'Run apps individually'",
-    "lint": "echo 'Add linting and formatting'",
-    "test": "echo 'Add test runner'",
+    "lint": "pnpm -r lint && uv run --project packages/engine ruff check packages/engine",
+    "test": "pnpm -r test && uv run --project packages/engine pytest",
+    "contracts:gen": "pnpm --filter @sak/contracts run gen",
+    "contracts:check": "pnpm --filter @sak/contracts run check",
     "init-project": "node scripts/init-project.mjs"
   }
 }

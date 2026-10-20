@@ -1,0 +1,16 @@
+{
+  "schema": "sak.event/1",
+  "event_id": "01K8M3Q7R50000000000000005",
+  "type": "verdict.recorded",
+  "ts": "2026-10-19T10:15:00+02:00",
+  "project": "immo-agent",
+  "run_id": "088-20261019-101500",
+  "spec": "088-kartenansicht",
+  "data": {
+    "round": 1,
+    "role": "ui_review",
+    "verdict": "approve",
+    "must_count": 0,
+    "may_count": 1
+  }
+}

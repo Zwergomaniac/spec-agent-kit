@@ -1,3 +1,4 @@
+# packages/engine ist ein uv-Projekt, packages/agent-blueprint kein npm-Paket.
 packages:
+  - packages/contracts
   - apps/*
-  - packages/*
