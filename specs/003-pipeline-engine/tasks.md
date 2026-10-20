@@ -15,23 +15,34 @@
 
 ## Phase 2: US1/US2 – Kernablauf
 
-- [ ] T005 `preflight`: sauberer Stand, Sperre, Verwaist-Erkennung, Branch, `run.started` und `round.started`.
-- [ ] T006 `state`, `release`, `return`, `abort`.
-- [ ] T007 `guard`, `snapshot`, `reviewer-check`.
-- [ ] T008 `pipeline/verdict.py` und `verdict`, en und de.
-- [ ] T009 `combine`: aktive Rollen, Rundenlimit, Muss-Befunde ausgeben.
-- [ ] T010 `merge`: `--no-ff`, bei Konflikt abbrechen und eskalieren, kein Push.
-- [ ] T011 `list`, `show`, `event emit`. CLI-Verdrahtung in `cli.py`.
+- [X] T005 `preflight`: sauberer Stand, Sperre, Verwaist-Erkennung, Branch, `run.started` und `round.started`.
+  - Anmerkung: `config check` (Spec 004) ist die Prüfung „Config gültig“; Schemafehler lehnt schon `cli.py` ab (Antwort `{ok:false, errors[]}`). Basis-Branch ist `--base` oder `project.base_branch`; ausgecheckt sein muss der Basis- oder der Spec-Branch (sonst Ablehnung). Weil der Basis-Branch aus der Config kommt, entfällt die Pflicht `--base` auf dem Spec-Branch aus der Referenz. Ein verwaister Lauf wird in Ablehnung und Antwort unter `stale_runs` genannt. Reihenfolge der Prüfungen: Config, Spec, tasks.md, sauberer Stand, Sperre, Branch. Zielbranch aus `branch_pattern`; ein bestehender Branch muss den aktuellen HEAD enthalten (kein Rebase).
+- [X] T006 `state`, `release`, `return`, `abort`.
+  - Anmerkung: `state` setzt `merged` nie (nur `merge`) und leitet `paused` und die Rückkehr aus `paused` an `pause`/`resume`. `--gate` wird gegen das Vokabular geprüft. `release` und `return` gelten nur für eskalierte Läufe; `return` braucht `--reason` und liegt unterhalb des Rundenlimits.
+- [X] T007 `guard`, `snapshot`, `reviewer-check`.
+  - Anmerkung: `guard` ändert nichts, meldet aber `gate: protected_paths`; der Orchestrator ruft dann `state … escalated --gate protected_paths`. `reviewer-check` hat laut Spec kein Lauf-Argument: es eskaliert den aktiven Lauf mit Gate `review_integrity` und lehnt ab. Der Snapshot enthält zusätzlich einen Inhalts-Hash jeder geänderten Datei (auch unversionierte), damit Änderungen an unversionierten Dateien auffallen.
+- [X] T008 `pipeline/verdict.py` und `verdict`, en und de.
+  - Anmerkung: `parse_verdict(text, locale)`: englische Form immer, deutsche Form (`Urteil:`, `[Muss]`, `[Kann]`) nur bei Locale `de` (die Config-Locale ist in v1 immer `de`). `Grund:` und `Reason:` sind in beiden Locales erlaubt. `verdict` verlangt den Zustand `reviewing` und eine aktive Prüfrolle (code_review, ui_review, security_review).
+- [X] T009 `combine`: aktive Rollen, Rundenlimit, Muss-Befunde ausgeben.
+  - Anmerkung: Fehlt ein Urteil, lehnt `combine` ab (Exit 1, `missing`), statt wie in der Referenz `complete: false` zu melden. `combine` führt den Wechsel aus: `approved`, nächste Runde (`building`), `escalated` mit Gate `round_limit` (letzte Runde) oder `escalated` ohne Gate bei `needs_human`. Das Ergebnis nennt die Muss-Befunde als `[rolle] Text`.
+- [X] T010 `merge`: `--no-ff`, bei Konflikt abbrechen und eskalieren, kein Push.
+  - Anmerkung: Bei einem Konflikt: `git merge --abort`, zurück auf den Run-Branch, Lauf `escalated` (ohne Gate, Grund „Merge-Konflikt“). Andere Git-Fehler lehnen nur ab und lassen den Lauf `approved`. Ist der Branch schon enthalten, erzeugt Git keinen Merge-Commit; `merge_commit` ist dann der aktuelle HEAD.
+- [X] T011 `list`, `show`, `event emit`. CLI-Verdrahtung in `cli.py`.
+  - Anmerkung: `event emit` schreibt nur Ereignisse ohne Zustandswechsel (run.escalated, released, returned, paused, aborted, resumed, approved, reviewed, merged, taken_over, round.started); Ereignisse mit eigenem Befehl (run.started, station.*, verdict.recorded, diag.hook) lehnt es ab. `list` zeigt offene Läufe, neueste zuerst. Verdrahtung: `cli.py` und `pipeline/cli_bridge.py` (Parser und Verteilung; Plan nannte nur cli.py).
 
 ## Phase 3: US3/US4 – Pause, Übernahme, Nur-Prüfung
 
-- [ ] T012 `pause` und `resume`: `paused_from`, Branch-Wechsel bei sauberem Stand, Sperrprüfung.
-- [ ] T013 `--takeover` in preflight (`run.taken_over` und `aborted`).
-- [ ] T014 `--review-only --base-commit` und Abschluss als `reviewed` in `combine`.
+- [X] T012 `pause` und `resume`: `paused_from`, Branch-Wechsel bei sauberem Stand, Sperrprüfung.
+  - Anmerkung: Lesart: Ein aus `escalated` pausierter Lauf kehrt bei `resume` nach `escalated` zurück (Zustand vor der Pause). `resume` wählt bei Spec-Angabe den jüngsten pausierten Lauf, prüft die Sperre, wechselt den Branch nur bei sauberem Stand und schreibt `run.resumed`.
+- [X] T013 `--takeover` in preflight (`run.taken_over` und `aborted`).
+  - Anmerkung: Nur ein verwaister aktiver Lauf lässt sich übernehmen; ein frischer wird mit Hinweis abgelehnt. Es entsteht nur `run.taken_over` (kein zusätzliches `run.aborted`). Die Übernahme geschieht erst nach erfolgreichem Branch-Wechsel für den neuen Lauf.
+- [X] T014 `--review-only --base-commit` und Abschluss als `reviewed` in `combine`.
+  - Anmerkung: Die Spec nennt in US4 `--base <commit>`, in FR-001 `--base-commit <sha>`; umgesetzt ist FR-001. Der Lauf bleibt auf dem ausgecheckten Branch, startet in `reviewing` (Events run.started mit kind `review_only` und round.started), braucht einen sauberen Stand. `combine`: approve → `reviewed`, sonst `escalated` (ohne Gate). Ein solcher Lauf wird nie gemergt.
 
 ## Phase 4: US5 – Hooks
 
-- [ ] T015 `pipeline/hooks.py` und `sak hook subagent-start|subagent-stop`: Rollen-Mapping über die Config, open-stations, Dauer, einmaliges `diag.hook`, immer Exit 0, keine Ausnahme nach außen.
+- [X] T015 `pipeline/hooks.py` und `sak hook subagent-start|subagent-stop`: Rollen-Mapping über die Config, open-stations, Dauer, einmaliges `diag.hook`, immer Exit 0, keine Ausnahme nach außen.
+  - Anmerkung: Der Hook schreibt nichts auf stdout (SubagentStart-Ausgaben könnten als Kontext in den Subagent gelangen). `diag.hook` entsteht je Phase einmal, nur bei fehlendem Agent-Typ und nur bei aktivem Lauf (Spec: „Hook ohne aktiven Lauf: kein Event“). Agent-Typ → Rolle über `pipeline.roles.<rolle>.agent` der aktiven Rollen; ein Stop ohne Start schreibt `duration_s: 0`. Parallel startende Prüfer schützt eine kurze Dateisperre um `open-stations.json` (höchstens 0,5 s). Ungültige Aufrufe von `sak hook …` enden ebenfalls mit Exit 0.
 
 ## Phase 5: Tests
 

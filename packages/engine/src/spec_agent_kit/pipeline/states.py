@@ -83,10 +83,12 @@ def plan_transition(
         events.append(("run.merged", {"merge_commit": merge_commit}))
     elif new == "reviewed":
         events.append(("run.reviewed", {}))
-    elif takeover:  # new == "aborted"
-        events.append(("run.taken_over", {"reason": shown, "previous_state": old}))
-    else:
-        events.append(("run.aborted", {"reason": shown}))
+    elif new == "aborted":
+        if takeover:
+            events.append(("run.taken_over", {"reason": shown, "previous_state": old}))
+        else:
+            events.append(("run.aborted", {"reason": shown}))
+    # new == "reviewing" (von building): das Vokabular kennt dafür kein Ereignis.
 
     if old == "escalated" and new in {"approved", "building", "aborted"}:
         run["escalation"] = None
