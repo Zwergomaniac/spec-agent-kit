@@ -1,0 +1,46 @@
+{
+  "schema": "sak.config/1",
+  "project": { "key": "demo-app", "name": "Demo App", "base_branch": "main" },
+  "locale": "de",
+  "pipeline": {
+    "max_rounds": 3,
+    "idle_minutes": 45,
+    "stale_hours": 8,
+    "branch_pattern": "{spec}",
+    "roles": {
+      "builder": { "enabled": true, "agent": "sak-builder", "model": "sonnet", "effort": "medium" },
+      "code_review": { "enabled": true, "agent": "sak-code-review", "model": "opus", "effort": "high" },
+      "ui_review": { "enabled": true, "agent": "sak-ui-review", "model": "sonnet", "effort": "medium" },
+      "security_review": { "enabled": false },
+      "docs": { "enabled": false },
+      "integrator": { "enabled": false }
+    }
+  },
+  "stages": { "deployed": true, "verified": false },
+  "commands": {
+    "test_fast": ["uv run pytest -q {paths}"],
+    "test_full": ["uv run pytest -q"],
+    "lint": ["uv run ruff check ."],
+    "environment_failures": ["connection refused"]
+  },
+  "ui": {
+    "command": "npx playwright test",
+    "base_url": "http://127.0.0.1:5173",
+    "paths": ["web/src/"],
+    "viewports": { "desktop": [1440, 900], "mobile": [390, 844] },
+    "checks": ["horizontal_overflow", "console_errors"],
+    "regression_tests": ["layout.spec.ts"]
+  },
+  "guard": { "protected_paths": ["AGENTS.md"], "clean_ignore": ["build/"] },
+  "escalation": { "paths": ["src/auth/"], "topics": ["Anmeldung und Rechte"] },
+  "review": { "rules": ["Jede Abfrage nach Kontodaten filtert nach owner_id."] },
+  "orchestrator_only": ["deploy", "ssh"],
+  "deploy": { "command": null },
+  "dashboard": {
+    "url": "https://dashboard.example.org",
+    "token_env": "SAK_DASHBOARD_TOKEN",
+    "push": "auto",
+    "share_commit_subjects": false
+  },
+  "plugins": []
+}

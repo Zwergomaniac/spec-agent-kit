@@ -1,0 +1,77 @@
+# Projektkonfiguration des Spec Agent Kit (Schema sak.config/1, Spec 004).
+#
+# Das ist die einzige Stelle für Projektspezifisches: Testbefehle, Rollen, geschützte Pfade,
+# Prüfthemen, Deploy-Befehl und Dashboard-Ziel. Agents, Skills und Engine bleiben unverändert.
+# Unbekannte Schlüssel sind unzulässig. Prüfen mit: sak config check. Wirksame Werte: sak config show.
+# Keine Secrets in dieser Datei (der Dashboard-Schlüssel kommt aus der Umgebung, siehe dashboard).
+schema: sak.config/1
+
+project:
+  key: __PROJECT_KEY__        # 2 bis 40 Zeichen: a-z, 0-9, Bindestrich; beginnt mit einem Buchstaben
+  name: __PROJECT_NAME__      # Anzeigename im Dashboard
+  base_branch: __BASE_BRANCH__
+
+locale: de                    # Sprache der Berichte und Labels
+
+pipeline:
+  max_rounds: 2               # 1 bis 5 Builder-Prüfer-Runden, danach Eskalation
+  idle_minutes: 60            # Lauf ohne Aktivität gilt danach als eingeschlafen
+  stale_hours: 6              # Lauf ohne Fortschritt gilt danach als veraltet
+  branch_pattern: "{spec}"    # Branch-Name je Spec; {spec} ist Pflicht
+  roles:                      # Besetzung der Rollen; agent = Dateiname unter .claude/agents/ ohne .md
+    builder:         { enabled: true,  agent: sak-builder,         model: sonnet, effort: medium }
+    code_review:     { enabled: true,  agent: sak-code-review,     model: opus,   effort: medium }
+    ui_review:       { enabled: false, agent: sak-ui-review,       model: sonnet, effort: medium }
+    security_review: { enabled: false, agent: sak-security-review, model: opus,   effort: medium }
+    docs:            { enabled: false, agent: sak-docs,            model: sonnet, effort: medium }
+    # integrator: in v1 nicht aktivierbar
+    # Modell und Effort müssen mit dem Frontmatter der Agent-Datei übereinstimmen (config check).
+    # effort: low | medium | high (Empfehlung: medium)
+
+stages:                       # abschaltbare Stationen
+  deployed: true
+  verified: true
+
+commands:
+  test_fast: []               # je Phase; {paths} = vom Builder gewählte Testpfade, optional
+  #  - uv run pytest -q {paths}
+  test_full: []               # vollständige Suite vor der Übergabe an die Prüfer
+  #  - uv run pytest -q
+  lint: []
+  #  - uv run ruff check .
+  environment_failures: []    # Textmuster, die einen Fehlschlag als umgebungsbedingt kennzeichnen
+
+# Nur nötig, wenn pipeline.roles.ui_review.enabled true ist:
+# ui:
+#   command: npx playwright test
+#   base_url: http://127.0.0.1:5173
+#   paths: [web/src/]                       # Frontend-Pfade: Änderungen hier lösen die UI-Prüfung aus
+#   viewports: { desktop: [1440, 900], mobile: [390, 844] }
+#   checks: [horizontal_overflow, console_errors, screenshots]
+#   regression_tests: []                    # Browser-Tests, die bei globalen Änderungen mitlaufen
+
+guard:
+  protected_paths: []         # zusätzlich zum fest verdrahteten Kern-Schutz (nicht abschaltbar)
+  clean_ignore: []            # zählt nicht für "sauberer Stand"; .spec-agent/state/ ist immer ausgenommen
+
+escalation:
+  paths: []                   # Hinweise an die Prüfer (keine Automatik)
+  topics: []                  # fachliche Themen, bei denen die Rolle code_review "needs_human" urteilt
+
+review:
+  rules: []                   # projektspezifische Prüfregeln als kurze Sätze
+
+orchestrator_only:            # Aktionen, die nie ein Subagent ausführt
+  - deploy
+  - ssh
+
+deploy:
+  command: null               # wird nur vom Orchestrator nach Freigabe des Betreibers ausgeführt
+
+dashboard:
+  url: null                   # https://... des Dashboards, oder null
+  token_env: SAK_DASHBOARD_TOKEN   # Name der Umgebungsvariable; Alternative: Datei .spec-agent/dashboard.key (gitignoriert)
+  # push: auto | manual | off   # Default: auto, sobald url gesetzt ist, sonst manual
+  share_commit_subjects: false
+
+plugins: []                   # in v1 nur reserviert

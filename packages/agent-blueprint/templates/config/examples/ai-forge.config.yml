@@ -1,0 +1,32 @@
+# Beispiel-Config für AI-Forge (Python, uv, pytest, ruff, keine Web-UI).
+# ACHTUNG: Die Werte sind nach bestem Wissen gewählt und im Pilot (Spec 008) zu überprüfen.
+schema: sak.config/1
+
+project:
+  key: ai-forge
+  name: AI-Forge
+  base_branch: main
+
+pipeline:
+  roles:
+    builder:     { enabled: true,  agent: sak-builder,     model: sonnet, effort: medium }
+    code_review: { enabled: true,  agent: sak-code-review, model: opus,   effort: medium }
+    ui_review:   { enabled: false }   # keine Web-UI: das Gesamturteil entsteht aus code_review allein
+
+commands:
+  test_fast:
+    - uv run pytest -q {paths}
+  test_full:
+    - uv run pytest -q
+  lint:
+    - uv run ruff check .
+
+orchestrator_only:
+  - deploy
+  - ssh
+
+deploy:
+  command: null                 # im Pilot zu prüfen
+
+dashboard:
+  url: null                     # im Pilot zu prüfen; bis dahin push: manual

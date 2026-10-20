@@ -70,6 +70,12 @@ describe('Enum und Vokabular (Spec 002 FR-002)', () => {
     expect(count).toBeGreaterThan(10)
   })
 
+  it('die Rollen der Projektkonfiguration entsprechen der Ebene role (Spec 004 FR-002)', () => {
+    const roles = schemas.config.properties.pipeline.properties.roles
+    expect(Object.keys(roles.properties).sort()).toEqual([...lvl('role')].sort())
+    expect(roles.additionalProperties).toBe(false)
+  })
+
   it('die Event-Zweige decken genau event_type und diag_event_type ab', () => {
     const covered: string[] = []
     for (const branch of schemas.event.anyOf) {
@@ -104,7 +110,7 @@ describe('Beispiele gegen ajv', () => {
   const examples = loadExamples()
 
   it('es gibt gültige und ungültige Beispiele je Schema', () => {
-    for (const s of ['event', 'board', 'ingest'] as const) {
+    for (const s of ['event', 'board', 'ingest', 'config'] as const) {
       expect(examples.filter((e) => e.schema === s && e.valid).length, `${s} gültig`).toBeGreaterThan(0)
       expect(examples.filter((e) => e.schema === s && !e.valid).length, `${s} ungültig`).toBeGreaterThan(0)
     }

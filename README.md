@@ -29,6 +29,7 @@ Dieses Repo ist absichtlich ein **Mixed Repo**. Blueprint und Dashboard werden g
 | Pipeline-Engine (Stationen, Urteile, Gates) | Konzept | — (Quelle: ImmoAgent Spec 093) |
 | Rollen-/Agent-Definitionen | Konzept | — |
 | Contracts (Event-/Board-Vertrag, Statusvokabular) | implementiert (JSON Schema, Vokabular, Labels, generierte Zod-Typen, Python-Validierung, Deep-Link-Helfer; Specs 001 und 002) | packages/contracts, packages/engine/src/spec_agent_kit/contracts.py |
+| Projektkonfiguration (`.spec-agent/config.yml`) | implementiert (Schema `sak.config/1`, Laden mit Defaults und Kern-Schutz, `sak config check` und `sak config show`, Vorlage und Beispiel-Configs für ImmoAgent und AI-Forge; Spec 004; die AI-Forge-Werte sind im Pilot zu prüfen) | packages/contracts/schema/config.schema.json, packages/engine/src/spec_agent_kit/config, packages/agent-blueprint/templates/config |
 | Init-Skript | Mock (kopiert 5 Template-Dateien, ohne Validierung/Überschreibschutz) | scripts/init-project.mjs |
 | Upgrade-CLI | Konzept | — |
 | Agent-Skill spec-agent-init | Konzept | packages/agent-blueprint/templates/root/.claude/skills |

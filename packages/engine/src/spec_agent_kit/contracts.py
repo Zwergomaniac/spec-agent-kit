@@ -23,7 +23,8 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 SCHEMA_DIR: Final[Path] = Path(__file__).resolve().parent / "schemas"
-SCHEMA_NAMES: Final[tuple[str, ...]] = ("common", "event", "board", "ingest")
+SCHEMA_NAMES: Final[tuple[str, ...]] = ("common", "event", "board", "ingest", "config")
+CONFIG_MAX_BYTES: Final[int] = 256 * 1024
 DEFAULT_LOCALE: Final[str] = "de"
 
 # ---------------------------------------------------------------------------
@@ -37,7 +38,7 @@ def _load_json(relative: str) -> Any:
 
 
 def load_schema(name: str) -> dict[str, Any]:
-    """Lädt ``<name>.schema.json`` (``common``, ``event``, ``board`` oder ``ingest``)."""
+    """Lädt ``<name>.schema.json`` (eines aus ``SCHEMA_NAMES``)."""
     if name not in SCHEMA_NAMES:
         raise ValueError(f"Unbekanntes Schema: {name}")
     schema: dict[str, Any] = _load_json(f"{name}.schema.json")
@@ -181,6 +182,16 @@ def validate_board(obj: Any) -> list[str]:
 def validate_ingest(obj: Any) -> list[str]:
     """Prüft Ingest-Anfrage oder -Antwort (``sak.ingest/1`` bzw. ``sak.ingest_result/1``)."""
     return _validate("ingest", obj, LIMITS["INGEST_MAX_BYTES"])
+
+
+def validate_config(obj: Any) -> list[str]:
+    """Prüft eine Projektkonfiguration gegen ``sak.config/1`` (höchstens 256 KB)."""
+    return _validate("config", obj, CONFIG_MAX_BYTES)
+
+
+def config_schema_errors(obj: Any) -> list[ValidationError]:
+    """Alle Schemaverstöße einer Projektkonfiguration (für ``sak config check``)."""
+    return sorted(_validator("config").iter_errors(obj), key=lambda e: list(map(str, e.path)))
 
 
 # ---------------------------------------------------------------------------
