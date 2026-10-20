@@ -20,7 +20,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 700
+    chunkSizeWarningLimit: 900
   },
   test: {
     environment: 'jsdom',

@@ -36,12 +36,16 @@
 
 ## Phase 5: UI
 
-- [ ] T012 Login mit Rücksprung zur Ziel-URL.
-- [ ] T013 Portfolio: Projektkarten, Warnungen, Hervorhebung bei Eskalation.
-- [ ] T014 Projekt: Tabs board, runs, attention, conflicts mit `?tab=`-Sync; Kennzahlen-Kacheln, Stationsspalten, „Mensch prüft“-Spalte, Agenten-Panel, Ticker, 2 Diagramme.
-- [ ] T015 Lauf-Ansicht: Runden, Stationen, Urteile, Eskalationen, Event-Log.
-- [ ] T016 Admin: Projekte verwalten.
-- [ ] T017 Polling alle 10 s, sichtbar-abhängig; „zuletzt aktualisiert“; Fehler- und Leerzustände; Labels über Contracts, unbekannte Werte als „unbekannt (wert)“.
+- [X] T012 Login mit Rücksprung zur Ziel-URL.
+  - Anmerkung: Bei fehlender Session erscheint die Anmeldung unter der angefragten URL; der Hash bleibt unverändert, daher rendert nach dem Login dieselbe Route (Rücksprung). Zusätzlich wird `#/login?next=<hash>` unterstützt (nur interne Ziele).
+- [X] T013 Portfolio: Projektkarten, Warnungen, Hervorhebung bei Eskalation.
+  - Anmerkung: Die Warnungstexte „Lauf inaktiv“ und „Kein Push seit über 24 Std.“ sind UI-Texte, weil das Vokabular dafür keine Werte kennt; „Lauf hängt“ stammt aus `attention_kind.stale_run`.
+- [X] T014 Projekt: Tabs board, runs, attention, conflicts mit `?tab=`-Sync; Kennzahlen-Kacheln, Stationsspalten, „Mensch prüft“-Spalte, Agenten-Panel, Ticker, 2 Diagramme.
+  - Anmerkung: Die Stationsspalten (ab 900 px) füllen die Breite mit `auto-fill` und brechen bei Bedarf in eine zweite Zeile um, statt horizontal zu scrollen; unter 900 px stehen sie untereinander. „Mensch prüft / entscheidet“ ist die erste Spalte und zeigt die `attention`-Einträge; wartende und blockierte Specs tragen zusätzlich ein Badge in ihrer Stationsspalte. Zurückgestellte Specs stehen eingeklappt unter dem Board. Der Tab `operator` aus `docs/ui/dashboard-concept.md` entfällt; es gelten die Tabs aus Spec 002 (`attention`).
+- [X] T015 Lauf-Ansicht: Runden, Stationen, Urteile, Eskalationen, Event-Log.
+  - Anmerkung: Ist der Lauf nicht mehr im Board (mehr als 20 Läufe), werden nur die gespeicherten Events gezeigt.
+- [X] T016 Admin: Projekte verwalten.
+- [X] T017 Polling alle 10 s, sichtbar-abhängig; „zuletzt aktualisiert“; Fehler- und Leerzustände; Labels über Contracts, unbekannte Werte als „unbekannt (wert)“.
 
 ## Phase 6: Deploy
 
