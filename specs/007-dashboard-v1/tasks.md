@@ -14,7 +14,8 @@
 - [X] T003 `env.ts` (Pflicht-Secrets), `db.ts` und `migrations.ts` (WAL, Schema aus plan.md).
 - [X] T004 `auth/password.ts` (scrypt), `auth/session.ts` (HMAC-Cookie), `auth/rate-limit.ts`, Login-Sperre. `cli/hash-password.ts`.
   - Anmerkung: Der Passwort-Hash hat das Format `scrypt:N:r:p:salt:hash` (base64url, ohne `$`), damit er ohne Escaping in `.env`/Compose steht. Das Passwort wird nie per Argument übergeben, nur interaktiv oder über stdin (mindestens 12 Zeichen). Die Login-Sperre zählt jeden Versuch vorab als Fehlversuch (Schutz gegen parallele Versuche) und löscht die Einträge bei Erfolg.
-- [ ] T005 `app.ts` mit Fehlerbehandlung (JSON-Fehler, kein Stacktrace nach außen), `/healthz`, Auth-Routen und Auth-Middleware.
+- [X] T005 `app.ts` mit Fehlerbehandlung (JSON-Fehler, kein Stacktrace nach außen), `/healthz`, Auth-Routen und Auth-Middleware.
+  - Anmerkung: Zusätzlich gesetzt: Sicherheits-Header inkl. CSP, `Cache-Control: no-store` für die API und eine Origin-Prüfung für schreibende Requests (zusätzlich zu SameSite=Strict). Mit dieser Phase wurde `app.ts` erst committet, weil es alle Routen einbindet.
 
 ## Phase 3: US4 – Ingest
 
@@ -28,8 +29,10 @@
 
 ## Phase 4: US1–US3 – Lese-API
 
-- [ ] T010 `routes/meta.ts`, `routes/read.ts` und `services/portfolio.ts`, `services/runs.ts`.
-- [ ] T011 Tests für die Lese-API mit dem Pilot-Board-Beispiel aus `packages/contracts/examples/valid/`.
+- [X] T010 `routes/meta.ts`, `routes/read.ts` und `services/portfolio.ts`, `services/runs.ts`.
+  - Anmerkung: `GET /api/projects/:key/events` liefert ohne `since` die neuesten `limit` Events (aufsteigend), mit `since` die ersten `limit` Events danach. Das Portfolio liefert zusätzlich `escalation` (eskalierter Lauf samt Grund) und `warnings` (`stale`, `idle`, `no_push_24h`; diese Warnungsbegriffe sind nicht Teil des Vokabulars). Das Alter für `no_push_24h` bemisst sich ab `last_ingest_at`, bei Projekten ohne Einlieferung ab Anlage.
+- [X] T011 Tests für die Lese-API mit dem Pilot-Board-Beispiel aus `packages/contracts/examples/valid/`.
+  - Anmerkung: Die Beispiel-Ingest-Requests der Contracts enthalten nur 2 Events bzw. kein Event; die Lauf-Events zu Lauf 088 leitet der Test deshalb aus den Stationen des Pilot-Boards ab (`pilotEvents()`).
 
 ## Phase 5: UI
 
