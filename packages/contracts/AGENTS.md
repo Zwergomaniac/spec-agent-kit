@@ -2,7 +2,7 @@
 
 Contracts sind Source of Truth (Constitution I, Spec 001 und 002).
 
-- Die Quelle ist `schema/`: `vocabulary.json`, `labels/de.json`, `limits.json` und die `*.schema.json`.
+- Die Quelle ist `schema/`: `vocabulary.json`, `labels/de.json`, `limits.json` und die `*.schema.json` (Event, Board, Ingest, Config, Lock).
   Änderungen passieren nur dort.
 - Ein neuer Enum-Wert steht an zwei Stellen: Schema (`common.schema.json`) und `vocabulary.json` samt Label.
   Tests erzwingen die Übereinstimmung.
@@ -11,3 +11,5 @@ Contracts sind Source of Truth (Constitution I, Spec 001 und 002).
 - In Schema-Mustern (`pattern`) keine Backslashes verwenden (`[0-9]` statt `\d`, `[.]` statt `\.`):
   der Zod-Generator verdoppelt sie nicht. `gen-zod.mjs` bricht sonst ab.
 - Nur rückwärtskompatible Änderungen innerhalb von `/1` (Spec 002 FR-008). Alles andere braucht eine neue Hauptversion.
+- Das Paket exportiert Zod-Schemas, Typen, Vokabular, Labels, `LIMITS` und die Deep-Link-Helfer (`src/deep-links.ts`). Die Python-Seite ist `packages/engine/src/spec_agent_kit/contracts.py`.
+- Der generierte Zod-Code ist unformatiert; das ist bekannt und wird nicht von Hand korrigiert (siehe `docs/follow-ups.md`).
