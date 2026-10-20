@@ -38,7 +38,7 @@ def _load_json(relative: str) -> Any:
 
 
 def load_schema(name: str) -> dict[str, Any]:
-    """Lädt ``<name>.schema.json`` (``common``, ``event``, ``board``, ``ingest`` oder ``config``)."""
+    """Lädt ``<name>.schema.json`` (eines aus ``SCHEMA_NAMES``)."""
     if name not in SCHEMA_NAMES:
         raise ValueError(f"Unbekanntes Schema: {name}")
     schema: dict[str, Any] = _load_json(f"{name}.schema.json")

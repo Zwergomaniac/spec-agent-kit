@@ -9,9 +9,12 @@
 
 ## Phase 2: US1/US3 – Laden und wirksame Config
 
-- [ ] T002 `spec_agent_kit/config/defaults.py` und `__init__.py`: `load_config`, Mischregeln, `CORE_PROTECTED` und `CORE_CLEAN_IGNORE` (Spec FR-003).
-- [ ] T003 `find_root()` in `cli.py`. Fehlende Config → Exit 1 mit „nicht initialisiert“ (außer `version` und, später, `init`).
-- [ ] T004 `sak config show`.
+- [X] T002 `spec_agent_kit/config/defaults.py` und `__init__.py`: `load_config`, Mischregeln, `CORE_PROTECTED` und `CORE_CLEAN_IGNORE` (Spec FR-003).
+  - Anmerkung: Defaults: Rollen  (zum Beispiel ); Modelle builder sonnet, code_review opus, ui_review sonnet, security_review opus, docs sonnet (aus der ImmoAgent-Besetzung abgeleitet), effort .  hat als Default eine leere Liste (die Spec nennt nur Beispiele); die Vorlage trägt  und  ein. Neben `load_config` gibt es `read_raw`, `schema_errors`, `build_effective` und `read_dashboard_key` (FR-006).
+- [X] T003 `find_root()` in `cli.py`. Fehlende Config → Exit 1 mit „nicht initialisiert“ (außer `version` und, später, `init`).
+  - Anmerkung: Ohne Projektwurzel oder ohne Config antworten alle Befehle außer `version` mit JSON `ok: false` und Exit 1. `init` existiert erst mit Spec 005.
+- [X] T004 `sak config show`.
+  - Anmerkung: Ausgabe ist die wirksame Config als JSON (ohne `ok`-Hülle), bei Fehlern `{ok:false, errors, warnings}` mit Exit 1.
 
 ## Phase 3: US2 – Prüfung
 
