@@ -39,7 +39,7 @@ Beides in die `.env` neben der Compose-Datei eintragen. Der Hash hat das Format 
 
 ## Starten
 
-`compose.snippet.yml` in die vorhandene Compose-Datei übernehmen. Der Name des externen Netzes von edge-caddy kommt aus `SAK_EDGE_NETWORK` (Default `edge`). Danach in `caddy.example` den Host anpassen und den Block in die Caddy-Konfiguration übernehmen.
+`compose.snippet.yml` in die vorhandene Compose-Datei übernehmen. Der Name des externen Netzes von edge-caddy kommt aus `SAK_EDGE_NETWORK` (Default `edge`). Heißt das Netz auf dem VPS `edge-network`, muss `SAK_EDGE_NETWORK=edge-network` in der `.env` neben der Compose-Datei gesetzt sein (Netzname prüfen mit `docker network ls`). Danach in `caddy.example` den Host anpassen und den Block in die Caddy-Konfiguration übernehmen.
 
 Prüfen: `GET /healthz` liefert `{"status":"ok"}`.
 
