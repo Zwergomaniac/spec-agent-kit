@@ -31,6 +31,9 @@ def scanned_files() -> list[Path]:
     claude = TEMPLATES / "claude"
     if claude.is_dir():
         files += [p for p in claude.rglob("*") if p.is_file()]
+    launchers = TEMPLATES / "spec-agent"
+    if launchers.is_dir():  # Starter und gitignore (Spec 009)
+        files += [p for p in launchers.rglob("*") if p.is_file()]
     files.append(TEMPLATES / "config" / "config.yml")
     return [f for f in files if "__pycache__" not in f.parts]
 
@@ -39,6 +42,7 @@ def test_scan_covers_engine_and_templates() -> None:
     files = scanned_files()
     assert any(p.name == "commands.py" for p in files)
     assert any(p.name == "config.yml" for p in files)
+    assert {"sak", "sak.cmd"} <= {p.name for p in files}
 
 
 @pytest.mark.parametrize("word", FORBIDDEN)
