@@ -38,3 +38,74 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check
       - run: uv run pytest
+
+  # Spec 005 SC-003: Init, doctor, lokale Änderung, Versionssprung, Upgrade, Konflikterkennung.
+  # Läuft nur gegen Wegwerf-Verzeichnisse, nie gegen ein echtes Projekt.
+  smoke-init-upgrade:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Smoke-Test Init und Upgrade
+        shell: bash
+        run: |
+          set -euo pipefail
+          WORK="$(mktemp -d)"
+          if command -v cygpath >/dev/null 2>&1; then WORK="$(cygpath -m "$WORK")"; fi
+          KIT="$WORK/kit"
+          TARGET="$WORK/target"
+          DOCS=".claude/agents/sak-docs.md"
+
+          # Kit-Kopie, damit Vorlagen und Version verändert werden können.
+          mkdir -p "$KIT/packages/engine" "$TARGET"
+          cp -R packages/agent-blueprint "$KIT/packages/agent-blueprint"
+          cp -R packages/engine/src packages/engine/pyproject.toml packages/engine/uv.lock "$KIT/packages/engine/"
+          sak_kit() { uv run --project "$KIT/packages/engine" sak "$@"; }
+          json_get() { uv run --project "$KIT/packages/engine" python -c 'import json, sys; d = json.load(sys.stdin); print(eval(sys.argv[1]))' "$1"; }
+
+          # Ziel-Repo: spec-kit-Attrappe, eigener Agent, eigener SessionStart-Hook.
+          cd "$TARGET"
+          git init -q -b main
+          git config user.email ci@example.org
+          git config user.name ci
+          mkdir -p .specify .claude/agents
+          echo '{"speckit_version": "0.12.16"}' > .specify/init-options.json
+          printf -- '---\nname: code-executor\nmodel: sonnet\n---\nEigener Agent\n' > .claude/agents/code-executor.md
+          echo '{"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "echo hallo"}]}]}}' > .claude/settings.json
+          echo hallo > README.md
+          git add -A
+          git commit -q -m "Ausgangsstand"
+          cd "$GITHUB_WORKSPACE"
+
+          # 1. Init (Plan, dann Apply) und Doctor aus der vendorten Engine.
+          sak_kit init "$TARGET" --key smoke --name Smoke --no-ui > "$WORK/plan.json" 2>/dev/null
+          test "$(json_get 'd["mode"]' < "$WORK/plan.json")" = plan
+          test ! -e "$TARGET/.spec-agent"
+          sak_kit init "$TARGET" --key smoke --name Smoke --no-ui --apply > "$WORK/init.json" 2>/dev/null
+          test "$(json_get 'd["ok"]' < "$WORK/init.json")" = True
+          cd "$TARGET"
+          git add -A
+          git commit -q -m "sak init"
+          uv run --project .spec-agent/engine sak doctor
+          test -z "$(git status --porcelain)"
+          cd "$GITHUB_WORKSPACE"
+
+          # 2. Eine Kit-Datei lokal ändern, Kit-Version erhöhen und dieselbe Datei im Kit ändern.
+          echo "Lokale Anpassung" >> "$TARGET/$DOCS"
+          git -C "$TARGET" commit -q -am "lokal"
+          echo "Neue Kit-Regel" >> "$KIT/packages/agent-blueprint/templates/claude/agents/sak-docs.md"
+          sed -i 's/^__version__ = .*/__version__ = "0.99.0"/' "$KIT/packages/engine/src/spec_agent_kit/__init__.py"
+
+          # 3. Upgrade: der Konflikt wird erkannt, die lokale Datei bleibt.
+          sak_kit upgrade "$TARGET" --apply --no-sync > "$WORK/upgrade.json" 2>/dev/null
+          test "$(json_get 'd["conflicts"]' < "$WORK/upgrade.json")" = "['$DOCS']"
+          test -f "$TARGET/$DOCS.sak-new"
+          grep -q "Lokale Anpassung" "$TARGET/$DOCS"
+          grep -q "Neue Kit-Regel" "$TARGET/$DOCS.sak-new"
+          test "$(json_get 'd["kit_version"]' < "$WORK/upgrade.json")" = 0.99.0
+          cd "$TARGET"
+          uv run --project .spec-agent/engine sak doctor

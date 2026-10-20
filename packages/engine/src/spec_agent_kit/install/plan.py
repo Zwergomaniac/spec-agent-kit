@@ -49,8 +49,6 @@ WRITING: Final[frozenset[str]] = frozenset({CREATE, MERGE, REPLACE, DELETE})
 
 SAK_NEW_SUFFIX: Final[str] = ".sak-new"
 NAME_MAX: Final[int] = 80
-DEFAULT_UI_COMMAND: Final[str] = "npx playwright test"
-DEFAULT_UI_BASE_URL: Final[str] = "http://127.0.0.1:5173"
 _LOCAL_HOSTS: Final[frozenset[str]] = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
@@ -287,6 +285,18 @@ def _quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def ui_placeholders(template: str) -> tuple[str, str]:
+    """Beispielwerte für ``ui.command`` und ``ui.base_url`` aus dem kommentierten ``ui``-Block.
+
+    Die Werte stehen nur in der Vorlage, nie in der Engine (Constitution VIII).
+    """
+    command = re.search(r"^#\s+command:\s*(.+?)\s*$", template, flags=re.MULTILINE)
+    base_url = re.search(r"^#\s+base_url:\s*(\S+)", template, flags=re.MULTILINE)
+    if command is None or base_url is None:
+        raise InstallError.single(CONFIG_TARGET, "die Vorlage enthält keinen ui-Beispielblock")
+    return command.group(1), base_url.group(1)
+
+
 def render_config(
     template: str,
     *,
@@ -320,9 +330,12 @@ def render_config(
         )
     if dashboard_url:
         text = re.sub(
-            r"^(  url:) null\b", lambda m: f"{m.group(1)} {_quote(dashboard_url)}", text,
-            count=1, flags=re.MULTILINE,
-        )  # fmt: skip
+            r"^(  url:) null",
+            lambda m: f"{m.group(1)} {_quote(dashboard_url)}",
+            text,
+            count=1,
+            flags=re.MULTILINE,
+        )
     if ui:
         text = re.sub(
             r"^(    ui_review:\s+\{ enabled:) false,",
@@ -331,10 +344,11 @@ def render_config(
             count=1,
             flags=re.MULTILINE,
         )
+        command, base_url = ui_placeholders(template)
         block = (
             "ui:\n"
-            f"  command: {_quote(DEFAULT_UI_COMMAND)}     # Platzhalter: anpassen\n"
-            f"  base_url: {DEFAULT_UI_BASE_URL}     # Platzhalter: anpassen\n\n"
+            f"  command: {_quote(command)}     # Platzhalter aus der Vorlage: anpassen\n"
+            f"  base_url: {base_url}     # Platzhalter aus der Vorlage: anpassen\n\n"
         )
         text = text.replace("guard:\n", block + "guard:\n", 1)
     return text
@@ -520,9 +534,10 @@ def build_init_plan(
             Action(CREATE, CONFIG_TARGET, "aus der Vorlage", content=config_text.encode("utf-8"))
         )
     if ui:
+        placeholder_command, placeholder_url = ui_placeholders(kit.config_template())
         plan.warnings.append(
             "ui_review ist aktiv; ui.command und ui.base_url sind Platzhalter "
-            f"({DEFAULT_UI_COMMAND}, {DEFAULT_UI_BASE_URL}). In .spec-agent/config.yml anpassen "
+            f"({placeholder_command}, {placeholder_url}). In .spec-agent/config.yml anpassen "
             "oder mit --no-ui initialisieren."
         )
 
