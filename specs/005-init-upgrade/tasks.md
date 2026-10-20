@@ -18,8 +18,8 @@
 
 ## Phase 3: US2 – Upgrade
 
-- [ ] T009 Upgrade-Plan (replace, delete, conflict, skip) und Meldung neuer Config-Schlüssel. CLI `sak upgrade`.
-- [ ] T010 Tests für US2 und Idempotenz (SC-001).
+- [X] T009 Upgrade-Plan (replace, delete, conflict, skip) und Meldung neuer Config-Schlüssel. CLI `sak upgrade`.
+- [X] T010 Tests für US2 und Idempotenz (SC-001).
 
 ## Phase 4: US4 – Doctor
 
