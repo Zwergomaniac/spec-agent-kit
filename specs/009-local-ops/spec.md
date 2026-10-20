@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: Befunde aus dem ersten Einsatz am 2026-10-20 (Pilot AI-Forge, Deployment specboard.prozessfit.de):
 - `uv` war in einer offenen Shell nicht im PATH.

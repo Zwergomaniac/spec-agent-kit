@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 ist umgesetzt. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -33,13 +33,26 @@ Werte: **implementiert** (Code und Tests vorhanden), **teilweise**, **Konzept** 
 | Collector, lokales Board, Push | implementiert | `sak board`, `sak board serve`, ausfallsicherer `sak push`; Spec 006 | `packages/engine/src/spec_agent_kit/board`, `.../push` |
 | Dashboard-API | implementiert | Hono + SQLite, Admin-Login, Ingest mit Contracts-Validierung, Lese-API, Retention, Projekt-CLI; Spec 007 | `apps/dashboard-api` |
 | Dashboard-Web | implementiert | Portfolio, Projekt (Tabs), Lauf-Ansicht, Admin, Login, Dark Mode, Deep Links. Der Tab `conflicts` zeigt nur einen Hinweis | `apps/dashboard-web` |
-| Deployment (Container) | teilweise | Dockerfile, Compose-Snippet, Caddy-Beispiel vorhanden; `docker build` nie ausgeführt, SC-003 (Startzeit, RAM) ungemessen | `deploy/dashboard` |
+| Deployment (Container) | implementiert | Image gebaut und produktiv seit 2026-10-20, per Skript aktualisiert (`deploy-vps.sh`, Spec 009); Dockerfile, Compose-Snippet, Caddy-Beispiel; Leerlauf-RAM gemessen (18 MB) | `deploy/dashboard` |
+| Lokale Bedienung (Starter, `board serve`, `dashboard connect`, `dashboard:local`) | implementiert | Starter `.spec-agent/sak` und `sak.cmd`, Port-Ausweichen, Anbindung in einem Befehl, lokales Dashboard ohne Docker, Portfolio-Karte als Link; Spec 009 | `packages/engine`, `apps/dashboard-api/scripts`, `apps/dashboard-web` |
 | Tests | implementiert | vitest (TS), pytest (Engine), Smoke-Test für Init/Upgrade, API-Vertragstests, Playwright-E2E (lokal) | `**/test`, `packages/engine/tests`, `apps/dashboard-web/e2e` |
 | CI | teilweise | Workflow vorhanden (TS, Python, Smoke-Test; Ubuntu und Windows), noch nie auf einem Remote gelaufen; E2E nicht enthalten | `.github/workflows/ci.yml` |
 | Pilot in AI-Forge | fehlt | Spec 008 ist ein Entwurf | `specs/008-pilot-ai-forge` |
 | Parallelbetrieb (Worktrees, Konflikt-Radar) | Konzept | nur nicht verbaut (Constitution VIII); Integrator-Rolle ist reserviert | – |
 | Plugins (graphify, impeccable, Queue/Blocker) | Konzept | `plugins: []` in der Config ist nur reserviert | – |
 | Verteilung per `uvx` | fehlt | Rollout heute nur aus dem Kit-Repo | – |
+
+## Schnellstart lokal: Dashboard ohne Docker
+
+Voraussetzungen wie unten (Node 22+, pnpm 10). Nach `pnpm install`:
+
+```sh
+pnpm dashboard:local                                     # baut bei Bedarf, startet auf http://127.0.0.1:3000 (nur Loopback)
+pnpm dashboard:project add mein-projekt "Mein Projekt"   # Projekt anlegen; der Schlüssel erscheint genau einmal
+pnpm dashboard:project list                              # auch: rotate <key>, remove <key>
+```
+
+`--rebuild` erzwingt einen neuen Build. Den Schlüssel gibt man danach an `sak dashboard connect` (siehe unten).
 
 ## Schnellstart: am Kit entwickeln
 
@@ -91,7 +104,7 @@ Geführt geht es im Kit-Repo mit dem Skill `/sak-init`: er stellt die Fragen, ze
 
 ## Im Zielprojekt arbeiten
 
-Im Zielprojekt steht die Engine unter `.spec-agent/engine`. Abkürzung: `SAK` = `uv run --project .spec-agent/engine sak`.
+Im Zielprojekt steht die Engine unter `.spec-agent/engine`. Empfohlener Aufruf ist der Starter, den Init und Upgrade mit installieren: `.spec-agent\sak` (Windows, `sak.cmd`) bzw. `.spec-agent/sak` (POSIX). Er findet uv auch ohne PATH (Reihenfolge: `SAK_UV`, PATH, bekannte Installationsorte) und reicht den Exit-Code von `sak` durch. Abkürzung hier: `SAK` = der Starter (gleichwertig: `uv run --project .spec-agent/engine sak`).
 
 ```sh
 # Pipeline: im Claude-Code-Chat, erst nach ausdrücklichem „umsetzen“ für genau diese Spec
@@ -101,15 +114,35 @@ SAK run list [--all]          # offene (mit --all auch beendete) Läufe
 SAK run show <lauf>           # ein Lauf
 SAK config check              # Konfiguration prüfen
 SAK board --text              # Kurzfassung des Boards (höchstens 40 Zeilen); --json ist der Standard
-SAK board serve [--port 5192] # lokale Ansicht auf 127.0.0.1, ohne Netz
+SAK board serve [--port N] [--open]  # lokale Ansicht auf 127.0.0.1, ohne Netz; --open startet den Browser
 SAK push                      # Events und Board ans Dashboard senden (--background, --quiet)
 ```
+
+`board serve` probiert ohne `--port` zuerst 5192, bei Belegung die nächsten freien Ports bis 5212. Mit `--port` gilt genau dieser Port (belegt: Exit 2).
+
+### Dashboard anbinden
+
+```sh
+SAK dashboard connect --url https://dashboard.example.org                    # zeigt nur den Plan
+SAK dashboard connect --url https://dashboard.example.org --key-stdin --yes  # Schlüssel von stdin lesen, Plan umsetzen
+SAK dashboard status                                                         # Stand der Anbindung
+```
+
+`connect` trägt `dashboard.url` in die Config ein, schreibt den Projekt-Schlüssel nach `.spec-agent/dashboard.key` und löst einen Test-Push aus. Weitere Optionen: `--force` ersetzt eine vorhandene `dashboard.key`, `--no-test-push` überspringt den Test-Push. Schlägt der Test-Push fehl, endet `connect` mit Exit 1; Config und Schlüssel bleiben dann trotzdem geschrieben. `http://` ist nur für localhost erlaubt. Der Schlüssel erscheint nie in der Ausgabe.
 
 Für den Push braucht das Projekt `dashboard.url` in der Config und den Projekt-Schlüssel in der Umgebungsvariable `SAK_DASHBOARD_TOKEN` oder in der Datei `.spec-agent/dashboard.key` (gitignoriert). Bei `push: auto` startet der Push nach Hooks und Run-Befehlen im Hintergrund und blockiert nie die Pipeline.
 
 ## Dashboard betreiben und entwickeln
 
 Betrieb (Image, Umgebungsvariablen, Secrets, Projekt anlegen, Caddy): [deploy/dashboard/README.md](deploy/dashboard/README.md).
+
+Update des laufenden Dashboards auf dem VPS (deployt wird `HEAD` eines sauberen Arbeitsstands; Zugangsdaten in der gitignorierten `deploy/dashboard/vps.env`, Vorlage `vps.env.example`):
+
+```sh
+deploy/dashboard/deploy-vps.sh --dry-run   # zeigt alle Schritte, führt nichts aus
+deploy/dashboard/deploy-vps.sh             # Image auf dem VPS bauen, Dienst neu starten, auf healthy warten
+deploy/dashboard/deploy-vps.sh --prune     # zusätzlich den Build-Cache aufräumen
+```
 
 Lokale Entwicklung (API auf Port 3000, UI mit Vite-Proxy auf die API):
 
@@ -140,7 +173,7 @@ apps/
   dashboard-web/    React + Vite + Tailwind/shadcn (@sak/dashboard-web)
 deploy/dashboard/   Dockerfile, Compose-Snippet, Caddy-Beispiel, Betriebs-README
 docs/               Architektur, ADR, UI-Konzept, offene Punkte
-specs/              spec-kit-Artefakte 001 bis 008 (Dogfooding)
+specs/              spec-kit-Artefakte 001 bis 009 (Dogfooding)
 .claude/skills/     spec-kit-Skills und `sak-init`
 .specify/           spec-kit-Upstream (Constitution unter memory/)
 ```
@@ -154,8 +187,8 @@ specs/              spec-kit-Artefakte 001 bis 008 (Dogfooding)
 - [docs/architecture-vision.md](docs/architecture-vision.md) – Protokoll der Stack-Beratung (Historie, nicht verbindlich)
 - [deploy/dashboard/README.md](deploy/dashboard/README.md) – Betrieb des Dashboards
 - [.specify/memory/constitution.md](.specify/memory/constitution.md) – Constitution
-- [specs/](specs/) – Specs 001 bis 007 sind umgesetzt, 008 (Pilot) ist ein Entwurf
+- [specs/](specs/) – Specs 001 bis 007 und 009 sind umgesetzt, 008 (Pilot) ist ein Entwurf
 
 ## Bekannte Lücken
 
-Kurz: Pilot in AI-Forge, `docker build`, CI auf einem Remote, E2E in der CI, Parallelbetrieb und Plugins. Die vollständige Liste mit Herkunft und Vorschlag steht in [docs/follow-ups.md](docs/follow-ups.md).
+Kurz: Pilot in AI-Forge, CI auf einem Remote, E2E in der CI, Parallelbetrieb und Plugins. Die vollständige Liste mit Herkunft und Vorschlag steht in [docs/follow-ups.md](docs/follow-ups.md).

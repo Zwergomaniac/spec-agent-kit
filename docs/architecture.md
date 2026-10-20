@@ -120,7 +120,7 @@ Alle Specs 001 bis 007 sind umgesetzt (Spec 008, der Pilot, steht aus). Die Deta
 - Ein 400 auf die ganze Anfrage ist systemisch: der Cursor bleibt, die Ursache wird gemeldet. „unsupported schema version“ und „unknown event type“ gelten als Versionsfehler, der Cursor bleibt ebenfalls. Ablehnungen des Boards (`board: …`) blockieren die Events nicht.
 - Das Board geht nur mit der Anfrage, die den Rückstand leert, und nur bei geändertem Inhalt (Hash ohne `generated_at`). Batches sind auf 1,2 MB begrenzt.
 - Der Client folgt keinen Weiterleitungen, nutzt für Loopback keinen Proxy und erlaubt `http://` nur für `localhost` und `127.0.0.1`.
-- `sak board serve` bindet nur 127.0.0.1, ohne `SO_REUSEADDR` (Windows), Default-Port 5192; belegte Ports ergeben Exit 2. `metrics.blocked` ist in v1 immer 0.
+- `sak board serve` bindet nur 127.0.0.1, ohne `SO_REUSEADDR` (Windows), ohne `--port` wird 5192 und bei Belegung der nächste freie Port bis 5212 genommen (Spec 009); ein ausdrücklich gewählter, belegter Port ergibt Exit 2. `metrics.blocked` ist in v1 immer 0.
 
 **Dashboard (007)**
 
@@ -130,4 +130,4 @@ Alle Specs 001 bis 007 sind umgesetzt (Spec 008, der Pilot, steht aus). Die Deta
 - Das Projekt ergibt sich aus dem Bearer-Schlüssel; abweichendes `project` in der Hülle ergibt 403. Retention gilt für den Event-Zeitstempel `ts`.
 - Warnungen `idle` und `no_push_24h` des Portfolios sind kein Vokabular; die Texte stehen in der UI (`ProjectCard.tsx`).
 - Tab `operator` aus dem frühen Konzept entfällt, es gelten `board|runs|attention|conflicts`. `conflicts` ist in v1 ein Hinweis (siehe [dashboard-concept](ui/dashboard-concept.md)).
-- Playwright-E2E (Port 3100, frische DB) läuft nur lokal. Das Dockerfile wurde noch nie gebaut.
+- Playwright-E2E (Port 3100, frische DB) läuft nur lokal. Das Image wird auf dem VPS gebaut und läuft dort seit 2026-10-20.
