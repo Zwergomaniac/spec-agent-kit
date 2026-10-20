@@ -41,10 +41,10 @@
 
 ## Phase 5: Tests
 
-- [ ] T016 [P] `packages/contracts/test/schemas.test.ts`: ajv gegen die Beispiele, Abgleich Enum ↔ Vokabular, Labels vollständig.
-- [ ] T017 [P] `packages/contracts/test/zod.test.ts`: Zod beurteilt die Beispiele wie ajv.
-- [ ] T018 [P] `packages/contracts/test/deep-links.test.ts`.
-- [ ] T019 [P] `packages/engine/tests/test_contracts.py`: Beispiele, Byte-Gleichheit der Kopie, ULID-Format, Größenlimits.
+- [X] T016 [P] `packages/contracts/test/schemas.test.ts`: ajv gegen die Beispiele, Abgleich Enum ↔ Vokabular, Labels vollständig.
+- [X] T017 [P] `packages/contracts/test/zod.test.ts`: Zod beurteilt die Beispiele wie ajv.
+- [X] T018 [P] `packages/contracts/test/deep-links.test.ts`.
+- [X] T019 [P] `packages/engine/tests/test_contracts.py`: Beispiele, Byte-Gleichheit der Kopie, ULID-Format, Größenlimits.
 
 ## Phase 6: Aufräumen
 
