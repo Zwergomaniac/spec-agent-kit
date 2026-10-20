@@ -216,8 +216,11 @@ def test_fragment_permissions() -> None:
     permissions = fragment()["permissions"]
     allow, deny = permissions["allow"], permissions["deny"]
     assert "Bash(uv run --project .spec-agent/engine sak *)" in allow
-    for verb in ("status", "diff", "log", "switch", "merge"):
+    for verb in ("status", "diff", "log"):
         assert any(rule.startswith(f"Bash(git {verb}") for rule in allow), verb
+    # Constitution IV: Merge und Branch-Wechsel nur über `sak run ...`; Subagents müssen nachfragen.
+    for verb in ("switch", "merge"):
+        assert not any(rule.startswith(f"Bash(git {verb}") for rule in allow), verb
     assert not any("push" in rule for rule in allow)
     assert "Bash(git push)" in deny and "Bash(git push *)" in deny
     assert any(".env" in rule and rule.startswith("Read(") for rule in deny)

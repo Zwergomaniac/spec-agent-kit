@@ -178,7 +178,7 @@ Die Hooks `SubagentStart` und `SubagentStop` rufen `sak hook subagent-start|suba
   - **Graphify:** keine graphify-Pflicht, das ist ein Plugin.
 - **FR-015**: `settings.fragment.json` MUSS enthalten:
   - **Hooks:** `SubagentStart` und `SubagentStop` mit Matcher auf `sak-.*`. Befehl: `uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" sak hook subagent-start || true`, Timeout 5.
-  - **Permissions:** Allowlist für `uv run --project .spec-agent/engine sak *`, `git status|diff|log|switch|merge` und die Testbefehle des Projekts. Die Testbefehle trägt Spec 005 beim Init ein.
+  - **Permissions:** Allowlist für `uv run --project .spec-agent/engine sak *`, `git status|diff|log` (Merge und Branch-Wechsel nur über `sak run`, nie direkt freigegeben) und die Testbefehle des Projekts. Die Testbefehle trägt Spec 005 beim Init ein.
   - **Deny:** `git push`, `git push *`, Lesen und Schreiben von `.env*` und `.spec-agent/dashboard.key`.
   - **Kein** `defaultMode: bypassPermissions`.
 
