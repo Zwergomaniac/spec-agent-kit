@@ -21,7 +21,8 @@
 
 ## Phase 3: US2 – Lokale Ansicht
 
-- [ ] T008 `board/serve.py` und `static/board.html` (Port der Referenz-HTML auf `sak.board/1`, Labels de eingebettet aus `labels/de.json`). Tests für Host-Prüfung, 404 und 405.
+- [X] T008 `board/serve.py` und `static/board.html` (Port der Referenz-HTML auf `sak.board/1`, Labels de eingebettet aus `labels/de.json`). Tests für Host-Prüfung, 404 und 405.
+  - Anmerkung: Der Server nutzt kein `SO_REUSEADDR` (unter Windows würde es einen zweiten Server auf demselben Port zulassen); belegte Ports ergeben Exit 2. `HEAD` gilt wie jede Nicht-GET-Methode als 405 (Spec: nur `GET`). Die Labels kommen über die neue Funktion `contracts.labels(locale)`; die Seite bekommt zusätzlich eine CSP und `X-Frame-Options: DENY`. Pfade mit Query-String werden auf den Pfad reduziert.
 
 ## Phase 4: US3 – Push
 

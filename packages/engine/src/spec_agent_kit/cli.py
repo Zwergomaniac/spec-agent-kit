@@ -17,6 +17,7 @@ from typing import Any
 from spec_agent_kit import __version__
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
+from spec_agent_kit.board.serve import DEFAULT_PORT, make_server
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
@@ -145,6 +146,37 @@ def _board(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _board_serve(args: argparse.Namespace) -> int:
+    """``sak board serve [--port]``: lokale Ansicht auf 127.0.0.1 (Spec 006 FR-008)."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    try:
+        load_config(root)
+    except NotInitializedError:
+        return _not_initialized()
+    except ConfigError as exc:
+        return _reject(exc.errors)
+    if not 0 <= args.port <= 65535:
+        _emit({"ok": False, "error": f"ungültiger Port: {args.port}"})
+        return EXIT_USAGE
+    try:
+        server = make_server(root, args.port)
+    except OSError as exc:
+        _emit({"ok": False, "error": f"Port {args.port} nicht nutzbar: {exc}"})
+        return EXIT_USAGE
+    host, port = server.server_address[:2]
+    _emit({"ok": True, "url": f"http://{host}:{port}", "hint": "Strg+C beendet"})
+    sys.stdout.flush()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return EXIT_OK
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sak", description="Spec Agent Kit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -157,6 +189,9 @@ def _build_parser() -> argparse.ArgumentParser:
     shape = board.add_mutually_exclusive_group()
     shape.add_argument("--json", action="store_true", help="Board als JSON (Standard)")
     shape.add_argument("--text", action="store_true", help="Kurzfassung, höchstens 40 Zeilen")
+    board_sub = board.add_subparsers(dest="board_command")
+    serve = board_sub.add_parser("serve", help="Lokale Ansicht auf 127.0.0.1 (ohne Netz)")
+    serve.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port (Default 5192)")
     add_parsers(sub)
     return parser
 
@@ -179,7 +214,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command in {"run", "event"}:
         return _pipeline(args)
     if args.command == "board":
-        return _board(args)
+        return _board_serve(args) if args.board_command == "serve" else _board(args)
     if args.command == "version":
         sys.stdout.write(json.dumps({"version": __version__}, ensure_ascii=False) + "\n")
         return EXIT_OK

@@ -104,9 +104,7 @@ def _push_notes(root: Path) -> list[str]:
         )
     rejected = outbox.count_rejected(root)
     if rejected:
-        notes.append(
-            f"{rejected} Event(s) vom Dashboard abgelehnt (siehe push-rejected.jsonl)"
-        )
+        notes.append(f"{rejected} Event(s) vom Dashboard abgelehnt (siehe push-rejected.jsonl)")
     if cursor.last_error:
         notes.append(clip(f"Letzter Push fehlgeschlagen: {cursor.last_error}", 295))
     return notes
