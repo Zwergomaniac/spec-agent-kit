@@ -1,0 +1,37 @@
+# Tasks: Projektkonfiguration
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md), [../../docs/architecture.md](../../docs/architecture.md), Contracts aus Spec 002
+
+## Phase 1: Contract
+
+- [ ] T001 `packages/contracts/schema/config.schema.json` gemäß Spec FR-002, sowie das Vokabular für den Rollen-Abgleich. Zusätzlich ein gültiges und mehrere ungültige Beispiele (JSON) unter `packages/contracts/examples/`. `pnpm contracts:gen`; die Tests in TS und Python decken das neue Schema ab.
+
+## Phase 2: US1/US3 – Laden und wirksame Config
+
+- [ ] T002 `spec_agent_kit/config/defaults.py` und `__init__.py`: `load_config`, Mischregeln, `CORE_PROTECTED` und `CORE_CLEAN_IGNORE` (Spec FR-003).
+- [ ] T003 `find_root()` in `cli.py`. Fehlende Config → Exit 1 mit „nicht initialisiert“ (außer `version` und, später, `init`).
+- [ ] T004 `sak config show`.
+
+## Phase 3: US2 – Prüfung
+
+- [ ] T005 `config/check.py` mit allen Prüfungen aus FR-004 inklusive Frontmatter-Vergleich und Tippfehler-Vorschlag.
+- [ ] T006 `sak config check`.
+
+## Phase 4: Vorlagen
+
+- [ ] T007 [P] `packages/agent-blueprint/templates/config/config.yml`, kommentiert, in deutscher Sprache.
+- [ ] T008 [P] `examples/immoagent.config.yml`, Quellen laut plan.md.
+- [ ] T009 [P] `examples/ai-forge.config.yml`.
+
+## Phase 5: Tests und Abschluss
+
+- [ ] T010 `packages/engine/tests/test_config.py`:
+  - Defaults
+  - Kern-Schutz nicht abschaltbar
+  - unbekannter Schlüssel mit Vorschlag
+  - Frontmatter-Abweichung
+  - fehlende Agent-Datei
+  - `ui_review` aktiv ohne `ui`-Block
+  - keine Prüfrolle aktiv
+  - beide Beispiel-Configs sind gültig
+- [ ] T011 Alles grün (TS, Python, ruff, `contracts:check`). README-Statusmatrix: Zeile „Projektkonfiguration“ ergänzen.
