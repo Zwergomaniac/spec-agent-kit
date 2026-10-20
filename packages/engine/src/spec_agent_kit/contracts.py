@@ -57,6 +57,12 @@ def label(level: str, value: str, locale: str = DEFAULT_LOCALE) -> str:
     return table.get(level, {}).get(value, value)
 
 
+def labels(locale: str = DEFAULT_LOCALE) -> dict[str, dict[str, str]]:
+    """Alle Anzeigebezeichnungen einer Locale (Ebene -> Maschinenwert -> Bezeichnung)."""
+    table: dict[str, dict[str, str]] = _load_json(f"labels/{locale}.json")
+    return table
+
+
 def _load_limits() -> Any:
     raw: dict[str, int] = _load_json("limits.json")
     return MappingProxyType({k.upper(): v for k, v in raw.items() if k != "version"})

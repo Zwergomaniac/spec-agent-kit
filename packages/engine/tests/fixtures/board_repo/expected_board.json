@@ -1,0 +1,463 @@
+{
+  "schema": "sak.board/1",
+  "generated_at": "2026-10-10T11:00:00Z",
+  "source": "live",
+  "kit_version": "0.1.0",
+  "project": {
+    "key": "demo-board",
+    "name": "Demo Board",
+    "base_branch": "main"
+  },
+  "metrics": {
+    "in_progress": 1,
+    "done": 3,
+    "blocked": 0,
+    "waiting": 4,
+    "mean_lead_time_days": 1.7
+  },
+  "specs": [
+    {
+      "number": 6,
+      "dir": "006-export",
+      "title": "Export",
+      "stage": "specified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": "clarification",
+      "tasks": {
+        "done": 0,
+        "open": 0
+      },
+      "started_at": "2026-10-10T08:00:00+02:00",
+      "updated_at": "2026-10-10T08:00:00+02:00"
+    },
+    {
+      "number": 5,
+      "dir": "005-notify",
+      "title": "Notify",
+      "stage": "tasked",
+      "descoped": false,
+      "blocked": false,
+      "waiting": "approval",
+      "tasks": {
+        "done": 0,
+        "open": 4
+      },
+      "started_at": "2026-10-09T12:00:00+02:00",
+      "updated_at": "2026-10-09T13:00:00+02:00"
+    },
+    {
+      "number": 3,
+      "dir": "003-search",
+      "title": "Search",
+      "stage": "implementing",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 3,
+        "open": 2
+      },
+      "started_at": "2026-10-08T12:00:00+02:00",
+      "updated_at": "2026-10-09T10:00:00+02:00"
+    },
+    {
+      "number": 4,
+      "dir": "004-billing",
+      "title": "Billing",
+      "stage": "implemented",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 2,
+        "open": 0
+      },
+      "started_at": "2026-10-06T08:00:00+02:00",
+      "finished_at": "2026-10-08T10:00:00+02:00",
+      "updated_at": "2026-10-08T10:00:00+02:00",
+      "lead_time_days": 2.1
+    },
+    {
+      "number": 2,
+      "dir": "002-importer",
+      "title": "Importer",
+      "stage": "deployed",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 2,
+        "open": 0
+      },
+      "started_at": "2026-10-04T08:00:00+02:00",
+      "finished_at": "2026-10-05T09:00:00+02:00",
+      "updated_at": "2026-10-05T09:00:00+02:00",
+      "lead_time_days": 1.0
+    },
+    {
+      "number": 1,
+      "dir": "001-foundation",
+      "title": "Foundation",
+      "stage": "verified",
+      "descoped": false,
+      "blocked": false,
+      "waiting": null,
+      "tasks": {
+        "done": 3,
+        "open": 0
+      },
+      "started_at": "2026-10-01T10:00:00+02:00",
+      "finished_at": "2026-10-03T08:00:00+02:00",
+      "updated_at": "2026-10-02T10:00:00+02:00",
+      "lead_time_days": 1.9
+    }
+  ],
+  "attention": [
+    {
+      "kind": "escalation",
+      "spec": "003-search",
+      "reason": "Rundenlimit erreicht",
+      "source": "runs/003-20261010-090000"
+    },
+    {
+      "kind": "approval",
+      "spec": "005-notify",
+      "reason": "Tasks fertig, wartet auf Freigabe zur Umsetzung",
+      "source": "tasks.md"
+    },
+    {
+      "kind": "clarification",
+      "spec": "006-export",
+      "reason": "Klärung offen: spec.md enthält unbeantwortete Fragen",
+      "source": "spec.md"
+    },
+    {
+      "kind": "operator_task",
+      "spec": "003-search",
+      "reason": "T099 DNS-Eintrag setzen",
+      "source": "tasks.md"
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "003-20261010-090000",
+      "spec": "003-search",
+      "kind": "pipeline",
+      "state": "escalated",
+      "round": 2,
+      "max_rounds": 2,
+      "active": true,
+      "started_at": "2026-10-10T09:00:00Z",
+      "updated_at": "2026-10-10T10:30:00Z",
+      "last_event_at": "2026-10-10T10:30:00Z",
+      "idle": false,
+      "stale": false,
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "sak-builder",
+          "state": "finished",
+          "started_at": "2026-10-10T09:01:00Z",
+          "model": "sonnet",
+          "duration_s": 1140
+        },
+        {
+          "round": 1,
+          "role": "code_review",
+          "agent": "sak-code-reviewer",
+          "state": "finished",
+          "started_at": "2026-10-10T09:21:00Z",
+          "model": "sonnet",
+          "duration_s": 540,
+          "verdict": "changes_requested",
+          "must_count": 2,
+          "may_count": 0
+        },
+        {
+          "round": 2,
+          "role": "builder",
+          "agent": "sak-builder",
+          "state": "finished",
+          "started_at": "2026-10-10T09:33:00Z",
+          "model": "sonnet",
+          "duration_s": 1020
+        },
+        {
+          "round": 2,
+          "role": "code_review",
+          "agent": "sak-code-reviewer",
+          "state": "finished",
+          "started_at": "2026-10-10T09:51:00Z",
+          "model": "sonnet",
+          "duration_s": 540,
+          "verdict": "changes_requested",
+          "must_count": 1,
+          "may_count": 0
+        }
+      ],
+      "escalations": [
+        {
+          "ts": "2026-10-10T10:30:00Z",
+          "round": 2,
+          "reason": "Rundenlimit erreicht",
+          "open": true,
+          "gate": "round_limit"
+        }
+      ],
+      "origin": {
+        "branch": "main"
+      }
+    },
+    {
+      "run_id": "002-20261005-080000",
+      "spec": "002-importer",
+      "kind": "pipeline",
+      "state": "paused",
+      "round": 1,
+      "max_rounds": 2,
+      "active": false,
+      "started_at": "2026-10-05T08:00:00Z",
+      "updated_at": "2026-10-05T08:30:00Z",
+      "last_event_at": "2026-10-05T08:30:00Z",
+      "idle": false,
+      "stale": false,
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "sak-builder",
+          "state": "running",
+          "started_at": "2026-10-05T08:05:00Z",
+          "model": "sonnet"
+        }
+      ],
+      "escalations": [],
+      "origin": {
+        "branch": "main"
+      }
+    },
+    {
+      "run_id": "001-20261002-080000",
+      "spec": "001-foundation",
+      "kind": "pipeline",
+      "state": "merged",
+      "round": 1,
+      "max_rounds": 2,
+      "active": false,
+      "started_at": "2026-10-02T08:00:00Z",
+      "updated_at": "2026-10-02T09:00:00Z",
+      "last_event_at": "2026-10-02T09:00:00Z",
+      "idle": false,
+      "stale": false,
+      "stations": [
+        {
+          "round": 1,
+          "role": "builder",
+          "agent": "sak-builder",
+          "state": "finished",
+          "started_at": "2026-10-02T08:01:00Z",
+          "model": "sonnet",
+          "duration_s": 1200
+        },
+        {
+          "round": 1,
+          "role": "code_review",
+          "agent": "sak-code-reviewer",
+          "state": "finished",
+          "started_at": "2026-10-02T08:22:00Z",
+          "model": "sonnet",
+          "duration_s": 480,
+          "verdict": "approve",
+          "must_count": 0,
+          "may_count": 1
+        }
+      ],
+      "escalations": [],
+      "origin": {
+        "branch": "main"
+      }
+    }
+  ],
+  "markers": [
+    {
+      "kind": "deploy",
+      "specs": [
+        4
+      ],
+      "ts": "2026-10-07T10:00:00+02:00",
+      "commit": "06608ae3cd2dba81eddc027d471a950cc7a448e5"
+    },
+    {
+      "kind": "deploy",
+      "specs": [
+        2
+      ],
+      "ts": "2026-10-05T14:00:00+02:00",
+      "commit": "e8860efbc937f482cf47e9933a180d62d4711200"
+    },
+    {
+      "kind": "verified",
+      "specs": [
+        1
+      ],
+      "ts": "2026-10-03T08:00:00+02:00",
+      "commit": "700facbf9dba05a3f53682f0f6856ec345db7afc"
+    },
+    {
+      "kind": "deploy",
+      "specs": [
+        1
+      ],
+      "ts": "2026-10-02T12:00:00+02:00",
+      "commit": "8b5f66dddd5a4e664e97b82e68aa472092e677d7"
+    }
+  ],
+  "ticker": [
+    {
+      "ts": "2026-10-10T08:00:00+02:00",
+      "kind": "commit",
+      "spec": "006-export",
+      "text": "docs(006): spec"
+    },
+    {
+      "ts": "2026-10-09T13:00:00+02:00",
+      "kind": "commit",
+      "spec": "005-notify",
+      "text": "docs(005): tasks"
+    },
+    {
+      "ts": "2026-10-09T12:00:00+02:00",
+      "kind": "commit",
+      "spec": "005-notify",
+      "text": "docs(005): spec"
+    },
+    {
+      "ts": "2026-10-09T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "003-search",
+      "text": "feat(003): erste Tasks"
+    },
+    {
+      "ts": "2026-10-08T14:00:00+02:00",
+      "kind": "commit",
+      "spec": "003-search",
+      "text": "docs(003): tasks"
+    },
+    {
+      "ts": "2026-10-08T13:00:00+02:00",
+      "kind": "commit",
+      "spec": "003-search",
+      "text": "docs(003): plan"
+    },
+    {
+      "ts": "2026-10-08T12:00:00+02:00",
+      "kind": "commit",
+      "spec": "003-search",
+      "text": "docs(003): spec"
+    },
+    {
+      "ts": "2026-10-08T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "004-billing",
+      "text": "feat(004): rest"
+    },
+    {
+      "ts": "2026-10-07T10:00:00+02:00",
+      "kind": "deploy",
+      "spec": "004-billing",
+      "text": "deploy(004): erste Stufe"
+    },
+    {
+      "ts": "2026-10-06T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "004-billing",
+      "text": "docs(004): tasks"
+    },
+    {
+      "ts": "2026-10-06T09:00:00+02:00",
+      "kind": "commit",
+      "spec": "004-billing",
+      "text": "docs(004): plan"
+    },
+    {
+      "ts": "2026-10-06T08:00:00+02:00",
+      "kind": "commit",
+      "spec": "004-billing",
+      "text": "docs(004): spec"
+    },
+    {
+      "ts": "2026-10-05T14:00:00+02:00",
+      "kind": "deploy",
+      "spec": "002-importer",
+      "text": "deploy(002): importer"
+    },
+    {
+      "ts": "2026-10-05T09:00:00+02:00",
+      "kind": "commit",
+      "spec": "002-importer",
+      "text": "feat(002): importer"
+    },
+    {
+      "ts": "2026-10-04T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "002-importer",
+      "text": "docs(002): tasks"
+    },
+    {
+      "ts": "2026-10-04T09:00:00+02:00",
+      "kind": "commit",
+      "spec": "002-importer",
+      "text": "docs(002): plan"
+    },
+    {
+      "ts": "2026-10-04T08:00:00+02:00",
+      "kind": "commit",
+      "spec": "002-importer",
+      "text": "docs(002): spec"
+    },
+    {
+      "ts": "2026-10-03T08:00:00+02:00",
+      "kind": "verified",
+      "spec": "001-foundation",
+      "text": "verified(001): foundation geprüft"
+    },
+    {
+      "ts": "2026-10-02T12:00:00+02:00",
+      "kind": "deploy",
+      "spec": "001-foundation",
+      "text": "deploy(001): foundation live"
+    },
+    {
+      "ts": "2026-10-02T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "001-foundation",
+      "text": "feat(001): alles"
+    },
+    {
+      "ts": "2026-10-01T12:00:00+02:00",
+      "kind": "commit",
+      "spec": "001-foundation",
+      "text": "docs(001): tasks"
+    },
+    {
+      "ts": "2026-10-01T11:00:00+02:00",
+      "kind": "commit",
+      "spec": "001-foundation",
+      "text": "docs(001): plan"
+    },
+    {
+      "ts": "2026-10-01T10:00:00+02:00",
+      "kind": "commit",
+      "spec": "001-foundation",
+      "text": "docs(001): spec"
+    },
+    {
+      "ts": "2026-10-01T09:00:00+02:00",
+      "kind": "commit",
+      "text": "chore: init"
+    }
+  ],
+  "notes": []
+}

@@ -33,9 +33,7 @@
       "Bash(git diff)",
       "Bash(git diff *)",
       "Bash(git log)",
-      "Bash(git log *)",
-      "Bash(git switch *)",
-      "Bash(git merge *)"
+      "Bash(git log *)"
     ],
     "deny": [
       "Bash(git push)",
