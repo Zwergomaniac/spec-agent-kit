@@ -26,11 +26,16 @@
 
 ## Phase 4: US3 – Push
 
-- [ ] T009 `push/outbox.py` (Cursor, Reset, kaputte Zeilen).
-- [ ] T010 `push/client.py` und `push/run.py` (FR-009, FR-012, Abgelehnt-Protokoll).
-- [ ] T011 `spawn_background` und Sperrdatei (FR-010). Auslöser in Hooks und Run-Befehlen (FR-011).
-- [ ] T012 CLI `sak push`.
-- [ ] T013 Push-Tests (SC-002, SC-003) mit einem lokalen Test-Server.
+- [X] T009 `push/outbox.py` (Cursor, Reset, kaputte Zeilen).
+  - Anmerkung: Identität = Hash der ersten vollständigen Zeile; Reset bei Offset > Dateigröße oder anderer Identität. Eine halbe Zeile am Dateiende (ohne Zeilenumbruch) wartet. Vertragswidrige Zeilen werden wie kaputte übersprungen und gezählt (`skipped` im Cursor, Hinweis im Board). Batches sind zusätzlich auf 1,2 MB begrenzt, damit die Anfrage unter 2 MB bleibt (500 Events × 8 KB wären mehr).
+- [X] T010 `push/client.py` und `push/run.py` (FR-009, FR-012, Abgelehnt-Protokoll).
+  - Anmerkung: Auslegung von „400 je Event“: Das Dashboard antwortet auf Einzelfehler mit 200 und `rejected[]` (so in `apps/dashboard-api`); diese Einträge gehen ins Abgelehnt-Protokoll (nur Event-ID und Grund, nie der Inhalt) und der Cursor rückt vor. Ein 400 auf die ganze Anfrage ist systemisch (nie eventbezogen): Cursor bleibt, Ursache wird gemeldet; „unsupported schema version“ und „unknown event type“ (auch je Event) gelten als Versionsfehler, Cursor bleibt. Board-Ablehnungen (`board: …`) blockieren die Events nicht. Das Board geht nur mit der Anfrage, die den Rückstand leert, und nur bei geändertem Inhalt (Hash ohne `generated_at`). Der Client folgt keinen Weiterleitungen (Schlüsselschutz), nutzt für Loopback keinen Proxy und nimmt `http://` nur für `localhost` und `127.0.0.1`. Netzfehler enden mit Exit 1 (Status `unreachable`).
+- [X] T011 `spawn_background` und Sperrdatei (FR-010). Auslöser in Hooks und Run-Befehlen (FR-011).
+  - Anmerkung: Der Hintergrundprozess startet `python -m spec_agent_kit.cli push --quiet` mit `sys.executable`. Der Start wird übersprungen, solange die Sperre frisch ist. Auslöser (nur bei `push: auto` und gesetzter URL): nach `sak hook …` und nach jedem `sak run …`/`sak event …` außer `list`, `show`, `snapshot`, auch bei Ablehnung (Events könnten entstanden sein).
+- [X] T012 CLI `sak push`.
+  - Anmerkung: `sak push` ohne Flag läuft im Vordergrund (Exit 0 bei Erfolg, deaktiviert und gesperrt; 1 bei Fehler); `--background` startet losgelöst, `--quiet` unterdrückt die Ausgabe.
+- [X] T013 Push-Tests (SC-002, SC-003) mit einem lokalen Test-Server.
+  - Anmerkung: Der Test des echten Hintergrundprozesses (SC-003) misst den Hook in-process und mit frischem Interpreter, beide unter 1 s.
 
 ## Phase 5: Abschluss
 

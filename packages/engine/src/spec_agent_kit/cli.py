@@ -25,6 +25,7 @@ from spec_agent_kit.pipeline import RefusedError, UsageError
 from spec_agent_kit.pipeline.cli_bridge import add_parsers, run_command
 from spec_agent_kit.pipeline.commands import Ctx
 from spec_agent_kit.pipeline.hooks import cmd_hook
+from spec_agent_kit.push.run import push, push_background, trigger_if_auto
 
 EXIT_OK = 0
 EXIT_REJECTED = 1
@@ -177,6 +178,27 @@ def _board_serve(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _push(args: argparse.Namespace) -> int:
+    """``sak push [--quiet] [--background]`` (Spec 006 FR-009, FR-010)."""
+    root = find_root()
+    if root is None:
+        code, result = (
+            1,
+            {
+                "ok": False,
+                "status": "not_initialized",
+                "error": "nicht initialisiert: .spec-agent/config.yml fehlt",
+            },
+        )
+    elif args.background:
+        code, result = push_background(root)
+    else:
+        code, result = push(root)
+    if not args.quiet:
+        _emit(result)
+    return code
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sak", description="Spec Agent Kit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -192,6 +214,11 @@ def _build_parser() -> argparse.ArgumentParser:
     board_sub = board.add_subparsers(dest="board_command")
     serve = board_sub.add_parser("serve", help="Lokale Ansicht auf 127.0.0.1 (ohne Netz)")
     serve.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port (Default 5192)")
+    pushp = sub.add_parser("push", help="Events und Board ans Dashboard senden (Spec 006)")
+    pushp.add_argument("--quiet", action="store_true", help="Keine Ausgabe")
+    pushp.add_argument(
+        "--background", action="store_true", help="Losgelöst starten und sofort zurückkehren"
+    )
     add_parsers(sub)
     return parser
 
@@ -209,10 +236,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
     if args.command == "hook":
         phase = "start" if args.hook_command == "subagent-start" else "stop"
-        cmd_hook(phase, sys.stdin, find_root())
+        root = find_root()
+        cmd_hook(phase, sys.stdin, root)
+        trigger_if_auto(root)  # FR-011: Hintergrund-Push, Fehler werden ignoriert
         return EXIT_OK
+    if args.command == "push":
+        return _push(args)
     if args.command in {"run", "event"}:
-        return _pipeline(args)
+        code = _pipeline(args)
+        if getattr(args, "run_command", None) not in {"list", "show", "snapshot"}:
+            trigger_if_auto(find_root())
+        return code
     if args.command == "board":
         return _board_serve(args) if args.board_command == "serve" else _board(args)
     if args.command == "version":
