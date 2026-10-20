@@ -1,0 +1,10 @@
+services:
+  spec-agent-dashboard:
+    image: spec-agent-dashboard:latest
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      SQLITE_PATH: /data/dashboard.sqlite
+      DASHBOARD_DEFAULT_VIEW: portfolio
+    volumes:
+      - spec-agent-dashboard-data:/data

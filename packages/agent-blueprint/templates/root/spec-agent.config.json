@@ -1,0 +1,12 @@
+{
+  "project": "__PROJECT_KEY__",
+  "defaultBranch": "main",
+  "dashboard": {
+    "baseUrl": "https://board.example.tld",
+    "eventMode": "push",
+    "auth": "api-key"
+  },
+  "routing": {
+    "defaultView": "portfolio"
+  }
+}

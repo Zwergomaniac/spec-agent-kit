@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "event_id": "evt_001",
+  "event_type": "pipeline.stage_changed",
+  "timestamp": "2026-10-20T10:00:00+02:00",
+  "project": "immo-agent",
+  "data": {
+    "run_id": "093-abc",
+    "spec_id": "093",
+    "stage": "ui_review",
+    "status": "needs_changes",
+    "verdict": "Änderung"
+  }
+}

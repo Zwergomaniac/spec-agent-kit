@@ -1,0 +1,12 @@
+{
+  "name": "@spec-agent-kit/dashboard-api",
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "build": "echo build dashboard-api",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "hono": "^4.6.10"
+  }
+}
