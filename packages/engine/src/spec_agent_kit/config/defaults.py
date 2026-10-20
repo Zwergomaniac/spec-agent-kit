@@ -50,9 +50,20 @@ _ROLE_DEFAULTS: Final[dict[str, tuple[bool, str]]] = {
 DEFAULT_EFFORT: Final[str] = "medium"
 
 
+DEFAULT_AGENTS: Final[dict[str, str]] = {
+    "builder": "sak-builder",
+    "code_review": "sak-code-reviewer",
+    "ui_review": "sak-ui-reviewer",
+    "security_review": "sak-security-reviewer",
+    "docs": "sak-docs",
+    "integrator": "sak-integrator",
+}
+"""Dateinamen der Kit-Agents je Rolle (Spec 003 FR-013), ohne ``.md``."""
+
+
 def default_agent_name(role: str) -> str:
-    """Dateiname des Kit-Agents einer Rolle, zum Beispiel ``sak-code-review``."""
-    return "sak-" + role.replace("_", "-")
+    """Dateiname des Kit-Agents einer Rolle, zum Beispiel ``sak-code-reviewer``."""
+    return DEFAULT_AGENTS[role]
 
 
 def role_defaults() -> dict[str, dict[str, Any]]:

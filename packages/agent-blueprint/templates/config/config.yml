@@ -19,11 +19,11 @@ pipeline:
   stale_hours: 6              # Lauf ohne Fortschritt gilt danach als veraltet
   branch_pattern: "{spec}"    # Branch-Name je Spec; {spec} ist Pflicht
   roles:                      # Besetzung der Rollen; agent = Dateiname unter .claude/agents/ ohne .md
-    builder:         { enabled: true,  agent: sak-builder,         model: sonnet, effort: medium }
-    code_review:     { enabled: true,  agent: sak-code-review,     model: opus,   effort: medium }
-    ui_review:       { enabled: false, agent: sak-ui-review,       model: sonnet, effort: medium }
-    security_review: { enabled: false, agent: sak-security-review, model: opus,   effort: medium }
-    docs:            { enabled: false, agent: sak-docs,            model: sonnet, effort: medium }
+    builder:         { enabled: true,  agent: sak-builder,           model: sonnet, effort: medium }
+    code_review:     { enabled: true,  agent: sak-code-reviewer,      model: opus,   effort: medium }
+    ui_review:       { enabled: false, agent: sak-ui-reviewer,        model: sonnet, effort: medium }
+    security_review: { enabled: false, agent: sak-security-reviewer,  model: opus,   effort: medium }
+    docs:            { enabled: false, agent: sak-docs,               model: sonnet, effort: medium }
     # integrator: in v1 nicht aktivierbar
     # Modell und Effort müssen mit dem Frontmatter der Agent-Datei übereinstimmen (config check).
     # effort: low | medium | high (Empfehlung: medium)
