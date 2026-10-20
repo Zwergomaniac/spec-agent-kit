@@ -18,10 +18,13 @@
 
 ## Phase 3: US4 – Ingest
 
-- [ ] T006 `services/projects.ts` und `cli/project.ts` (add, list, rotate, remove; Schlüssel einmalig ausgeben).
-- [ ] T007 `routes/ingest.ts` und `services/ingest.ts` gemäß Spec FR-004 und FR-006, mit Größenlimit 2 MB.
-- [ ] T008 `services/retention.ts` (täglich und beim Start).
-- [ ] T009 Vertragstests für Ingest (SC-002).
+- [X] T006 `services/projects.ts` und `cli/project.ts` (add, list, rotate, remove; Schlüssel einmalig ausgeben).
+  - Anmerkung: Der Projekt-Schlüssel hat das Format `sak_<43 Zeichen base64url>` (256 Bit). Die Admin-Routen (`routes/admin.ts`, T016 Backend) nutzen denselben Service und liegen deshalb hier.
+- [X] T007 `routes/ingest.ts` und `services/ingest.ts` gemäß Spec FR-004 und FR-006, mit Größenlimit 2 MB.
+  - Anmerkung: Das Projekt ergibt sich aus dem Bearer-Schlüssel (Vergleich der SHA-256-Hashes mit allen Projekten in konstanter Zeit, ohne frühen Abbruch). Ist `project` in der Ingest-Hülle ein anderes Projekt, folgt 403 `project mismatch`; bei Events im Batch wird nur das betroffene Event abgelehnt (`rejected[]`). Ein veraltetes oder gleich altes Board ergibt `board_accepted: false` ohne `rejected`-Eintrag (Wiederholungen aus der Outbox sind normal); ein ungültiges oder fremdes Board ergibt zusätzlich einen `rejected`-Eintrag `board: …`. Zusätzlich zum Projekt-Limit (60/min) gilt ein Limit von 30 fehlgeschlagenen Authentifizierungen pro Minute und IP.
+- [X] T008 `services/retention.ts` (täglich und beim Start).
+  - Anmerkung: Die Frist gilt für den Event-Zeitstempel `ts`, nicht für den Empfangszeitpunkt.
+- [X] T009 Vertragstests für Ingest (SC-002).
 
 ## Phase 4: US1–US3 – Lese-API
 
