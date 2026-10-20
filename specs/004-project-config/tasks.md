@@ -25,9 +25,12 @@
 
 ## Phase 4: Vorlagen
 
-- [ ] T007 [P] `packages/agent-blueprint/templates/config/config.yml`, kommentiert, in deutscher Sprache.
-- [ ] T008 [P] `examples/immoagent.config.yml`, Quellen laut plan.md.
-- [ ] T009 [P] `examples/ai-forge.config.yml`.
+- [X] T007 [P] `packages/agent-blueprint/templates/config/config.yml`, kommentiert, in deutscher Sprache.
+  - Anmerkung: Platzhalter `__PROJECT_KEY__`, `__PROJECT_NAME__`, `__BASE_BRANCH__`. `ui_review` ist in der Vorlage inaktiv (der `ui`-Block steht auskommentiert), `orchestrator_only` trägt `deploy` und `ssh` ein.
+- [X] T008 [P] `examples/immoagent.config.yml`, Quellen laut plan.md.
+  - Anmerkung: `ui.backend` aus der ImmoAgent-Quelle hat in `sak.config/1` kein Feld (Spec FR-002 nennt es nicht) und entfällt; `tests.full` ist in `test_full` (Tests) und `lint` aufgeteilt; `protected_paths` führt nur Ergänzungen zum Kern-Schutz.
+- [X] T009 [P] `examples/ai-forge.config.yml`.
+  - Anmerkung: `stages` bleibt auf den Defaults, obwohl `deploy.command` null ist. Das ist im Pilot zu klären.
 
 ## Phase 5: Tests und Abschluss
 

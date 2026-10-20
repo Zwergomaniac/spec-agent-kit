@@ -1,0 +1,95 @@
+# Beispiel-Config für ImmoAgent. Die Werte stammen aus dessen .specify/pipeline.yml (Spec 093) und aus
+# den Agents pipeline-code-reviewer und pipeline-ui-reviewer. Abweichungen zur Vorlage:
+#  - Interpreter-Pfade (.venv/Scripts/python.exe) sind auf "uv run" umgestellt.
+#  - Die frühere Liste tests.full ist aufgeteilt: Tests in test_full, Linter in lint.
+#  - ui.backend (mock | local) hat in sak.config/1 kein Feld; der Mock-Betrieb steckt in ui.command.
+schema: sak.config/1
+
+project:
+  key: immoagent
+  name: ImmoAgent
+  base_branch: main
+
+pipeline:
+  max_rounds: 2
+  roles:
+    builder:     { enabled: true, agent: sak-builder,     model: sonnet, effort: medium }
+    code_review: { enabled: true, agent: sak-code-review, model: opus,   effort: medium }
+    ui_review:   { enabled: true, agent: sak-ui-review,   model: sonnet, effort: medium }
+
+commands:
+  test_fast:                      # {paths} = vom Builder gewählte Testpfade
+    - uv run pytest -q {paths}
+    - npm --prefix web run typecheck
+    - npm --prefix web test
+  test_full:
+    - uv run pytest -q
+  lint:
+    - uv run ruff check src tests
+    - npm --prefix web run lint
+  environment_failures:           # gelten als umgebungsbedingt
+    - "refused during quiet hours"
+
+ui:
+  command: npx --prefix web playwright test --config web/playwright.config.ts
+  base_url: http://127.0.0.1:5183
+  paths:                          # Frontend-Pfade; globale Dateien lösen auch die Regressionstests aus
+    - web/src/views/
+    - web/src/components/
+    - web/src/style.css
+    - web/src/main.ts
+    - web/tests/e2e/mock-backend.ts
+  viewports:
+    desktop: [1440, 900]
+    mobile: [390, 844]
+  checks: [horizontal_overflow, container_width, tap_targets_44px, console_errors, screenshots]
+  regression_tests:
+    - desktop-layout-regression.spec.ts
+    - mobile.spec.ts
+    - mobile-results.spec.ts
+    - mobile-tap-targets.spec.ts
+
+guard:
+  protected_paths:                # zusätzlich zum Kern-Schutz der Engine
+    - .claude/agents/
+    - .claude/skills/
+    - AGENT.MD
+  clean_ignore:
+    - graphify-out/               # der Graphify-Commit-Hook baut im Hintergrund neu
+
+escalation:
+  paths:                          # Hinweis an den Code-Prüfer, keine Automatik
+    - src/immoagent/api/routes/auth.py
+    - src/immoagent/api/routes/register.py
+    - src/immoagent/accounts/
+    - src/immoagent/data/migrations/
+    - src/immoagent/messaging/
+    - src/immoagent/browser/
+    - src/immoagent/client/
+    - src/immoagent/pairing/
+  topics:                         # fachliche Themen -> needs_human
+    - Anmeldung, Sitzungen, Rechte
+    - Konto-Trennung (owner_id-Scope)
+    - echter Kontaktversand an Anbieter
+    - Zugangsdaten, Cookies, Secrets
+    - Migrationen auf Bestandsdaten
+    - Abrufverhalten gegenüber Portalen (Drosselung, Bot-Schutz)
+    - Pipeline-Dateien
+
+review:
+  rules:
+    - Jede neue Abfrage auf Kontodaten ist auf owner_id begrenzt (Ownable/Global-Scope-Regel).
+    - Layer-Isolation gemäß AGENT.MD einhalten.
+    - Conservative Scraping einhalten (Drosselung und Bot-Schutz gegenüber Portalen).
+    - Async-Code und Typen gemäß AGENT.MD.
+
+orchestrator_only:
+  - deploy
+  - ssh zum VPS
+  - echter Versand (dry_run=False)
+
+deploy:
+  command: bash deploy/deploy-vps.sh
+
+dashboard:
+  url: null                       # sobald das Dashboard läuft, hier die URL eintragen
