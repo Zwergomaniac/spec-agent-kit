@@ -1,0 +1,7 @@
+# Beispiel-Block für den bestehenden edge-caddy. Nur Doku: Caddy wird nicht von diesem Repo verwaltet.
+# Caddy terminiert TLS und setzt X-Forwarded-For (SAK_TRUST_PROXY=true). Dashboard und Caddy
+# müssen im selben Docker-Netz hängen (SAK_EDGE_NETWORK).
+dashboard.example.com {
+	encode zstd gzip
+	reverse_proxy spec-agent-dashboard:3000
+}

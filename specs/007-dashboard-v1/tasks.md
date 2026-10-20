@@ -49,8 +49,10 @@
 
 ## Phase 6: Deploy
 
-- [ ] T018 `deploy/dashboard/Dockerfile` (Multi-Stage, non-root, Healthcheck), `compose.snippet.yml` (externes Netz `${SAK_EDGE_NETWORK:-edge}`), `caddy.example`, `README.md` (Betrieb, Secrets, Projekt anlegen).
-- [ ] T019 `server.ts` liefert die statische UI aus, mit SPA-Fallback auf index.html.
+- [X] T018 `deploy/dashboard/Dockerfile` (Multi-Stage, non-root, Healthcheck), `compose.snippet.yml` (externes Netz `${SAK_EDGE_NETWORK:-edge}`), `caddy.example`, `README.md` (Betrieb, Secrets, Projekt anlegen).
+  - Anmerkung: Das Dockerfile wurde nicht gebaut (Docker ist auf dieser Maschine nicht installiert). Die Laufzeit-Stage installiert nur `better-sqlite3` per npm; alles andere steckt im esbuild-Bundle. Die Variablen des alten Snippets (`SQLITE_PATH`, `DASHBOARD_DEFAULT_VIEW`) entfallen, es gelten die Namen aus Spec FR-001.
+- [X] T019 `server.ts` liefert die statische UI aus, mit SPA-Fallback auf index.html.
+  - Anmerkung: Der Code liegt seit Phase 4 in `static.ts`/`app.ts`; Tests kamen hier dazu (`test/static.test.ts`). Pfade ohne Dateiendung fallen auf `index.html` zurück, fehlende Dateien mit Endung ergeben 404.
 
 ## Phase 7: Tests und Abschluss
 
