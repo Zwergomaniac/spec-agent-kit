@@ -34,7 +34,7 @@
 
 ## Phase 5: Tests und Abschluss
 
-- [ ] T010 `packages/engine/tests/test_config.py`:
+- [X] T010 `packages/engine/tests/test_config.py`:
   - Defaults
   - Kern-Schutz nicht abschaltbar
   - unbekannter Schlüssel mit Vorschlag
@@ -43,4 +43,6 @@
   - `ui_review` aktiv ohne `ui`-Block
   - keine Prüfrolle aktiv
   - beide Beispiel-Configs sind gültig
-- [ ] T011 Alles grün (TS, Python, ruff, `contracts:check`). README-Statusmatrix: Zeile „Projektkonfiguration“ ergänzen.
+  - Anmerkung: Zusätzlich getestet: Mischregeln, `dashboard.push`-Default, Integrator nicht aktivierbar, `branch_pattern`, Basis-Branch, Secrets-Quellen (FR-006), Vorlage nach Platzhalter-Ersetzung, CLI-Exit-Codes sowie ein grep-Test, dass der Engine-Quelltext keine Projektwerte enthält.
+- [X] T011 Alles grün (TS, Python, ruff, `contracts:check`). README-Statusmatrix: Zeile „Projektkonfiguration“ ergänzen.
+  - Anmerkung: README-Statusmatrix: neue Zeile "Projektkonfiguration". Lauf: `pnpm -r test` (147 Tests), `pnpm contracts:check`, `pytest -q` (125 Tests), `ruff check` grün.

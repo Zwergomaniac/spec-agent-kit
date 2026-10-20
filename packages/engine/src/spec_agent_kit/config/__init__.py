@@ -44,7 +44,6 @@ __all__ = [
 ]
 
 
-
 class ConfigError(Exception):
     """Die Konfiguration ist ungültig. ``errors`` sind ``{path, message[, suggestion]}``."""
 
