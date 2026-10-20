@@ -10,10 +10,10 @@ export function SpecCard({ spec, projectKey, run }: { spec: BoardSpec; projectKe
   const pct = total === 0 ? 0 : Math.round((spec.tasks.done / total) * 100)
 
   return (
-    <li className="rounded-lg border bg-card p-3 text-sm shadow-xs" data-testid={`spec-${spec.number}`}>
-      <div className="flex items-start gap-2">
-        <span className="font-mono text-xs text-muted-foreground">{specNumber(spec.number)}</span>
-        <span className="min-w-0 flex-1 font-medium leading-snug">{spec.title}</span>
+    <li className="min-w-0 rounded-lg border bg-card p-2.5 min-[1536px]:p-3 text-sm shadow-xs" data-testid={`spec-${spec.number}`}>
+      <div className="flex flex-col gap-0.5 min-[1536px]:flex-row min-[1536px]:items-start min-[1536px]:gap-2">
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">{specNumber(spec.number)}</span>
+        <span className="min-w-0 flex-1 font-medium leading-snug break-words">{spec.title}</span>
       </div>
 
       {total > 0 ? (
@@ -30,12 +30,12 @@ export function SpecCard({ spec, projectKey, run }: { spec: BoardSpec; projectKe
       {spec.waiting || spec.blocked ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {spec.waiting ? (
-            <Badge variant="warning">
+            <Badge variant="warning" className="max-w-full shrink whitespace-normal text-left">
               <UserRound /> Wartet: {labelOf('attention_kind', spec.waiting)}
             </Badge>
           ) : null}
           {spec.blocked ? (
-            <Badge variant="danger">
+            <Badge variant="danger" className="max-w-full shrink whitespace-normal text-left">
               <Lock /> {labelOf('attention_kind', 'blocker')}
             </Badge>
           ) : null}

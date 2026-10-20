@@ -28,7 +28,7 @@ export function RunsTab({ projectKey, runs }: { projectKey: string; runs: Board[
         <TableBody>
           {runs.map((r) => (
             <TableRow key={r.run_id} data-testid={`run-row-${r.run_id}`}>
-              <TableCell className="font-medium">{r.spec}</TableCell>
+              <TableCell className="min-w-40 font-medium [overflow-wrap:anywhere]">{r.spec}</TableCell>
               <TableCell>
                 <a href={safeLink(() => links.run(projectKey, r.run_id))} className="font-mono text-xs underline-offset-2 hover:underline">
                   {r.run_id}

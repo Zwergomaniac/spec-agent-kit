@@ -46,7 +46,7 @@ export function RunPanel({ projectKey, run, spec }: { projectKey: string; run: B
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Badge variant={runStateTone(run.state)}>{labelOf('run_state', run.state)}</Badge>
-          <span className="font-medium">{spec?.title ?? run.spec}</span>
+          <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{spec?.title ?? run.spec}</span>
           <span className="text-xs text-muted-foreground">
             Runde {run.round} von {run.max_rounds}
           </span>
@@ -61,7 +61,7 @@ export function RunPanel({ projectKey, run, spec }: { projectKey: string; run: B
         {openEscalation ? (
           <Alert variant="destructive">
             <AlertTitle>{openEscalation.gate ? labelOf('gate', openEscalation.gate) : labelOf('run_state', 'escalated')}</AlertTitle>
-            <AlertDescription>{openEscalation.reason}</AlertDescription>
+            <AlertDescription className="[overflow-wrap:anywhere]">{openEscalation.reason}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -75,7 +75,7 @@ export function RunPanel({ projectKey, run, spec }: { projectKey: string; run: B
                   <Cpu className="size-4 shrink-0 text-muted-foreground" />
                   <span className="font-medium">{labelOf('role', s.role)}</span>
                 </span>
-                <span className="font-mono text-xs text-muted-foreground">{s.agent}</span>
+                <span className="min-w-0 font-mono text-xs text-muted-foreground [overflow-wrap:anywhere]">{s.agent}</span>
                 {s.model ? <Badge variant="outline">{s.model}</Badge> : null}
                 <span className="ml-auto flex items-center gap-2">
                   {s.state === 'running' ? (
