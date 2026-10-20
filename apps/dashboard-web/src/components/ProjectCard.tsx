@@ -74,7 +74,7 @@ export function ProjectCard({ project, now }: { project: PortfolioProject; now?:
     <Card
       className={cn(
         // Stretched Link: der Titel-Link spannt per ::after die ganze Karte auf (position: relative hier).
-        'group relative cursor-pointer gap-4 transition-[border-color,box-shadow,transform] duration-150',
+        'group relative min-w-0 cursor-pointer gap-4 transition-[border-color,box-shadow,transform] duration-150',
         'hover:border-foreground/25 hover:shadow-lg hover:shadow-foreground/5 motion-safe:hover:-translate-y-0.5',
         'has-[a[data-card-link]:focus-visible]:border-ring has-[a[data-card-link]:focus-visible]:ring-2 has-[a[data-card-link]:focus-visible]:ring-ring/50',
         escalated && 'border-danger/50 bg-danger-soft/30 hover:border-danger/70'
@@ -105,7 +105,7 @@ export function ProjectCard({ project, now }: { project: PortfolioProject; now?:
       <CardContent className="flex flex-1 flex-col gap-4">
         {escalated && project.escalation ? (
           <div className="rounded-lg border border-danger/40 bg-card/70 p-3 text-sm">
-            <p className="font-medium text-danger">{project.escalation.reason ?? 'Eskalation ohne Angabe eines Grundes'}</p>
+            <p className="font-medium text-danger [overflow-wrap:anywhere]">{project.escalation.reason ?? 'Eskalation ohne Angabe eines Grundes'}</p>
             <a
               href={safeLink(() => links.run(project.key, project.escalation!.run_id))}
               className="relative z-10 mt-1 inline-flex items-center gap-1 text-xs font-medium underline-offset-2 hover:underline"
@@ -121,7 +121,7 @@ export function ProjectCard({ project, now }: { project: PortfolioProject; now?:
           <div className="grid gap-1.5 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={runStateTone(run.state)}>{labelOf('run_state', run.state)}</Badge>
-              <span className="font-medium">{run.spec}</span>
+              <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{run.spec}</span>
             </div>
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>

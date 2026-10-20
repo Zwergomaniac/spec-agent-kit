@@ -67,7 +67,7 @@ export function LastUpdated({ updatedAt, error, onRefresh }: { updatedAt: number
 
 export function PageHeader({ title, subtitle, actions, children }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex scroll-mt-20 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {children}
         <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>

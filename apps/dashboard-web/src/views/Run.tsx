@@ -42,7 +42,7 @@ function RoundCard({ round, stations }: { round: number; stations: BoardStation[
             {stations.map((s, i) => (
               <TableRow key={`${s.role}-${s.started_at}-${i}`}>
                 <TableCell className="font-medium">{labelOf('role', s.role)}</TableCell>
-                <TableCell className="font-mono text-xs">{s.agent}</TableCell>
+                <TableCell className="font-mono text-xs [overflow-wrap:anywhere]">{s.agent}</TableCell>
                 <TableCell className="text-muted-foreground">{s.model ?? '–'}</TableCell>
                 <TableCell className="whitespace-nowrap text-muted-foreground">{fmtDateTime(s.started_at)}</TableCell>
                 <TableCell className="whitespace-nowrap tabular-nums">{s.state === 'running' ? labelOf('station_state', 'running') : fmtDuration(s.duration_s)}</TableCell>
@@ -128,7 +128,7 @@ export function Run({ projectKey, runId }: { projectKey: string; runId: string }
         {projectKey}
       </a>
       <ChevronRight className="size-3" />
-      <span className="font-mono">{runId}</span>
+      <span className="font-mono [overflow-wrap:anywhere]">{runId}</span>
     </nav>
   )
 
@@ -181,7 +181,7 @@ export function Run({ projectKey, runId }: { projectKey: string; runId: string }
                   {e.gate ? labelOf('gate', e.gate) : labelOf('run_state', 'escalated')} · Runde {e.round}
                   {e.open ? ' · offen' : ' · erledigt'}
                 </AlertTitle>
-                <AlertDescription>
+                <AlertDescription className="[overflow-wrap:anywhere]">
                   {e.reason} <span className="text-xs opacity-80">({fmtDateTime(e.ts)})</span>
                 </AlertDescription>
               </Alert>

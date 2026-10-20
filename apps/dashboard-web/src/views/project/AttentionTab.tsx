@@ -30,9 +30,9 @@ export function AttentionTab({ items }: { items: Board['attention'] }) {
               <TableCell>
                 <Badge variant={attentionTone(a.kind)}>{labelOf('attention_kind', a.kind)}</Badge>
               </TableCell>
-              <TableCell className="font-mono text-xs">{a.spec ?? '–'}</TableCell>
-              <TableCell className="min-w-64 whitespace-normal">{a.reason}</TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{a.source}</TableCell>
+              <TableCell className="min-w-40 font-mono text-xs whitespace-normal [overflow-wrap:anywhere]">{a.spec ?? '–'}</TableCell>
+              <TableCell className="min-w-64 whitespace-normal [overflow-wrap:anywhere]">{a.reason}</TableCell>
+              <TableCell className="font-mono text-xs whitespace-normal text-muted-foreground [overflow-wrap:anywhere]">{a.source}</TableCell>
             </TableRow>
           ))}
         </TableBody>

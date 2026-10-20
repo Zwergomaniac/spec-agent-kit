@@ -1,5 +1,5 @@
 import type { Board, SakEvent } from '@sak/contracts'
-import { ADMIN_PASSWORD, BASE_URL, EXTRA_PROJECTS, PILOT_KEY, SECOND_KEY, extraBoard, pilotBoard, pilotEvents, secondBoard } from './fixtures'
+import { ADMIN_PASSWORD, BASE_URL, EXTRA_PROJECTS, LARGE_KEY, LARGE_NAME, PILOT_KEY, SECOND_KEY, extraBoard, largeBoard, pilotBoard, pilotEvents, secondBoard } from './fixtures'
 
 async function post(path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> {
   return fetch(`${BASE_URL}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) })
@@ -39,4 +39,10 @@ export async function seed(): Promise<void> {
     const token = await create(p.key, p.name)
     await ingest(token, p.key, [], extraBoard(base, p.key, p.name, p.specs))
   }
+
+  const largeToken = await create(LARGE_KEY, LARGE_NAME)
+  const large = largeBoard(base)
+  // Eigene Event-IDs, damit sie nicht mit denen des Pilot-Projekts kollidieren.
+  const largeEvents = pilotEvents(large).map((e) => ({ ...e, event_id: e.event_id.replace('01K8M3Q7R5', '01K8M3Q7R6') }) as SakEvent)
+  await ingest(largeToken, LARGE_KEY, largeEvents, large)
 }

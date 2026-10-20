@@ -92,3 +92,153 @@ export function extraBoard(base: Board, key: string, name: string, specs: number
     notes: []
   }
 }
+
+// ---------------------------------------------------------------------------
+// Großes Projekt: etwa 90 Specs über alle Stationen, 19 Aufmerksamkeitseinträge, sehr lange Titel
+// und Slugs (mindestens 40 Zeichen ohne Leerzeichen) und mehrere Läufe. Testet das Board-Layout.
+// ---------------------------------------------------------------------------
+export const LARGE_KEY = 'immoagent'
+export const LARGE_NAME = 'ImmoAgent Großprojekt'
+export const LARGE_RUN = '090-20261020-090000'
+
+const LARGE_STAGES: Array<[string, number]> = [
+  ['specified', 6],
+  ['clarified', 5],
+  ['planned', 6],
+  ['tasked', 9],
+  ['implementing', 4],
+  ['implemented', 9],
+  ['deployed', 7],
+  ['verified', 45]
+]
+
+const SLUG_WORDS = [
+  'search-templates-placeholders',
+  'postleitzahl-mittelpunkt-ungefaehre-lage',
+  'expose-export-pdf-vorlagen-verwaltung',
+  'kartenlayer-clustering-performance',
+  'benachrichtigungen-digest-zeitplan',
+  'mandantenfaehige-rollen-und-rechte',
+  'objektbewertung-vergleichswerte-import',
+  'besichtigungstermine-kalender-sync'
+]
+
+export function largeBoard(base: Board): Board {
+  const now = Date.now()
+  const iso = (daysAgo: number): string => new Date(now - daysAgo * 86_400_000).toISOString()
+  const specs: Board['specs'] = []
+  let n = 0
+  for (const [stage, count] of LARGE_STAGES) {
+    for (let i = 0; i < count; i++) {
+      n += 1
+      const word = SLUG_WORDS[(n * 3) % SLUG_WORDS.length]!
+      // Jede zweite Spec bekommt einen noch längeren Slug; alle Wortketten haben über 40 Zeichen ohne Leerzeichen.
+      const slug = n % 2 === 0 ? `${word}-fuer-grosse-portfolios-${n}` : `${word}-${n}`
+      const dir = `${String(n).padStart(3, '0')}-${slug}`
+      const done = ['verified', 'deployed', 'implemented'].includes(stage) ? 14 : stage === 'implementing' ? 6 : 0
+      const open = stage === 'implementing' ? 8 : stage === 'tasked' ? 12 : 0
+      specs.push({
+        number: n,
+        dir,
+        title:
+          n % 3 === 0
+            ? `Ungefähre_Lage_über_den_Postleitzahl-Mittelpunkt_darstellen_ohne_exakte_Adresse_preiszugeben_${n}`
+            : `Ungefähre Lage über den Postleitzahl-Mittelpunkt für Spec ${n} darstellen und Suchvorlagen mit Platzhaltern verwalten`,
+        descoped: false,
+        blocked: stage === 'implementing' && i === 0,
+        waiting: stage === 'tasked' && i < 4 ? 'approval' : stage === 'clarified' && i < 2 ? 'clarification' : null,
+        tasks: { done, open },
+        started_at: iso(40 - Math.min(n / 3, 39)),
+        updated_at: iso(Math.min(n / 10, 9)),
+        ...(stage === 'verified' ? { finished_at: iso(2 + (n % 20)), lead_time_days: 1.5 + (n % 7) } : {}),
+        stage
+      } as Board['specs'][number])
+    }
+  }
+  for (const d of [1, 2, 3]) {
+    n += 1
+    specs.push({
+      number: n,
+      dir: `${String(n).padStart(3, '0')}-zurueckgestellt-altes-feature-mit-sehr-langem-slug-${d}`,
+      title: `Zurückgestelltes Feature ${d}`,
+      descoped: true,
+      blocked: false,
+      waiting: null,
+      tasks: { done: 0, open: 3 },
+      stage: null
+    })
+  }
+
+  const pool = specs.filter((s) => s.stage === 'tasked' || s.stage === 'planned' || s.stage === 'clarified')
+  const kinds = ['decision', 'escalation', 'blocker', 'operator_task', 'clarification', 'stale_run', 'approval'] as const
+  const attention: Board['attention'] = []
+  for (let i = 0; i < 19; i++) {
+    const spec = pool[i % pool.length]!
+    attention.push({
+      kind: i < 12 ? 'approval' : kinds[i % kinds.length]!,
+      spec: spec.dir,
+      reason:
+        i % 2 === 0
+          ? 'Tasks fertig, wartet auf Freigabe zur Umsetzung'
+          : `Offene Entscheidung zu ${spec.dir}: bitte Umfang, Reihenfolge und Abnahmekriterien bestätigen, bevor die Umsetzung startet`,
+      source: `specs/${spec.dir}/tasks.md`
+    })
+  }
+
+  const roles = ['builder', 'code_review', 'ui_review'] as const
+  const states = ['escalated', 'merged', 'approved', 'reviewing', 'merged', 'aborted'] as const
+  const runSpecs = [...specs.filter((s) => s.stage === 'implementing' || s.stage === 'implemented'), ...specs.filter((s) => s.stage === 'tasked').slice(0, 2)].slice(0, 6)
+  const runs: Board['runs'] = runSpecs.map((s, idx) => {
+    const started = new Date(now - (idx + 1) * 3 * 3_600_000)
+    const day = started.toISOString().slice(0, 10).replaceAll('-', '')
+    const runId = idx === 0 ? LARGE_RUN : `${String(s.number).padStart(3, '0')}-${day}-${100000 + idx * 1111}`
+    const state = states[idx]!
+    const at = (min: number): string => new Date(started.getTime() + min * 60_000).toISOString()
+    return {
+      run_id: runId,
+      spec: s.dir,
+      kind: 'pipeline',
+      state,
+      round: 2,
+      max_rounds: 3,
+      active: idx === 0,
+      started_at: at(0),
+      updated_at: at(70),
+      last_event_at: at(70),
+      idle: false,
+      stale: false,
+      origin: { machine: 'dev-laptop-mit-sehr-langem-rechnernamen', branch: 'feature/lange-branch-bezeichnung-ohne-leerzeichen', source: 'local' },
+      stations: [1, 2].flatMap((round) =>
+        roles.map((role, k) => ({
+          round,
+          role,
+          agent: role === 'builder' ? 'pipeline-builder-mit-extrem-langem-agentennamen-ohne-leerzeichen' : `pipeline-${role}`,
+          model: 'opus',
+          state: 'finished' as const,
+          started_at: at(round * 20 + k),
+          duration_s: 300 + k * 60,
+          ...(role === 'builder'
+            ? {}
+            : { verdict: round === 2 && role === 'code_review' ? ('changes_requested' as const) : ('approve' as const), must_count: round === 2 ? 1 : 0, may_count: 1 })
+        }))
+      ),
+      escalations:
+        state === 'escalated'
+          ? [{ ts: at(70), round: 2, gate: 'round_limit' as const, reason: 'Rundenlimit erreicht, offene Muss-Befunde bei der Umsetzung der Postleitzahl-Mittelpunkt-Berechnung', open: true }]
+          : []
+    } as Board['runs'][number]
+  })
+
+  return {
+    ...base,
+    generated_at: new Date(now).toISOString(),
+    project: { key: LARGE_KEY, name: LARGE_NAME, base_branch: 'main' },
+    metrics: { in_progress: 13, done: 45, blocked: 1, waiting: 6, mean_lead_time_days: 4.2 },
+    specs,
+    attention,
+    runs,
+    markers: [{ kind: 'deploy', specs: [86, 87], ts: new Date(now - 86_400_000).toISOString(), commit: '0f1e2d3c4b5a69788796a5b4c3d2e1f001122334' }],
+    ticker: base.ticker,
+    notes: []
+  }
+}
