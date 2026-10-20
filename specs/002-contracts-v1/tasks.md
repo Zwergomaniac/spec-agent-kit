@@ -4,20 +4,20 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Root-Tooling:
+- [X] T001 Root-Tooling:
   - `package.json` mit Skripten `lint`, `test`, `build`, `contracts:gen`, `contracts:check` (alle echt, kein `echo`)
   - `pnpm-workspace.yaml` (packages/contracts, apps/*)
   - `tsconfig.base.json`
   - `.editorconfig`
   - `.gitattributes` (`* text=auto eol=lf`)
-- [ ] T002 [P] Paket `packages/contracts/package.json` (`@sak/contracts`) mit den Abhängigkeiten aus plan.md; vitest-Konfiguration.
-- [ ] T003 [P] Python-Projekt `packages/engine`:
+- [X] T002 [P] Paket `packages/contracts/package.json` (`@sak/contracts`) mit den Abhängigkeiten aus plan.md; vitest-Konfiguration.
+- [X] T003 [P] Python-Projekt `packages/engine`:
   - `pyproject.toml`
   - `src/spec_agent_kit/__init__.py`
   - `cli.py` mit `sak version` und UTF-8-Reconfigure
   - `uv sync`
   - ruff-Konfiguration
-- [ ] T004 [P] `.github/workflows/ci.yml` für TS und Python (Matrix ubuntu und windows).
+- [X] T004 [P] `.github/workflows/ci.yml` für TS und Python (Matrix ubuntu und windows).
 
 ## Phase 2: US1 – Vokabular und Labels (Spec 001)
 
