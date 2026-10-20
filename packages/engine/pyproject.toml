@@ -34,3 +34,5 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ANN", "SIM", "RUF"]
+# JSON-Dokumente sind bewusst dynamisch typisiert.
+ignore = ["ANN401"]

@@ -34,10 +34,10 @@
 
 ## Phase 4: Generierung und Python-Seite
 
-- [ ] T012 `scripts/gen-zod.mjs` → `src/generated/`; `src/index.ts` exportiert Zod-Schemas, Typen, `vocabulary`, `labels`, `LIMITS`.
-- [ ] T013 `src/deep-links.ts` gemäß FR-009 (build + parse, Validierung).
-- [ ] T014 `scripts/sync-python.mjs`. `contracts:check` = gen + sync + `git diff --exit-code` auf die generierten Pfade.
-- [ ] T015 `packages/engine/src/spec_agent_kit/contracts.py` gemäß plan.md, inklusive `LIMITS` und `new_ulid()`.
+- [X] T012 `scripts/gen-zod.mjs` → `src/generated/`; `src/index.ts` exportiert Zod-Schemas, Typen, `vocabulary`, `labels`, `LIMITS`.
+- [X] T013 `src/deep-links.ts` gemäß FR-009 (build + parse, Validierung).
+- [X] T014 `scripts/sync-python.mjs`. `contracts:check` = gen + sync + `git diff --exit-code` auf die generierten Pfade.
+- [X] T015 `packages/engine/src/spec_agent_kit/contracts.py` gemäß plan.md, inklusive `LIMITS` und `new_ulid()`.
 
 ## Phase 5: Tests
 

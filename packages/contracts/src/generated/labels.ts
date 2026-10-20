@@ -1,0 +1,112 @@
+// GENERIERT von scripts/gen-zod.mjs aus schema/. Nicht von Hand ändern.
+
+export const labelsDe = {
+  "stage": {
+    "specified": "Spec",
+    "clarified": "Klärung",
+    "planned": "Plan",
+    "tasked": "Tasks",
+    "implementing": "Umsetzung",
+    "implemented": "Umsetzung fertig",
+    "deployed": "Deploy",
+    "verified": "Live geprüft"
+  },
+  "run_state": {
+    "building": "Baut",
+    "reviewing": "Wird geprüft",
+    "approved": "Freigegeben",
+    "escalated": "Eskaliert",
+    "paused": "Pausiert",
+    "merged": "Gemergt",
+    "reviewed": "Geprüft",
+    "aborted": "Abgebrochen"
+  },
+  "run_kind": {
+    "pipeline": "Pipeline",
+    "review_only": "Nur Prüfung",
+    "manual": "Manuell"
+  },
+  "verdict": {
+    "approve": "OK",
+    "changes_requested": "Änderung",
+    "needs_human": "Mensch prüft"
+  },
+  "severity": {
+    "must": "Muss",
+    "may": "Kann"
+  },
+  "attention_kind": {
+    "escalation": "Eskaliert",
+    "approval": "Freigabe",
+    "clarification": "Klärung",
+    "blocker": "Blocker",
+    "decision": "Entscheidung",
+    "operator_task": "Betreiber-Aufgabe",
+    "stale_run": "Lauf hängt"
+  },
+  "event_type": {
+    "run.started": "Lauf gestartet",
+    "round.started": "Runde gestartet",
+    "station.started": "Station gestartet",
+    "station.finished": "Station beendet",
+    "verdict.recorded": "Urteil erfasst",
+    "run.escalated": "Lauf eskaliert",
+    "run.released": "Lauf freigegeben",
+    "run.returned": "Lauf an Builder zurückgegeben",
+    "run.approved": "Lauf genehmigt",
+    "run.paused": "Lauf pausiert",
+    "run.resumed": "Lauf fortgesetzt",
+    "run.merged": "Lauf gemergt",
+    "run.reviewed": "Lauf geprüft",
+    "run.aborted": "Lauf abgebrochen",
+    "run.taken_over": "Lauf übernommen"
+  },
+  "diag_event_type": {
+    "diag.hook": "Hook-Diagnose"
+  },
+  "role": {
+    "builder": "Builder",
+    "code_review": "Code-Prüfung",
+    "ui_review": "UI-Prüfung",
+    "security_review": "Sicherheitsprüfung",
+    "docs": "Doku",
+    "integrator": "Integration"
+  },
+  "gate": {
+    "start_approval": "Startfreigabe",
+    "protected_paths": "Geschützte Pfade",
+    "review_integrity": "Prüfer-Integrität",
+    "round_limit": "Rundenlimit",
+    "release": "Release",
+    "deploy_approval": "Deploy-Freigabe"
+  },
+  "station_state": {
+    "running": "läuft",
+    "finished": "fertig"
+  },
+  "run_source": {
+    "local": "Lokal",
+    "cloud": "Cloud"
+  },
+  "marker_kind": {
+    "deploy": "Deploy",
+    "verified": "Live geprüft"
+  },
+  "ticker_kind": {
+    "commit": "Commit",
+    "deploy": "Deploy",
+    "verified": "Live geprüft"
+  },
+  "board_source": {
+    "live": "Live",
+    "snapshot": "Snapshot"
+  },
+  "hook_phase": {
+    "start": "Start",
+    "stop": "Stopp"
+  }
+} as const
+
+export const labels = { de: labelsDe } as const
+
+export type Locale = keyof typeof labels
