@@ -4,10 +4,14 @@
 
 ## Phase 1: Grundlagen
 
-- [ ] T001 `pipeline/git.py` und `pipeline/runs.py` (Lauf-ID nach Spec 001 FR-009, resolve_run nach FR-002, idle/stale).
-- [ ] T002 `pipeline/events.py`: v1-Hülle, Validierung, Anhängen mit flush.
-- [ ] T003 `pipeline/states.py`: Übergangstabelle, Mapping Übergang → Event-Typ(en).
-- [ ] T004 Test-Fixture `tests/pipeline/conftest.py` (Fixture-Repo inklusive Config und Agents).
+- [X] T001 `pipeline/git.py` und `pipeline/runs.py` (Lauf-ID nach Spec 001 FR-009, resolve_run nach FR-002, idle/stale).
+  - Anmerkung: Das Paket `spec_agent_kit.pipeline` hat zusätzlich `__init__.py` mit `RefusedError` (Exit 1) und `UsageError` (Exit 2). Die Uhr ist `runs.utcnow()` (in Tests ersetzbar). Lauf-IDs mit Kollisionssuffix `-b`, `-c` bei gleicher Sekunde (erlaubt von `common.schema.json`). Muster für Pfade (`git.matches`): Verzeichnis-Präfix mit `/`, Glob bei `*?[`, sonst exakter Pfad oder Verzeichnis. `resolve_run` nimmt bei Spec-Angabe den jüngsten nicht beendeten Lauf (`paused` zählt als nicht beendet).
+- [X] T002 `pipeline/events.py`: v1-Hülle, Validierung, Anhängen mit flush.
+  - Anmerkung: `emit(root, type, *, project, run=None, **data)` baut die Hülle (ULID, ts UTC, project, run_id, spec, `origin.branch` = Basis-Branch) und wirft `EventError`, ohne zu schreiben. Die Befehle fangen das ab und melden `warnings: ["Event verworfen: …"]` (Constitution: im Betrieb Hinweis, kein Event); die Test-Hilfe `Repo.sak` lässt solche Hinweise scheitern.
+- [X] T003 `pipeline/states.py`: Übergangstabelle, Mapping Übergang → Event-Typ(en).
+  - Anmerkung: Ein Wechsel `building → reviewing` hat keinen Ereignistyp im Vokabular und schreibt kein Event (wie in der Referenz). Lesart: `paused → escalated` ist zusätzlich erlaubt, damit ein aus `escalated` pausierter Lauf in den Zustand vor der Pause zurückkehrt (US3); Spec 001 FR-011 nennt nur building und reviewing. `run.taken_over` ersetzt `run.aborted` bei der Übernahme (ein Event, nicht zwei).
+- [X] T004 Test-Fixture `tests/pipeline/conftest.py` (Fixture-Repo inklusive Config und Agents).
+  - Anmerkung: `Repo`-Hilfsobjekt mit `sak()`, `events()`, `write()`, `commit()`; steuerbare `clock`-Fixture.
 
 ## Phase 2: US1/US2 – Kernablauf
 
