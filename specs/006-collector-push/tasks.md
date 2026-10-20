@@ -4,7 +4,7 @@
 
 ## Phase 1: Fixture
 
-- [ ] T001 `tests/fixtures/board_repo/` mit einem Generator für ein deterministisches Fixture-Repo nach Spec US1 (Independent Test).
+- [X] T001 `tests/fixtures/board_repo/` mit einem Generator für ein deterministisches Fixture-Repo nach Spec US1 (Independent Test).
 
 ## Phase 2: US1 – Board-Ableitung
 
