@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { boardSchema, configSchema, eventSchema, ingestSchema, label } from '../src/index'
+import { boardSchema, configSchema, eventSchema, ingestSchema, label, lockSchema } from '../src/index'
 import { SCHEMA_ID_BASE, createAjv, loadExamples } from './helpers'
 
 const ajv = createAjv()
-const zodSchemas = { event: eventSchema, board: boardSchema, ingest: ingestSchema, config: configSchema } as const
+const zodSchemas = { event: eventSchema, board: boardSchema, ingest: ingestSchema, config: configSchema, lock: lockSchema } as const
 const examples = loadExamples()
 
 describe('Zod beurteilt die Beispiele wie ajv (Spec 002 SC-001)', () => {

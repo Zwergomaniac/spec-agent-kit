@@ -23,7 +23,7 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 SCHEMA_DIR: Final[Path] = Path(__file__).resolve().parent / "schemas"
-SCHEMA_NAMES: Final[tuple[str, ...]] = ("common", "event", "board", "ingest", "config")
+SCHEMA_NAMES: Final[tuple[str, ...]] = ("common", "event", "board", "ingest", "config", "lock")
 CONFIG_MAX_BYTES: Final[int] = 256 * 1024
 DEFAULT_LOCALE: Final[str] = "de"
 
@@ -193,6 +193,11 @@ def validate_ingest(obj: Any) -> list[str]:
 def validate_config(obj: Any) -> list[str]:
     """Prüft eine Projektkonfiguration gegen ``sak.config/1`` (höchstens 256 KB)."""
     return _validate("config", obj, CONFIG_MAX_BYTES)
+
+
+def validate_lock(obj: Any) -> list[str]:
+    """Prüft ein Lockfile gegen ``sak.lock/1`` (höchstens 256 KB)."""
+    return _validate("lock", obj, CONFIG_MAX_BYTES)
 
 
 def config_schema_errors(obj: Any) -> list[ValidationError]:

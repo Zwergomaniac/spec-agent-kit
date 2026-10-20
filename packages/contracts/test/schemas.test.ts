@@ -110,7 +110,7 @@ describe('Beispiele gegen ajv', () => {
   const examples = loadExamples()
 
   it('es gibt gültige und ungültige Beispiele je Schema', () => {
-    for (const s of ['event', 'board', 'ingest', 'config'] as const) {
+    for (const s of ['event', 'board', 'ingest', 'config', 'lock'] as const) {
       expect(examples.filter((e) => e.schema === s && e.valid).length, `${s} gültig`).toBeGreaterThan(0)
       expect(examples.filter((e) => e.schema === s && !e.valid).length, `${s} ungültig`).toBeGreaterThan(0)
     }

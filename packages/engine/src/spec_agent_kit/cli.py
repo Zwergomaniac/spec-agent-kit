@@ -21,6 +21,11 @@ from spec_agent_kit.board.serve import DEFAULT_PORT, make_server
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
+from spec_agent_kit.install import InstallError
+from spec_agent_kit.install.apply import apply_plan
+from spec_agent_kit.install.doctor import run_doctor
+from spec_agent_kit.install.kit import locate_kit
+from spec_agent_kit.install.plan import build_init_plan, build_upgrade_plan
 from spec_agent_kit.pipeline import RefusedError, UsageError
 from spec_agent_kit.pipeline.cli_bridge import add_parsers, run_command
 from spec_agent_kit.pipeline.commands import Ctx
@@ -30,6 +35,7 @@ from spec_agent_kit.push.run import push, push_background, trigger_if_auto
 EXIT_OK = 0
 EXIT_REJECTED = 1
 EXIT_USAGE = 2
+_NL = chr(10)
 
 
 def _force_utf8() -> None:
@@ -199,6 +205,50 @@ def _push(args: argparse.Namespace) -> int:
     return code
 
 
+def _install(args: argparse.Namespace) -> int:
+    """``sak init`` und ``sak upgrade`` (Spec 005): ohne ``--apply`` nur der Plan."""
+    target = Path(args.target)
+    try:
+        kit = locate_kit()
+        if args.command == "init":
+            plan = build_init_plan(
+                kit,
+                target,
+                key=args.key,
+                name=args.name,
+                base_branch=args.base_branch,
+                dashboard_url=args.dashboard_url,
+                ui=not args.no_ui,
+                test_fast=args.test_fast,
+                test_full=args.test_full,
+                lint=args.lint,
+                allow_dirty=args.allow_dirty,
+            )
+        else:
+            plan = build_upgrade_plan(kit, target, allow_dirty=args.allow_dirty)
+        if not args.apply:
+            _emit(plan.to_dict())
+            sys.stderr.write(_NL.join(plan.text()) + _NL)
+            return EXIT_OK
+        report = apply_plan(plan, sync=not args.no_sync)
+    except InstallError as exc:
+        return _reject(exc.errors)
+    _emit(report)
+    sys.stderr.write(_NL.join(report["text"]) + _NL)
+    return EXIT_OK if report["ok"] else EXIT_REJECTED
+
+
+def _doctor(args: argparse.Namespace) -> int:
+    """``sak doctor [ziel]`` (Spec 005 FR-008)."""
+    root = Path(args.target).resolve() if args.target else find_root()
+    if root is None:
+        return _not_initialized()
+    here = Path(__file__).resolve().parents[2]  # .../engine, wenn der Aufruf aus einer Engine kommt
+    result = run_doctor(root, engine_running_from=here)
+    _emit(result)
+    return EXIT_OK if result["ok"] else EXIT_REJECTED
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sak", description="Spec Agent Kit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -219,8 +269,32 @@ def _build_parser() -> argparse.ArgumentParser:
     pushp.add_argument(
         "--background", action="store_true", help="Losgelöst starten und sofort zurückkehren"
     )
+    _add_install_parsers(sub)
     add_parsers(sub)
     return parser
+
+
+def _add_install_parsers(sub: Any) -> None:
+    init = sub.add_parser("init", help="Kit in ein Zielprojekt installieren (Plan, dann --apply)")
+    init.add_argument("target", help="Zielprojekt (Git-Wurzel mit spec-kit)")
+    init.add_argument("--key", required=True, help="Projektschlüssel (a-z, 0-9, Bindestrich)")
+    init.add_argument("--name", required=True, help="Anzeigename (1 bis 80 Zeichen)")
+    init.add_argument("--base-branch", default="main", help="Basis-Branch (Default main)")
+    init.add_argument("--dashboard-url", default=None, help="https://… (http nur für localhost)")
+    init.add_argument("--no-ui", action="store_true", help="ui_review nicht aktivieren")
+    init.add_argument("--test-fast", action="append", default=[], help="Befehl, wiederholbar")
+    init.add_argument("--test-full", action="append", default=[], help="Befehl, wiederholbar")
+    init.add_argument("--lint", action="append", default=[], help="Befehl, wiederholbar")
+    upgrade = sub.add_parser("upgrade", help="Kit-Dateien im Zielprojekt nachrüsten")
+    upgrade.add_argument("target", help="Zielprojekt")
+    for command in (init, upgrade):
+        command.add_argument("--apply", action="store_true", help="Plan umsetzen")
+        command.add_argument("--allow-dirty", action="store_true", help="Unsauberen Stand zulassen")
+        command.add_argument(
+            "--no-sync", action="store_true", help="uv sync im Engine-Ordner überspringen"
+        )
+    doctor = sub.add_parser("doctor", help="Gesundheitscheck des Projekts")
+    doctor.add_argument("target", nargs="?", default=None, help="Zielprojekt (Default: aktuelles)")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -240,6 +314,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         cmd_hook(phase, sys.stdin, root)
         trigger_if_auto(root)  # FR-011: Hintergrund-Push, Fehler werden ignoriert
         return EXIT_OK
+    if args.command in {"init", "upgrade"}:
+        return _install(args)
+    if args.command == "doctor":
+        return _doctor(args)
     if args.command == "push":
         return _push(args)
     if args.command in {"run", "event"}:
