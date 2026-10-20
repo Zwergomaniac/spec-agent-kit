@@ -17,6 +17,10 @@ from typing import Any
 from spec_agent_kit import __version__
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
+from spec_agent_kit.pipeline import RefusedError, UsageError
+from spec_agent_kit.pipeline.cli_bridge import add_parsers, run_command
+from spec_agent_kit.pipeline.commands import Ctx
+from spec_agent_kit.pipeline.hooks import cmd_hook
 
 EXIT_OK = 0
 EXIT_REJECTED = 1
@@ -92,6 +96,29 @@ def _config_check() -> int:
     return EXIT_OK if result["ok"] else EXIT_REJECTED
 
 
+def _pipeline(args: argparse.Namespace) -> int:
+    """``sak run ...`` und ``sak event ...`` (Spec 003)."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    try:
+        effective = load_config(root)
+    except NotInitializedError:
+        return _not_initialized()
+    except ConfigError as exc:
+        return _reject(exc.errors)
+    try:
+        result = run_command(args, Ctx(root=root, cfg=effective))
+    except RefusedError as exc:
+        _emit({"ok": False, "error": exc.message, **exc.extra})
+        return EXIT_REJECTED
+    except UsageError as exc:
+        _emit({"ok": False, "error": str(exc)})
+        return EXIT_USAGE
+    _emit(result)
+    return EXIT_OK
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sak", description="Spec Agent Kit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -100,6 +127,7 @@ def _build_parser() -> argparse.ArgumentParser:
     config_sub = config.add_subparsers(dest="config_command", required=True)
     config_sub.add_parser("check", help="Prüft die Konfiguration (Schema, Agents, Frontmatter)")
     config_sub.add_parser("show", help="Gibt die wirksame Konfiguration als JSON aus")
+    add_parsers(sub)
     return parser
 
 
@@ -107,10 +135,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Einstiegspunkt. Gibt den Exit-Code zurück."""
     _force_utf8()
     parser = _build_parser()
+    given = list(sys.argv[1:] if argv is None else argv)
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
+        if given[:1] == ["hook"]:
+            return EXIT_OK  # Hooks enden immer mit 0.
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    if args.command == "hook":
+        phase = "start" if args.hook_command == "subagent-start" else "stop"
+        cmd_hook(phase, sys.stdin, find_root())
+        return EXIT_OK
+    if args.command in {"run", "event"}:
+        return _pipeline(args)
     if args.command == "version":
         sys.stdout.write(json.dumps({"version": __version__}, ensure_ascii=False) + "\n")
         return EXIT_OK

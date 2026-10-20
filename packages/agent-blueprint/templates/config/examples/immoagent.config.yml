@@ -13,9 +13,9 @@ project:
 pipeline:
   max_rounds: 2
   roles:
-    builder:     { enabled: true, agent: sak-builder,     model: sonnet, effort: medium }
-    code_review: { enabled: true, agent: sak-code-review, model: opus,   effort: medium }
-    ui_review:   { enabled: true, agent: sak-ui-review,   model: sonnet, effort: medium }
+    builder:     { enabled: true, agent: sak-builder,       model: sonnet, effort: medium }
+    code_review: { enabled: true, agent: sak-code-reviewer, model: opus,   effort: medium }
+    ui_review:   { enabled: true, agent: sak-ui-reviewer,    model: sonnet, effort: medium }
 
 commands:
   test_fast:                      # {paths} = vom Builder gewählte Testpfade

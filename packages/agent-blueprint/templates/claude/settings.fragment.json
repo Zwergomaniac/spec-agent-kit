@@ -1,0 +1,49 @@
+{
+  "hooks": {
+    "SubagentStart": [
+      {
+        "matcher": "sak-.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/.spec-agent/engine\" sak hook subagent-start || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "sak-.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/.spec-agent/engine\" sak hook subagent-stop || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uv run --project .spec-agent/engine sak *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git switch *)",
+      "Bash(git merge *)"
+    ],
+    "deny": [
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Read(./.env*)",
+      "Edit(./.env*)",
+      "Read(./.spec-agent/dashboard.key)",
+      "Edit(./.spec-agent/dashboard.key)"
+    ]
+  }
+}

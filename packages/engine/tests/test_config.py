@@ -64,7 +64,7 @@ def repo(tmp_path: Path) -> Path:
     _git(tmp_path, "init", "-b", "main")
     _git(tmp_path, "commit", "--allow-empty", "-m", "init")
     _agent(tmp_path, "sak-builder", "sonnet")
-    _agent(tmp_path, "sak-code-review", "opus")
+    _agent(tmp_path, "sak-code-reviewer", "opus")
     return tmp_path
 
 
@@ -99,8 +99,8 @@ def test_defaults_follow_spec(tmp_path: Path) -> None:
         "docs": False,
         "integrator": False,
     }
-    assert pipeline["roles"]["code_review"]["agent"] == "sak-code-review"
-    assert default_agent_name("ui_review") == "sak-ui-review"
+    assert pipeline["roles"]["code_review"]["agent"] == "sak-code-reviewer"
+    assert default_agent_name("ui_review") == "sak-ui-reviewer"
     assert data["stages"] == {"deployed": True, "verified": True}
     assert data["deploy"] == {"command": None}
     assert data["plugins"] == []
@@ -130,7 +130,7 @@ def test_dicts_merge_deeply_and_lists_replace(tmp_path: Path) -> None:
     }
     data = build_effective(tmp_path, raw).data
     assert data["pipeline"]["roles"]["code_review"]["model"] == "sonnet"
-    assert data["pipeline"]["roles"]["code_review"]["agent"] == "sak-code-review"
+    assert data["pipeline"]["roles"]["code_review"]["agent"] == "sak-code-reviewer"
     assert data["commands"]["test_fast"] == ["a", "b"]
     assert data["commands"]["lint"] == []
 
@@ -243,7 +243,7 @@ def test_check_unknown_role_suggests_vocabulary_role(repo: Path) -> None:
 def test_check_frontmatter_mismatch_names_both_values(repo: Path) -> None:
     config = _no_ui({})
     config["pipeline"]["roles"]["code_review"] = {"model": "opus"}
-    _agent(repo, "sak-code-review", "sonnet")
+    _agent(repo, "sak-code-reviewer", "sonnet")
     _write_config(repo, config)
     result = check(repo)
     assert result["ok"] is False
@@ -285,7 +285,7 @@ def test_check_agent_without_frontmatter(repo: Path) -> None:
 
 
 def test_check_ui_review_active_without_ui_block(repo: Path) -> None:
-    _agent(repo, "sak-ui-review", "sonnet")
+    _agent(repo, "sak-ui-reviewer", "sonnet")
     _write_config(repo, MINIMAL)
     result = check(repo)
     assert result["ok"] is False
@@ -293,7 +293,7 @@ def test_check_ui_review_active_without_ui_block(repo: Path) -> None:
 
 
 def test_check_ui_review_active_with_ui_block_is_valid(repo: Path) -> None:
-    _agent(repo, "sak-ui-review", "sonnet")
+    _agent(repo, "sak-ui-reviewer", "sonnet")
     ui = {"command": "npx playwright test", "base_url": "http://127.0.0.1:5173"}
     _write_config(repo, {**MINIMAL, "ui": ui})
     assert check(repo)["ok"] is True

@@ -9,8 +9,8 @@
     "branch_pattern": "{spec}",
     "roles": {
       "builder": { "enabled": true, "agent": "sak-builder", "model": "sonnet", "effort": "medium" },
-      "code_review": { "enabled": true, "agent": "sak-code-review", "model": "opus", "effort": "high" },
-      "ui_review": { "enabled": true, "agent": "sak-ui-review", "model": "sonnet", "effort": "medium" },
+      "code_review": { "enabled": true, "agent": "sak-code-reviewer", "model": "opus", "effort": "high" },
+      "ui_review": { "enabled": true, "agent": "sak-ui-reviewer", "model": "sonnet", "effort": "medium" },
       "security_review": { "enabled": false },
       "docs": { "enabled": false },
       "integrator": { "enabled": false }

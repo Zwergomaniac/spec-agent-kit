@@ -9,8 +9,8 @@ project:
 
 pipeline:
   roles:
-    builder:     { enabled: true,  agent: sak-builder,     model: sonnet, effort: medium }
-    code_review: { enabled: true,  agent: sak-code-review, model: opus,   effort: medium }
+    builder:     { enabled: true,  agent: sak-builder,       model: sonnet, effort: medium }
+    code_review: { enabled: true,  agent: sak-code-reviewer, model: opus,   effort: medium }
     ui_review:   { enabled: false }   # keine Web-UI: das Gesamturteil entsteht aus code_review allein
 
 commands:
