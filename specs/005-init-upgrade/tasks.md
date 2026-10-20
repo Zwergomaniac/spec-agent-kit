@@ -23,7 +23,7 @@
 
 ## Phase 4: US4 – Doctor
 
-- [ ] T011 `install/doctor.py` und CLI `sak doctor` mit Tests.
+- [X] T011 `install/doctor.py` und CLI `sak doctor` mit Tests.
 
 ## Phase 5: US3 – Skill und Aufräumen
 
