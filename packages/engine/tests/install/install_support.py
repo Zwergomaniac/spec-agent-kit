@@ -8,10 +8,14 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from spec_agent_kit.install.kit import ENGINE_RELATIVE, TEMPLATES_RELATIVE, Kit
+
+Sak = Callable[..., tuple[int, dict[str, Any]]]
+"""Aufruf von ``sak``: ``(exit, json)``."""
 
 REAL_KIT_ROOT = Path(__file__).resolve().parents[4]
 

@@ -3,18 +3,15 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
-from install_support import make_kit, make_target
+from install_support import Sak, make_kit, make_target
 
 from spec_agent_kit.cli import main
 from spec_agent_kit.install import kit as kit_module
 from spec_agent_kit.install.kit import Kit
-
-Sak = Callable[..., tuple[int, dict[str, Any]]]
 
 
 @pytest.fixture

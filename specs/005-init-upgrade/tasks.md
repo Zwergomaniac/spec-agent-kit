@@ -11,10 +11,10 @@
 
 ## Phase 2: US1 – Init
 
-- [ ] T005 `install/settings.py` (FR-005) mit Tests: fehlende Datei, bestehende Hooks, bypass-Warnung, Idempotenz, ungültiges JSON.
-- [ ] T006 `install/plan.py` für init (FR-001 bis FR-003, FR-006), Validierung (FR-002).
-- [ ] T007 `install/apply.py` und CLI `sak init`. Nach Apply: `uv sync` und `config check` (FR-009).
-- [ ] T008 Tests für US1 inklusive aller Acceptance Scenarios und SC-002.
+- [X] T005 `install/settings.py` (FR-005) mit Tests: fehlende Datei, bestehende Hooks, bypass-Warnung, Idempotenz, ungültiges JSON.
+- [X] T006 `install/plan.py` für init (FR-001 bis FR-003, FR-006), Validierung (FR-002).
+- [X] T007 `install/apply.py` und CLI `sak init`. Nach Apply: `uv sync` und `config check` (FR-009).
+- [X] T008 Tests für US1 inklusive aller Acceptance Scenarios und SC-002.
 
 ## Phase 3: US2 – Upgrade
 
