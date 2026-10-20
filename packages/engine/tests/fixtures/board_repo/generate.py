@@ -132,7 +132,9 @@ def _write_run(path: Path, run: dict[str, Any], events: list[dict[str, Any]]) ->
             handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
-def _run_json(run_id: str, spec: str, state: str, rnd: int, started: str, **extra: Any) -> dict[str, Any]:
+def _run_json(
+    run_id: str, spec: str, state: str, rnd: int, started: str, **extra: Any
+) -> dict[str, Any]:
     run: dict[str, Any] = {
         "run_id": run_id,
         "spec": spec,
@@ -179,31 +181,80 @@ def build_fixture_repo(path: Path) -> Path:
     )
 
     # 001: durchgängig bis verified.
-    repo.commit("docs(001): spec", "10-01", {"specs/001-foundation/spec.md": _spec("Foundation", clarified=True)})
-    repo.commit("docs(001): plan", "10-01", {"specs/001-foundation/plan.md": "# Plan\n"}, hour="11:00:00")
-    repo.commit("docs(001): tasks", "10-01", {"specs/001-foundation/tasks.md": _tasks(0, 3)}, hour="12:00:00")
-    repo.commit("feat(001): alles", "10-02", {"specs/001-foundation/tasks.md": _tasks(3, 0), "src/a.py": "a = 1\n"})
+    repo.commit(
+        "docs(001): spec",
+        "10-01",
+        {"specs/001-foundation/spec.md": _spec("Foundation", clarified=True)},
+    )
+    repo.commit(
+        "docs(001): plan", "10-01", {"specs/001-foundation/plan.md": "# Plan\n"}, hour="11:00:00"
+    )
+    repo.commit(
+        "docs(001): tasks",
+        "10-01",
+        {"specs/001-foundation/tasks.md": _tasks(0, 3)},
+        hour="12:00:00",
+    )
+    repo.commit(
+        "feat(001): alles",
+        "10-02",
+        {"specs/001-foundation/tasks.md": _tasks(3, 0), "src/a.py": "a = 1\n"},
+    )
     repo.commit("deploy(001): foundation live", "10-02", hour="12:00:00")
     repo.commit("verified(001): foundation geprüft", "10-03", hour="08:00:00")
 
     # 002: bis deployed.
-    repo.commit("docs(002): spec", "10-04", {"specs/002-importer/spec.md": _spec("Importer")}, hour="08:00:00")
-    repo.commit("docs(002): plan", "10-04", {"specs/002-importer/plan.md": "# Plan\n"}, hour="09:00:00")
-    repo.commit("docs(002): tasks", "10-04", {"specs/002-importer/tasks.md": _tasks(0, 2)}, hour="10:00:00")
-    repo.commit("feat(002): importer", "10-05", {"specs/002-importer/tasks.md": _tasks(2, 0), "src/b.py": "b = 1\n"}, hour="09:00:00")
+    repo.commit(
+        "docs(002): spec",
+        "10-04",
+        {"specs/002-importer/spec.md": _spec("Importer")},
+        hour="08:00:00",
+    )
+    repo.commit(
+        "docs(002): plan", "10-04", {"specs/002-importer/plan.md": "# Plan\n"}, hour="09:00:00"
+    )
+    repo.commit(
+        "docs(002): tasks", "10-04", {"specs/002-importer/tasks.md": _tasks(0, 2)}, hour="10:00:00"
+    )
+    repo.commit(
+        "feat(002): importer",
+        "10-05",
+        {"specs/002-importer/tasks.md": _tasks(2, 0), "src/b.py": "b = 1\n"},
+        hour="09:00:00",
+    )
     repo.commit("deploy(002): importer", "10-05", hour="14:00:00")
 
     # 004: Deploy-Marker VOR dem letzten Commit an tasks.md -> Station implemented.
-    repo.commit("docs(004): spec", "10-06", {"specs/004-billing/spec.md": _spec("Billing", clarified=True)}, hour="08:00:00")
-    repo.commit("docs(004): plan", "10-06", {"specs/004-billing/plan.md": "# Plan\n"}, hour="09:00:00")
-    repo.commit("docs(004): tasks", "10-06", {"specs/004-billing/tasks.md": _tasks(1, 1)}, hour="10:00:00")
+    repo.commit(
+        "docs(004): spec",
+        "10-06",
+        {"specs/004-billing/spec.md": _spec("Billing", clarified=True)},
+        hour="08:00:00",
+    )
+    repo.commit(
+        "docs(004): plan", "10-06", {"specs/004-billing/plan.md": "# Plan\n"}, hour="09:00:00"
+    )
+    repo.commit(
+        "docs(004): tasks", "10-06", {"specs/004-billing/tasks.md": _tasks(1, 1)}, hour="10:00:00"
+    )
     repo.commit("deploy(004): erste Stufe", "10-07", hour="10:00:00")
-    repo.commit("feat(004): rest", "10-08", {"specs/004-billing/tasks.md": _tasks(2, 0), "src/c.py": "c = 1\n"}, hour="10:00:00")
+    repo.commit(
+        "feat(004): rest",
+        "10-08",
+        {"specs/004-billing/tasks.md": _tasks(2, 0), "src/c.py": "c = 1\n"},
+        hour="10:00:00",
+    )
 
     # 003: implementing mit Betreiber-Task.
-    repo.commit("docs(003): spec", "10-08", {"specs/003-search/spec.md": _spec("Search")}, hour="12:00:00")
-    repo.commit("docs(003): plan", "10-08", {"specs/003-search/plan.md": "# Plan\n"}, hour="13:00:00")
-    repo.commit("docs(003): tasks", "10-08", {"specs/003-search/tasks.md": _tasks(0, 5)}, hour="14:00:00")
+    repo.commit(
+        "docs(003): spec", "10-08", {"specs/003-search/spec.md": _spec("Search")}, hour="12:00:00"
+    )
+    repo.commit(
+        "docs(003): plan", "10-08", {"specs/003-search/plan.md": "# Plan\n"}, hour="13:00:00"
+    )
+    repo.commit(
+        "docs(003): tasks", "10-08", {"specs/003-search/tasks.md": _tasks(0, 5)}, hour="14:00:00"
+    )
     repo.commit(
         "feat(003): erste Tasks",
         "10-09",
@@ -224,13 +275,19 @@ def build_fixture_repo(path: Path) -> Path:
         },
         hour="12:00:00",
     )
-    repo.commit("docs(005): tasks", "10-09", {"specs/005-notify/tasks.md": _tasks(0, 4)}, hour="13:00:00")
+    repo.commit(
+        "docs(005): tasks", "10-09", {"specs/005-notify/tasks.md": _tasks(0, 4)}, hour="13:00:00"
+    )
 
     # 006: nur spec.md, echter Klärungsmarker.
     repo.commit(
         "docs(006): spec",
         "10-10",
-        {"specs/006-export/spec.md": _spec("Export", "Format: [NEEDS CLARIFICATION: CSV oder XLSX?]\n")},
+        {
+            "specs/006-export/spec.md": _spec(
+                "Export", "Format: [NEEDS CLARIFICATION: CSV oder XLSX?]\n"
+            )
+        },
         hour="08:00:00",
     )
 
@@ -238,25 +295,75 @@ def build_fixture_repo(path: Path) -> Path:
     done = _run_json("001-20261002-080000", "001-foundation", "merged", 1, "2026-10-02T08:00:00Z")
     done["updated_at"] = "2026-10-02T09:00:00Z"
     events = [
-        _event("run.started", "2026-10-02T08:00:00Z", done, kind="pipeline", base_branch="main", base_commit="a" * 40, max_rounds=2),
+        _event(
+            "run.started",
+            "2026-10-02T08:00:00Z",
+            done,
+            kind="pipeline",
+            base_branch="main",
+            base_commit="a" * 40,
+            max_rounds=2,
+        ),
         _event("round.started", "2026-10-02T08:00:00Z", done, round=1),
-        *_station(done, "builder", "sak-builder", 1, "2026-10-02T08:01:00Z", "2026-10-02T08:21:00Z", 1200),
-        *_station(done, "code_review", "sak-code-reviewer", 1, "2026-10-02T08:22:00Z", "2026-10-02T08:30:00Z", 480),
-        _event("verdict.recorded", "2026-10-02T08:31:00Z", done, round=1, role="code_review", verdict="approve", must_count=0, may_count=1),
+        *_station(
+            done, "builder", "sak-builder", 1, "2026-10-02T08:01:00Z", "2026-10-02T08:21:00Z", 1200
+        ),
+        *_station(
+            done,
+            "code_review",
+            "sak-code-reviewer",
+            1,
+            "2026-10-02T08:22:00Z",
+            "2026-10-02T08:30:00Z",
+            480,
+        ),
+        _event(
+            "verdict.recorded",
+            "2026-10-02T08:31:00Z",
+            done,
+            round=1,
+            role="code_review",
+            verdict="approve",
+            must_count=0,
+            may_count=1,
+        ),
         _event("run.approved", "2026-10-02T08:31:30Z", done),
         _event("run.merged", "2026-10-02T09:00:00Z", done, merge_commit="b" * 40),
     ]
     _write_run(path, done, events)
 
-    paused = _run_json("002-20261005-080000", "002-importer", "paused", 1, "2026-10-05T08:00:00Z", paused_from="building")
+    paused = _run_json(
+        "002-20261005-080000",
+        "002-importer",
+        "paused",
+        1,
+        "2026-10-05T08:00:00Z",
+        paused_from="building",
+    )
     paused["updated_at"] = "2026-10-05T08:30:00Z"
     _write_run(
         path,
         paused,
         [
-            _event("run.started", "2026-10-05T08:00:00Z", paused, kind="pipeline", base_branch="main", base_commit="a" * 40, max_rounds=2),
+            _event(
+                "run.started",
+                "2026-10-05T08:00:00Z",
+                paused,
+                kind="pipeline",
+                base_branch="main",
+                base_commit="a" * 40,
+                max_rounds=2,
+            ),
             _event("round.started", "2026-10-05T08:00:00Z", paused, round=1),
-            _event("station.started", "2026-10-05T08:05:00Z", paused, round=1, role="builder", agent="sak-builder", model="sonnet"),
+            _event(
+                "station.started",
+                "2026-10-05T08:05:00Z",
+                paused,
+                round=1,
+                role="builder",
+                agent="sak-builder",
+                model="sonnet",
+            ),
             _event("run.paused", "2026-10-05T08:30:00Z", paused, reason="API-Limit"),
         ],
     )
@@ -274,17 +381,82 @@ def build_fixture_repo(path: Path) -> Path:
         path,
         esc,
         [
-            _event("run.started", "2026-10-10T09:00:00Z", esc, kind="pipeline", base_branch="main", base_commit="a" * 40, max_rounds=2),
+            _event(
+                "run.started",
+                "2026-10-10T09:00:00Z",
+                esc,
+                kind="pipeline",
+                base_branch="main",
+                base_commit="a" * 40,
+                max_rounds=2,
+            ),
             _event("round.started", "2026-10-10T09:00:00Z", esc, round=1),
-            *_station(esc, "builder", "sak-builder", 1, "2026-10-10T09:01:00Z", "2026-10-10T09:20:00Z", 1140),
-            *_station(esc, "code_review", "sak-code-reviewer", 1, "2026-10-10T09:21:00Z", "2026-10-10T09:30:00Z", 540),
-            _event("verdict.recorded", "2026-10-10T09:31:00Z", esc, round=1, role="code_review", verdict="changes_requested", must_count=2, may_count=0),
+            *_station(
+                esc,
+                "builder",
+                "sak-builder",
+                1,
+                "2026-10-10T09:01:00Z",
+                "2026-10-10T09:20:00Z",
+                1140,
+            ),
+            *_station(
+                esc,
+                "code_review",
+                "sak-code-reviewer",
+                1,
+                "2026-10-10T09:21:00Z",
+                "2026-10-10T09:30:00Z",
+                540,
+            ),
+            _event(
+                "verdict.recorded",
+                "2026-10-10T09:31:00Z",
+                esc,
+                round=1,
+                role="code_review",
+                verdict="changes_requested",
+                must_count=2,
+                may_count=0,
+            ),
             _event("run.returned", "2026-10-10T09:32:00Z", esc, reason="Befunde beheben"),
             _event("round.started", "2026-10-10T09:32:00Z", esc, round=2),
-            *_station(esc, "builder", "sak-builder", 2, "2026-10-10T09:33:00Z", "2026-10-10T09:50:00Z", 1020),
-            *_station(esc, "code_review", "sak-code-reviewer", 2, "2026-10-10T09:51:00Z", "2026-10-10T10:00:00Z", 540),
-            _event("verdict.recorded", "2026-10-10T10:01:00Z", esc, round=2, role="code_review", verdict="changes_requested", must_count=1, may_count=0),
-            _event("run.escalated", "2026-10-10T10:30:00Z", esc, round=2, gate="round_limit", reason="Rundenlimit erreicht"),
+            *_station(
+                esc,
+                "builder",
+                "sak-builder",
+                2,
+                "2026-10-10T09:33:00Z",
+                "2026-10-10T09:50:00Z",
+                1020,
+            ),
+            *_station(
+                esc,
+                "code_review",
+                "sak-code-reviewer",
+                2,
+                "2026-10-10T09:51:00Z",
+                "2026-10-10T10:00:00Z",
+                540,
+            ),
+            _event(
+                "verdict.recorded",
+                "2026-10-10T10:01:00Z",
+                esc,
+                round=2,
+                role="code_review",
+                verdict="changes_requested",
+                must_count=1,
+                may_count=0,
+            ),
+            _event(
+                "run.escalated",
+                "2026-10-10T10:30:00Z",
+                esc,
+                round=2,
+                gate="round_limit",
+                reason="Rundenlimit erreicht",
+            ),
         ],
     )
     return path

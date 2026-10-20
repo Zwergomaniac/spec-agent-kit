@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any
 
 from spec_agent_kit import __version__
+from spec_agent_kit.board import BoardError
+from spec_agent_kit.board.build import build_board
+from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
 from spec_agent_kit.pipeline import RefusedError, UsageError
@@ -119,6 +122,29 @@ def _pipeline(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _board(args: argparse.Namespace) -> int:
+    """``sak board [--json|--text]`` (Spec 006 FR-007): validiert das Board vor der Ausgabe."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    try:
+        effective = load_config(root)
+    except NotInitializedError:
+        return _not_initialized()
+    except ConfigError as exc:
+        return _reject(exc.errors)
+    try:
+        # Lokal wird der Text der Commit-Betreffe immer angezeigt (Spec 006, Annahmen).
+        document = build_board(root, effective, share_text=True)
+    except BoardError as exc:
+        return _reject([{"path": exc.path, "message": exc.message}])
+    if args.text:
+        sys.stdout.write(render_text(document, str(effective.data["locale"])))
+    else:
+        _emit(document)
+    return EXIT_OK
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sak", description="Spec Agent Kit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -127,6 +153,10 @@ def _build_parser() -> argparse.ArgumentParser:
     config_sub = config.add_subparsers(dest="config_command", required=True)
     config_sub.add_parser("check", help="Prüft die Konfiguration (Schema, Agents, Frontmatter)")
     config_sub.add_parser("show", help="Gibt die wirksame Konfiguration als JSON aus")
+    board = sub.add_parser("board", help="Board-Dokument sak.board/1 (Spec 006)")
+    shape = board.add_mutually_exclusive_group()
+    shape.add_argument("--json", action="store_true", help="Board als JSON (Standard)")
+    shape.add_argument("--text", action="store_true", help="Kurzfassung, höchstens 40 Zeilen")
     add_parsers(sub)
     return parser
 
@@ -148,6 +178,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return EXIT_OK
     if args.command in {"run", "event"}:
         return _pipeline(args)
+    if args.command == "board":
+        return _board(args)
     if args.command == "version":
         sys.stdout.write(json.dumps({"version": __version__}, ensure_ascii=False) + "\n")
         return EXIT_OK

@@ -8,12 +8,16 @@
 
 ## Phase 2: US1 – Board-Ableitung
 
-- [ ] T002 `board/git_history.py` (Port).
-- [ ] T003 `board/specs.py` (FR-001, FR-002, FR-003 Spec-Teil).
-- [ ] T004 `board/runs_view.py` (FR-004, `escalation`- und `stale_run`-Einträge).
-- [ ] T005 `board/build.py` (FR-005 bis FR-007; `notes` bei Fehlern, nie abstürzen).
-- [ ] T006 CLI `sak board [--json|--text]`, `board/text.py`.
-- [ ] T007 Golden-File-Test und Einzeltests (Marker vor dem Task-Commit, unlesbare Datei, abgeschaltete Stationen, descoped, Betreiber-Task, Klärung im Code-Span ignoriert).
+- [X] T002 `board/git_history.py` (Port).
+- [X] T003 `board/specs.py` (FR-001, FR-002, FR-003 Spec-Teil).
+  - Anmerkung: `approval` entsteht nur bei Taskliste mit mindestens einer Task (0/0 hat nichts zum Freigeben, Spec 001 Randfälle). Eine offene Klärung unterdrückt `approval` derselben Spec und gibt `waiting: clarification` (wie in der Referenz, `elif`). Klärungsabschnitt = `## Clarifications` oder `## Klärung(en)`. Betreiber-Task-Gründe sind der Tasktext ohne die Kennzeichnung. Specs ohne `spec.md` (nur plan/tasks) bekommen die Station `null`.
+- [X] T004 `board/runs_view.py` (FR-004, `escalation`- und `stale_run`-Einträge).
+  - Anmerkung: Eine Eskalation bleibt offen, solange der Lauf `escalated` ist (auch `paused` aus `escalated`). Läufe ohne Event nutzen `updated_at` als `last_event_at`. Hook-lose Urteile (`verdict.recorded` ohne Station) ergänzen eine fertige Station mit dem Agent-Namen aus der Config.
+- [X] T005 `board/build.py` (FR-005 bis FR-007; `notes` bei Fehlern, nie abstürzen).
+  - Anmerkung: Ungültige Listeneinträge (z. B. Lauf mit unbekanntem Zustand aus einem anderen Kit-Stand) werden verworfen und als Hinweis gemeldet; jeder andere Verstoß ist ein `BoardError` mit Pfad (Exit 1). `metrics.blocked` ist in v1 immer 0 (Blocker kommen über Plugins). Es gibt höchstens 100 Marker im Dokument.
+- [X] T006 CLI `sak board [--json|--text]`, `board/text.py`.
+  - Anmerkung: `sak board` und `--text` zeigen den Commit-Betreff lokal immer (Spec Annahmen); der Push übernimmt `dashboard.share_commit_subjects`.
+- [X] T007 Golden-File-Test und Einzeltests (Marker vor dem Task-Commit, unlesbare Datei, abgeschaltete Stationen, descoped, Betreiber-Task, Klärung im Code-Span ignoriert).
 
 ## Phase 3: US2 – Lokale Ansicht
 
