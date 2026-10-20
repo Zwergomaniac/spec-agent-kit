@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E3, E5, Constitution III und IV, `docs/architecture-vision.md` (Template + Init-CLI, Skill als Bedienoberfläche). Audit-Befunde zum alten `init-project.mjs`: stilles Überschreiben, keine Validierung, `baseUrl`-Platzhalter bleibt stehen.
 

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E1, E7–E9, Constitution VI. Referenz-Implementierung:
 - `ImmoAgent/.specify/scripts/python/pipeline.py` (583 Zeilen, 40 Tests in `tests/unit/specify/test_pipeline.py`)

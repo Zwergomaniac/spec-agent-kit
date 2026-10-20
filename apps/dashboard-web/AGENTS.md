@@ -8,3 +8,6 @@ Default-Route ist Portfolio. Jede Kernansicht ist direkt verlinkbar (Hash-Router
 - Tailwind v4: Design-Tokens stehen in `src/index.css` (`:root` und `.dark`). Statusfarben: `success`, `warning`, `danger`, `info`.
 - Dev: `pnpm --filter @sak/dashboard-web dev` (Proxy auf die API unter `SAK_API_URL`, Default `http://localhost:3000`).
 - E2E: `pnpm --filter @sak/dashboard-web e2e` (siehe `e2e/`). Screenshots landen in `e2e/screenshots/` und werden nicht committet.
+- Routen: Contracts-Deep-Links (`#/portfolio`, `#/project/:key?tab=board|runs|attention|conflicts`, `#/run/:key/:runId`) plus die UI-Routen `#/login` (mit `?next=`) und `#/admin` in `src/router.ts`. Der Tab `conflicts` ist in v1 nur ein Hinweis, bis es Parallelbetrieb gibt.
+- Tests: `pnpm --filter @sak/dashboard-web test` (vitest). E2E braucht vorher `pnpm build` (Server auf Port 3100) und läuft nicht in der CI.
+- Warnungstexte des Portfolios (`idle`, `no_push_24h`) sind UI-Texte in `ProjectCard.tsx`, kein Vokabular (siehe `docs/follow-ups.md`).
