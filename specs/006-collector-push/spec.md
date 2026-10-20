@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E2. Referenz:
 - `ImmoAgent/.specify/scripts/python/dev_board.py` (790 Zeilen)

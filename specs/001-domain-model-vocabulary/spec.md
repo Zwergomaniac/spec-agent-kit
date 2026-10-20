@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: Beschreibung des Betreibers: „Ein gemeinsames Domänenmodell und Statusvokabular für Spec-Agent-Kit. Spec-Stationen, Lauf-Zustände und Urteile sind getrennte Ebenen. Maschinenwerte sind englisch, Labels per Locale (Default de). ImmoAgent wird per Zuordnungstabelle abgebildet. Der Weg zu parallelen Läufen bleibt offen.“ Grundlage: ADR 0001 (E1, E4, E8, E9), ImmoAgent Specs 092 und 093.
 
@@ -22,6 +22,11 @@ Ohne gemeinsame Begriffe driften Engine, Collector und Dashboard sofort auseinan
 
 - Q: Belegt ein `paused`-Lauf die Projekt-Sperre? → A: Nein. Pause gibt die Sperre frei, Fortsetzen nur bei freier Sperre, mehrere pausierte Läufe erlaubt (FR-013).
 - Q: Wird Arbeit der Hauptsitzung außerhalb der Pipeline modelliert? → A: In v1 nicht. Die Lauf-Art `manual` ist reserviert, das Feld Lauf-Art existiert ab v1 (FR-025).
+
+### Session 2026-10-20 (Umsetzung)
+
+- Nachtrag FR-011: Zusätzlich erlaubt ist `paused → escalated`. Ein aus `escalated` pausierter Lauf kehrt bei `resume` in den Zustand vor der Pause zurück (Spec 003, T003 und T012).
+- Vokabular-Ergänzungen (Spec 002, T005): Die Ebenen `diag_event_type` (`diag.hook`), `board_source` (`live`, `snapshot`) und `hook_phase` (`start`, `stop`) stehen im Vokabular, damit jedes Enum der Schemas dort geführt wird.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -161,7 +166,7 @@ Jeder Status-, Stations-, Urteils- und Ereigniswert aus ImmoAgent hat eine einde
   - `reviewing → building` (nächste Runde, nur wenn Runde < Rundenlimit) `| approved | escalated | reviewed | paused | aborted`
   - `approved → merged | escalated | aborted`
   - `escalated → approved | building` (Betreiber gibt mit Auftrag zurück) `| paused | aborted`
-  - `paused → building | reviewing` (Fortsetzen an der unterbrochenen Station) `| aborted`
+  - `paused → building | reviewing` (Fortsetzen an der unterbrochenen Station) `| escalated` (Rückkehr in den Zustand vor der Pause, wenn der Lauf aus `escalated` pausiert wurde) `| aborted`
 
   Endzustände haben keine Übergänge. Jeder Übergang MUSS als Ereignis protokolliert werden.
 - **FR-012**: „Inaktiv“ und „verwaist“ sind KEINE Zustände. Sie MÜSSEN aus dem Zeitpunkt des letzten Ereignisses eines aktiven Laufs berechnet werden:

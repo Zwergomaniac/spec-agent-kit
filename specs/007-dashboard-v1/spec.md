@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E10, Constitution II/IV, `docs/architecture-vision.md`, `docs/ui/dashboard-concept.md`. Die Board-Darstellung aus ImmoAgent 092 (Spalten je Station plus „Mensch prüft“, Kacheln, Agenten-Panel, Ticker) hat sich bewährt.
 

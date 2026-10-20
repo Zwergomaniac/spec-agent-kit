@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E1, E2 und Spec 001. Gesucht sind sprachneutrale, versionierte Verträge zwischen Engine/Collector (Python, im Zielprojekt) und Dashboard (TypeScript, VPS).
 

@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: ADR 0001 E6–E8, Constitution IV und VIII. ImmoAgent 093 `contracts/pipeline-config.md` (FR-010: „einzige Stelle für Projektspezifisches“).
 
