@@ -1,10 +1,31 @@
+# Snippet für die bestehende Compose-Datei auf dem VPS. Caddy (edge-caddy) läuft außerhalb dieses Repos.
+# Secrets stehen in der .env neben der Compose-Datei, nie im Repo. Der scrypt-Hash enthält kein "$".
 services:
   spec-agent-dashboard:
     image: spec-agent-dashboard:latest
     restart: unless-stopped
     environment:
-      PORT: 3000
-      SQLITE_PATH: /data/dashboard.sqlite
-      DASHBOARD_DEFAULT_VIEW: portfolio
+      SAK_ADMIN_PASSWORD_HASH: ${SAK_ADMIN_PASSWORD_HASH:?Hash fehlt}
+      SAK_SESSION_SECRET: ${SAK_SESSION_SECRET:?Secret fehlt}
+      SAK_DB_PATH: /data/dashboard.db
+      SAK_RETENTION_DAYS: ${SAK_RETENTION_DAYS:-30}
+      SAK_TRUST_PROXY: "true"
     volumes:
       - spec-agent-dashboard-data:/data
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  spec-agent-dashboard-data:
+
+networks:
+  edge:
+    # Externes Netz von edge-caddy; der Name ist per Variable einstellbar.
+    external: true
+    name: ${SAK_EDGE_NETWORK:-edge}
