@@ -23,7 +23,7 @@ const camel = (s) => {
 const HEADER = '// GENERIERT von scripts/gen-zod.mjs aus schema/. Nicht von Hand ändern.\n'
 
 // ---------- Zod ----------
-const FILES = ['common', 'event', 'board', 'ingest', 'config']
+const FILES = ['common', 'event', 'board', 'ingest', 'config', 'lock']
 const schemas = Object.fromEntries(FILES.map((f) => [f, readJson(`${f}.schema.json`)]))
 
 /** Bezeichner der Konstante für ein Def (common: ohne Präfix) oder das Top-Level-Schema. */
@@ -114,7 +114,8 @@ const TYPE_NAMES = {
   ingestRequestSchema: 'IngestRequest',
   ingestResultSchema: 'IngestResult',
   ingestSchema: 'IngestDocument',
-  configSchema: 'SakConfig'
+  configSchema: 'SakConfig',
+  lockSchema: 'SakLock'
 }
 zodSource += '\n'
 for (const [schemaName, typeName] of Object.entries(TYPE_NAMES)) {

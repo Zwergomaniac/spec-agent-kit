@@ -4,10 +4,10 @@
 
 ## Phase 1: Grundlagen
 
-- [ ] T001 `lock.schema.json` mit Beispielen, Generierung und Tests (Contracts-Workflow wie Spec 002).
-- [ ] T002 `install/kit.py`, `install/lock.py`, `install/speckit.py`.
-- [ ] T003 `templates/spec-agent/gitignore`.
-- [ ] T004 Fixture-Ziel-Repo-Generator in `tests/install/conftest.py`.
+- [X] T001 `lock.schema.json` mit Beispielen, Generierung und Tests (Contracts-Workflow wie Spec 002).
+- [X] T002 `install/kit.py`, `install/lock.py`, `install/speckit.py`.
+- [X] T003 `templates/spec-agent/gitignore`.
+- [X] T004 Fixture-Ziel-Repo-Generator in `tests/install/conftest.py`.
 
 ## Phase 2: US1 – Init
 

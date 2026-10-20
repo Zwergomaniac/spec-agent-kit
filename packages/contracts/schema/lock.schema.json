@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/lock.schema.json",
+  "title": "sak.lock/1",
+  "$comment": "Lockfile .spec-agent/lock.json (Spec 005 FR-004). Es verzeichnet alle vom Kit verwalteten Dateien mit SHA-256 (Zeilenenden auf LF normalisiert), ohne config.yml und ohne das Lockfile selbst.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "sak.lock/1"
+    },
+    "kit_version": {
+      "$ref": "#/$defs/version"
+    },
+    "installed_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "upgraded_at": {
+      "anyOf": [
+        {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/sha256"
+      },
+      "description": "Relativer POSIX-Pfad im Zielprojekt -> SHA-256."
+    },
+    "settings_fragment_hash": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "required": [
+    "schema",
+    "kit_version",
+    "installed_at",
+    "upgraded_at",
+    "files",
+    "settings_fragment_hash"
+  ],
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+[.][0-9]+[.][0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}
