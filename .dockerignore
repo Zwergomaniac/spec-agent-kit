@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+.git
+.local
+**/e2e/screenshots
+**/e2e/.tmp
+.venv
+.claude

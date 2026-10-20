@@ -19,7 +19,9 @@ ENV NODE_ENV=production \
 WORKDIR /app
 # Nur das native Modul bleibt extern (vom Bundle ausgenommen). Version passt zum Lockfile.
 ARG BETTER_SQLITE3_VERSION=13.0.3
-RUN npm install --omit=dev --no-audit --no-fund --no-package-lock --prefix /app better-sqlite3@${BETTER_SQLITE3_VERSION} \
+# "type": "module" vorab setzen: das Bundle ist ESM, sonst warnt Node (MODULE_TYPELESS_PACKAGE_JSON).
+RUN echo '{"name":"spec-agent-dashboard-runtime","private":true,"type":"module"}' > /app/package.json \
+    && npm install --omit=dev --no-audit --no-fund --no-package-lock --prefix /app better-sqlite3@${BETTER_SQLITE3_VERSION} \
     && npm cache clean --force
 COPY --from=build /repo/apps/dashboard-api/dist apps/dashboard-api/dist
 COPY --from=build /repo/apps/dashboard-web/dist apps/dashboard-web/dist

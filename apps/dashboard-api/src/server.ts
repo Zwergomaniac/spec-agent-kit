@@ -31,8 +31,8 @@ function main(): void {
   const stopRetention = startRetention(db, env.retentionDays)
   const app = createApp({ db, env: { ...env, webDist }, now: Date.now })
 
-  const server = serve({ fetch: app.fetch, port: env.port }, (info) => {
-    console.log(`dashboard listening on :${info.port} (ui: ${webDist ?? 'nicht gefunden'})`)
+  const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
+    console.log(`dashboard listening on ${info.address}:${info.port} (ui: ${webDist ?? 'nicht gefunden'})`)
   })
 
   const shutdown = (): void => {
