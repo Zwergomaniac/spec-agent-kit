@@ -57,10 +57,14 @@
 
 ## Phase 6: Vorlagen
 
-- [ ] T020 `templates/claude/agents/sak-builder.md`, `sak-code-reviewer.md`, `sak-ui-reviewer.md` nach den Generalisierungsregeln in plan.md.
-- [ ] T021 [P] `sak-security-reviewer.md` und `sak-docs.md`.
-- [ ] T022 `templates/claude/skills/sak-pipeline/SKILL.md` (Orchestrator, Spec FR-014), inklusive Ablaufschritten mit konkreten `sak`-Befehlen, Pause bei Unterbrechung, Deploy-Regel und Commit-Markern.
-- [ ] T023 `templates/claude/settings.fragment.json` (Spec FR-015).
+- [X] T020 `templates/claude/agents/sak-builder.md`, `sak-code-reviewer.md`, `sak-ui-reviewer.md` nach den Generalisierungsregeln in plan.md.
+  - Anmerkung: Quellen: die drei ImmoAgent-Agents. Prüfaspekte (Spec-Treue, Tests, Sicherheit, Migrationen, geschützte Pfade; Überlauf, Breite, Tap-Ziele, Konsole, Screenshots) und das Berichtsformat bleiben; Projektwerte sind durch `SAK config show` (`commands.*`, `ui.*`, `review.rules`, `escalation.*`) ersetzt, `SAK` steht für `uv run --project .spec-agent/engine sak`. Die Abschnitte `## Befunde` und `## Geprüft` sind unverändert. Die Frontmatter-Werte (model, effort) entsprechen den Config-Defaults; `test_templates.py` prüft das und lässt `sak config check` mit den unveränderten Vorlagen laufen.
+- [X] T021 [P] `sak-security-reviewer.md` und `sak-docs.md`.
+  - Anmerkung: Beide Vorlagen sind standardmäßig inaktiv (Config-Default). Der Doku-Agent hat wie der Builder keine `tools`-Zeile. Lesart zur Reihenfolge: `docs` ist eine bauende Rolle und läuft im Skill nach dem Builder und vor den Prüfern, sequentiell.
+- [X] T022 `templates/claude/skills/sak-pipeline/SKILL.md` (Orchestrator, Spec FR-014), inklusive Ablaufschritten mit konkreten `sak`-Befehlen, Pause bei Unterbrechung, Deploy-Regel und Commit-Markern.
+  - Anmerkung: Der Skill verwendet nur `SAK`-Befehle, die es gibt (`test_templates.py` gleicht sie mit dem Parser ab), und nennt keine Rollen-, Agent- oder Befehlswerte eines Projekts. Zusätzlich zur Spec: Aufrufoptionen `--return`, `--pause`, `--resume` und der Weg für die Nur-Prüfung.
+- [X] T023 `templates/claude/settings.fragment.json` (Spec FR-015).
+  - Anmerkung: `permissions.allow` enthält `sak *` und `git status|diff|log|switch|merge` (jeweils mit und ohne Argumente); die Testbefehle des Projekts ergänzt Spec 005 beim Init. `deny` sperrt `git push`, `.env*` und `.spec-agent/dashboard.key` für Read und Edit (Edit umfasst das Schreiben). Kein `defaultMode`.
 
 ## Phase 7: Abschluss
 
