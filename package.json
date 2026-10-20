@@ -12,7 +12,6 @@
     "lint": "pnpm -r lint && uv run --project packages/engine ruff check packages/engine",
     "test": "pnpm -r test && uv run --project packages/engine pytest",
     "contracts:gen": "pnpm --filter @sak/contracts run gen",
-    "contracts:check": "pnpm --filter @sak/contracts run check",
-    "init-project": "node scripts/init-project.mjs"
+    "contracts:check": "pnpm --filter @sak/contracts run check"
   }
 }

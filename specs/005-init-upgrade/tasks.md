@@ -27,8 +27,8 @@
 
 ## Phase 5: US3 – Skill und Aufräumen
 
-- [ ] T012 `.claude/skills/sak-init/SKILL.md` im Kit-Repo: Fragen, Plan zeigen, nach Bestätigung `--apply`, doctor, nächste Schritte (Commit-Vorschlag, Dashboard-Projekt anlegen, Schlüssel in `.spec-agent/dashboard.key` oder Env).
-- [ ] T013 Altes Gerüst entfernen (FR-010). `packages/agent-blueprint/AGENTS.md` neu schreiben.
+- [X] T012 `.claude/skills/sak-init/SKILL.md` im Kit-Repo: Fragen, Plan zeigen, nach Bestätigung `--apply`, doctor, nächste Schritte (Commit-Vorschlag, Dashboard-Projekt anlegen, Schlüssel in `.spec-agent/dashboard.key` oder Env).
+- [X] T013 Altes Gerüst entfernen (FR-010). `packages/agent-blueprint/AGENTS.md` neu schreiben.
 
 ## Phase 6: Abschluss
 
