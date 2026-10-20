@@ -68,4 +68,5 @@
 
 ## Phase 7: Abschluss
 
-- [ ] T024 Alles grün. README-Statusmatrix: Pipeline-Engine und Rollen-Definitionen → implementiert (Vorlagen; Installation folgt mit Spec 005).
+- [X] T024 Alles grün. README-Statusmatrix: Pipeline-Engine und Rollen-Definitionen → implementiert (Vorlagen; Installation folgt mit Spec 005).
+  - Anmerkung: Ergebnisse siehe Abschlussbericht: pytest, ruff check, pnpm -r test und pnpm contracts:check sind grün. Die README-Statusmatrix nennt Pipeline-Engine und Rollen-Definitionen als implementiert (Vorlagen; Installation folgt mit Spec 005).
