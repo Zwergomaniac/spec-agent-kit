@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-agent-kit.local/schema/v1/config.schema.json",
+  "title": "sak.config/1",
+  "$comment": "Projektkonfiguration .spec-agent/config.yml (Spec 004). YAML wird mit safe_load gelesen und als JSON-Dokument gegen dieses Schema geprüft. Defaults und der Kern-Schutz stehen in der Engine (spec_agent_kit.config), nicht hier. effort und dashboard.push sind bewusst als Konstanten-Alternativen (anyOf) modelliert: sie gehören nicht zum Statusvokabular (Spec 001). Die Rollenschlüssel unter pipeline.roles sind ausgeschrieben (damit Zod sie abbildet) und müssen der Ebene role des Vokabulars entsprechen; ein Test erzwingt das.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "sak.config/1"
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "name": {
+          "$ref": "common.schema.json#/$defs/name"
+        },
+        "base_branch": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "key",
+        "name"
+      ]
+    },
+    "locale": {
+      "const": "de"
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_rounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "idle_minutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "stale_hours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "branch_pattern": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "roles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "builder": {
+              "$ref": "#/$defs/roleConfig"
+            },
+            "code_review": {
+              "$ref": "#/$defs/roleConfig"
+            },
+            "ui_review": {
+              "$ref": "#/$defs/roleConfig"
+            },
+            "security_review": {
+              "$ref": "#/$defs/roleConfig"
+            },
+            "docs": {
+              "$ref": "#/$defs/roleConfig"
+            },
+            "integrator": {
+              "$ref": "#/$defs/integratorConfig"
+            }
+          }
+        }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deployed": {
+          "type": "boolean"
+        },
+        "verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test_fast": {
+          "$ref": "#/$defs/stringList"
+        },
+        "test_full": {
+          "$ref": "#/$defs/stringList"
+        },
+        "lint": {
+          "$ref": "#/$defs/stringList"
+        },
+        "environment_failures": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "base_url": {
+          "type": "string",
+          "pattern": "^https?://[^ ]+$"
+        },
+        "paths": {
+          "$ref": "#/$defs/stringList"
+        },
+        "viewports": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "checks": {
+          "$ref": "#/$defs/stringList"
+        },
+        "regression_tests": {
+          "$ref": "#/$defs/stringList"
+        }
+      },
+      "required": [
+        "command",
+        "base_url"
+      ]
+    },
+    "guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protected_paths": {
+          "$ref": "#/$defs/stringList"
+        },
+        "clean_ignore": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "$ref": "#/$defs/stringList"
+        },
+        "topics": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "orchestrator_only": {
+      "$ref": "#/$defs/stringList"
+    },
+    "deploy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "dashboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^https?://[^ ]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "token_env": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        "push": {
+          "anyOf": [
+            {
+              "const": "auto"
+            },
+            {
+              "const": "manual"
+            },
+            {
+              "const": "off"
+            }
+          ]
+        },
+        "share_commit_subjects": {
+          "type": "boolean"
+        }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      },
+      "maxItems": 0,
+      "description": "In v1 nur reserviert; muss leer sein."
+    }
+  },
+  "required": [
+    "schema",
+    "project"
+  ],
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "roleConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "agent": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "Dateiname unter .claude/agents/ ohne .md."
+        },
+        "model": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "effort": {
+          "anyOf": [
+            {
+              "const": "low"
+            },
+            {
+              "const": "medium"
+            },
+            {
+              "const": "high"
+            }
+          ]
+        }
+      }
+    },
+    "integratorConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": false
+        },
+        "agent": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "Dateiname unter .claude/agents/ ohne .md."
+        },
+        "model": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "effort": {
+          "anyOf": [
+            {
+              "const": "low"
+            },
+            {
+              "const": "medium"
+            },
+            {
+              "const": "high"
+            }
+          ]
+        }
+      },
+      "description": "Der Integrator ist in v1 nicht aktivierbar (Spec 004 FR-002)."
+    }
+  }
+}

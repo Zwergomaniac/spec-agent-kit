@@ -9,8 +9,8 @@ export const schemaDir = path.resolve(here, '..', 'schema')
 export const examplesDir = path.resolve(here, '..', 'examples')
 export const SCHEMA_ID_BASE = 'https://spec-agent-kit.local/schema/v1/'
 
-export const SCHEMA_FILES = ['common', 'event', 'board', 'ingest'] as const
-export type SchemaName = 'event' | 'board' | 'ingest'
+export const SCHEMA_FILES = ['common', 'event', 'board', 'ingest', 'config'] as const
+export type SchemaName = 'event' | 'board' | 'ingest' | 'config'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function readJson(file: string): any {

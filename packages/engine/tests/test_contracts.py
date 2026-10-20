@@ -22,6 +22,7 @@ VALIDATORS: dict[str, Callable[[Any], list[str]]] = {
     "event": contracts.validate_event,
     "board": contracts.validate_board,
     "ingest": contracts.validate_ingest,
+    "config": contracts.validate_config,
 }
 
 
@@ -107,7 +108,7 @@ def test_enums_in_schemas_match_vocabulary() -> None:
         return found
 
     seen = 0
-    for name in ("common", "event", "board", "ingest"):
+    for name in ("common", "event", "board", "ingest", "config"):
         for node in walk(contracts.load_schema(name)):
             seen += 1
             values = vocab[node["x-vocab"]]

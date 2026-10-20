@@ -4,7 +4,8 @@
 
 ## Phase 1: Contract
 
-- [ ] T001 `packages/contracts/schema/config.schema.json` gemäß Spec FR-002, sowie das Vokabular für den Rollen-Abgleich. Zusätzlich ein gültiges und mehrere ungültige Beispiele (JSON) unter `packages/contracts/examples/`. `pnpm contracts:gen`; die Tests in TS und Python decken das neue Schema ab.
+- [X] T001 `packages/contracts/schema/config.schema.json` gemäß Spec FR-002, sowie das Vokabular für den Rollen-Abgleich. Zusätzlich ein gültiges und mehrere ungültige Beispiele (JSON) unter `packages/contracts/examples/`. `pnpm contracts:gen`; die Tests in TS und Python decken das neue Schema ab.
+  - Anmerkung: Der Plan nennt `propertyNames` für die Rollen. Der Zod-Generator bildet `propertyNames` und `allOf` nicht ab (Zod würde unbekannte Rollen und einen aktiven Integrator akzeptieren). Deshalb sind die sechs Rollen unter `pipeline.roles` ausgeschrieben (`additionalProperties: false`, Integrator mit `enabled: const false`), und ein Test erzwingt die Übereinstimmung mit der Vokabular-Ebene `role`. `effort` und `dashboard.push` sind `anyOf` von Konstanten, weil sie nicht zum Vokabular gehören (Enums verlangen `x-vocab`). Beispiele liegen als `config-*.json` unter `examples/valid` und `examples/invalid`.
 
 ## Phase 2: US1/US3 – Laden und wirksame Config
 
