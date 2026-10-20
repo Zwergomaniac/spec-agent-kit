@@ -28,15 +28,15 @@ Dieses Repo ist absichtlich ein **Mixed Repo**. Blueprint und Dashboard werden g
 | --- | --- | --- |
 | Pipeline-Engine (Stationen, Urteile, Gates) | Konzept | — (Quelle: ImmoAgent Spec 093) |
 | Rollen-/Agent-Definitionen | Konzept | — |
-| Contracts (Event-/Board-Vertrag, Statusvokabular) | Konzept (nur EventEnvelope-Typ + Deep-Link-Helfer vorhanden) | packages/contracts |
+| Contracts (Event-/Board-Vertrag, Statusvokabular) | implementiert (JSON Schema, Vokabular, Labels, generierte Zod-Typen, Python-Validierung, Deep-Link-Helfer; Specs 001 und 002) | packages/contracts, packages/engine/src/spec_agent_kit/contracts.py |
 | Init-Skript | Mock (kopiert 5 Template-Dateien, ohne Validierung/Überschreibschutz) | scripts/init-project.mjs |
 | Upgrade-CLI | Konzept | — |
 | Agent-Skill spec-agent-init | Konzept | packages/agent-blueprint/templates/root/.claude/skills |
 | Collector / Ingest | Konzept | — |
 | Dashboard-API | Mock (feste Beispieldaten, ungeschützter In-Memory-Ingest, kein Server-Start) | apps/dashboard-api |
-| Dashboard-Web | Konzept (nur Routen-Konstanten) | apps/dashboard-web |
+| Dashboard-Web | Konzept (Deep-Link-Helfer liegen in @sak/contracts) | apps/dashboard-web |
 | Deployment (Container) | Konzept (kein Dockerfile) | deploy/dashboard |
-| Tests / CI | fehlt | — |
+| Tests / CI | teilweise (Tests für Contracts und Engine-Gerüst in TS und Python; CI-Workflow vorhanden, noch nicht auf einem Remote gelaufen) | .github/workflows/ci.yml |
 
 ## Dokumente
 

@@ -1,0 +1,3 @@
+# Wurzel-Konfiguration: Upstream-Dateien von spec-kit werden nicht geprüft.
+# packages/engine hat eine eigene Konfiguration (pyproject.toml), die dort Vorrang hat.
+extend-exclude = [".specify", ".claude"]
