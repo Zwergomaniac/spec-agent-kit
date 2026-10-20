@@ -10,7 +10,7 @@
 ## Phase 2: US1/US3 – Laden und wirksame Config
 
 - [X] T002 `spec_agent_kit/config/defaults.py` und `__init__.py`: `load_config`, Mischregeln, `CORE_PROTECTED` und `CORE_CLEAN_IGNORE` (Spec FR-003).
-  - Anmerkung: Defaults: Rollen  (zum Beispiel ); Modelle builder sonnet, code_review opus, ui_review sonnet, security_review opus, docs sonnet (aus der ImmoAgent-Besetzung abgeleitet), effort .  hat als Default eine leere Liste (die Spec nennt nur Beispiele); die Vorlage trägt  und  ein. Neben `load_config` gibt es `read_raw`, `schema_errors`, `build_effective` und `read_dashboard_key` (FR-006).
+  - Anmerkung: Defaults: Rollen heißen `sak-<rolle mit Bindestrich>` (zum Beispiel `sak-code-review`); Modelle: builder sonnet, code_review opus, ui_review sonnet, security_review opus, docs sonnet (aus der ImmoAgent-Besetzung abgeleitet), effort `medium`. `orchestrator_only` hat als Default eine leere Liste (die Spec nennt nur Beispiele); die Vorlage trägt `deploy` und `ssh` ein. Neben `load_config` gibt es `read_raw`, `schema_errors`, `build_effective` und `read_dashboard_key` (FR-006).
 - [X] T003 `find_root()` in `cli.py`. Fehlende Config → Exit 1 mit „nicht initialisiert“ (außer `version` und, später, `init`).
   - Anmerkung: Ohne Projektwurzel oder ohne Config antworten alle Befehle außer `version` mit JSON `ok: false` und Exit 1. `init` existiert erst mit Spec 005.
 - [X] T004 `sak config show`.
@@ -18,8 +18,10 @@
 
 ## Phase 3: US2 – Prüfung
 
-- [ ] T005 `config/check.py` mit allen Prüfungen aus FR-004 inklusive Frontmatter-Vergleich und Tippfehler-Vorschlag.
-- [ ] T006 `sak config check`.
+- [X] T005 `config/check.py` mit allen Prüfungen aus FR-004 inklusive Frontmatter-Vergleich und Tippfehler-Vorschlag.
+  - Anmerkung: Fehlt im Agent-Frontmatter `model` oder `effort`, ist das eine Warnung, kein Fehler (nur echte Abweichungen lehnen ab). Weitere Prüfungen über FR-004 hinaus: `pipeline.branch_pattern` muss `{spec}` enthalten (Fehler), ein `ui`-Block bei inaktivem `ui_review` wird als Warnung gemeldet. Die Prüfungen nach dem Schema laufen nur bei schemagültiger Config. Als vorhanden gilt ein Basis-Branch lokal oder unter `origin/`.
+- [X] T006 `sak config check`.
+  - Anmerkung: Exit 1 bei Fehlern oder fehlender Config (Ausgabe `{ok:false, errors, warnings}`), sonst 0.
 
 ## Phase 4: Vorlagen
 
