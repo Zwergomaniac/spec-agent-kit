@@ -2,11 +2,27 @@
 
 from __future__ import annotations
 
+from datetime import datetime, tzinfo
 from typing import Any, Final
 
 from spec_agent_kit import contracts
+from spec_agent_kit.board.specs import is_finished
 
 TEXT_LINE_LIMIT: Final[int] = 40
+
+
+def local_stamp(value: str, tz: tzinfo | None = None) -> str:
+    """Zeitpunkt in lokaler Zeit mit Zone, zum Beispiel ``2026-10-21 14:03 UTC+02:00``.
+
+    ``tz=None`` nimmt die Zeitzone des Rechners. Ein unlesbarer Wert kommt unverändert zurück.
+    """
+    try:
+        moment = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(tz)
+    except ValueError:
+        return value
+    offset = moment.strftime("%z")
+    zone = "UTC" if offset in {"", "+0000"} else f"UTC{offset[:3]}:{offset[3:]}"
+    return f"{moment:%Y-%m-%d %H:%M} {zone}"
 
 
 def _label(level: str, value: str | None, locale: str) -> str:
@@ -48,13 +64,15 @@ def _run_lines(run: dict[str, Any], locale: str) -> list[str]:
     return lines
 
 
-def render_text(document: dict[str, Any], locale: str = "de") -> str:
-    """Terminal-Text aus einem Board-Dokument, höchstens ``TEXT_LINE_LIMIT`` Zeilen."""
+def render_text(document: dict[str, Any], locale: str = "de", tz: tzinfo | None = None) -> str:
+    """Terminal-Text aus einem Board-Dokument, höchstens ``TEXT_LINE_LIMIT`` Zeilen.
+
+    Zeiten erscheinen in lokaler Zeit mit Zone (``tz``; ohne Angabe die des Rechners).
+    """
     metrics = document["metrics"]
     mean = metrics["mean_lead_time_days"]
     head = [
-        f"Board {document['project']['name']} · Stand "
-        f"{document['generated_at'][:16].replace('T', ' ')}",
+        f"Board {document['project']['name']} · Stand {local_stamp(document['generated_at'], tz)}",
         f"In Arbeit {metrics['in_progress']} · Fertig {metrics['done']} · "
         f"Blockiert {metrics['blocked']} · Wartet {metrics['waiting']} · "
         f"Ø Durchlauf {'-' if mean is None else f'{mean} Tage'}",
@@ -65,14 +83,18 @@ def render_text(document: dict[str, Any], locale: str = "de") -> str:
     ]
     working = [
         f"  {s['dir']} · {_label('stage', s['stage'], locale)} · "
-        f"{s['tasks']['done']}/{s['tasks']['done'] + s['tasks']['open']}"
+        f"{s['tasks']['done']}/{sum(s['tasks'].values())}"
         for s in document["specs"]
         if s["stage"] == "implementing"
+        or (
+            s["stage"] in {"implemented", "deployed", "verified"}
+            and not is_finished(s["stage"], s["tasks"]["open"], s["tasks"].get("partial", 0))
+        )
     ]
     finished = [
         f"  {s['dir']} · {_label('stage', s['stage'], locale)}"
         for s in document["specs"]
-        if s["stage"] in {"implemented", "deployed", "verified"}
+        if is_finished(s["stage"], s["tasks"]["open"], s["tasks"].get("partial", 0))
     ][:5]
     sections: list[tuple[str, list[str]]] = [
         (f"Wartet auf dich ({len(waiting)}):", waiting),

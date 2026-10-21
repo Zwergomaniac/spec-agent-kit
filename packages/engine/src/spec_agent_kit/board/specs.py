@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 
 from spec_agent_kit.board.git_history import GitHistory, parse_ts
 from spec_agent_kit.pipeline.events import clip
@@ -19,8 +19,9 @@ TITLE_MAX: Final[int] = 200
 _TITLE_PREFIX = re.compile(
     r"^(?:Feature Specification|Spec(?:ification)?)\s*(?:\d+)?\s*[:—-]\s*", re.I
 )
-_TASK_LINE = re.compile(r"^\s*[-*]\s+\[( |x|X)\]\s*(.*)$")
-_FENCE = re.compile(r"^\s*(```|~~~)")
+_TASK_LINE = re.compile(r"^\s*(?:[-*+]|[0-9]{1,9}[.)])\s+\[( |x|X|~)\]\s*(.*)$")
+_BULLET = re.compile(r"^\s*(?:[-*+]|[0-9]{1,9}[.)])\s")
+_FENCE = re.compile(r"^( {0,3})(`{3,}|~{3,})")
 _CODE_BLOCK = re.compile(r"(```|~~~).*?(\1|\Z)", re.S)
 _CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)+?\1", re.S)
 _NEEDS_CLARIFICATION = re.compile(r"\[NEEDS CLARIFICATION:")
@@ -28,6 +29,29 @@ _CLARIFICATIONS = re.compile(r"^##\s+(?:Clarifications?|Klärung(?:en)?)\b", re.
 _DESCOPED = re.compile(r"^\s*\*\*Status\*\*\s*:\s*descoped\b", re.I | re.M)
 _OPERATOR = re.compile(r"\[operator\]|\*\*\[Betreiber\]\*\*", re.I)
 DONE_STAGES: Final[frozenset[str]] = frozenset({"implemented", "deployed", "verified"})
+
+
+class TaskCounts(NamedTuple):
+    """Ergebnis von ``count_tasks``: Zähler und Texte offener Betreiber-Tasks."""
+
+    done: int
+    partial: int
+    open: int
+    operator: list[str]
+
+
+def is_finished(stage: str | None, open_: int, partial: int) -> bool:
+    """„Fertig“ für die Kennzahlen: Station ab ``implemented`` UND keine offene/teilweise Task.
+
+    Die Station bleibt ein Fakt (zum Beispiel ``deployed``); mit Resttasks gilt die Spec als in
+    Arbeit (Spec 010, Clarifications).
+    """
+    return stage in DONE_STAGES and open_ == 0 and partial == 0
+
+
+def is_in_progress(stage: str | None, open_: int, partial: int) -> bool:
+    """„In Arbeit“: Station ``implementing``, oder fertige Station mit Resttasks."""
+    return stage == "implementing" or (stage in DONE_STAGES and (open_ > 0 or partial > 0))
 
 
 @dataclass
@@ -45,6 +69,16 @@ class SpecInfo:
     updated_at: str | None
     lead_time_days: float | None
     attention: list[dict[str, str]] = field(default_factory=list)
+    partial: int = 0
+    blocked: bool = False
+
+    @property
+    def finished(self) -> bool:
+        return is_finished(self.stage, self.open, self.partial)
+
+    @property
+    def in_progress(self) -> bool:
+        return is_in_progress(self.stage, self.open, self.partial)
 
     def to_board(self) -> dict[str, Any]:
         item: dict[str, Any] = {
@@ -53,10 +87,12 @@ class SpecInfo:
             "title": self.title,
             "stage": self.stage,
             "descoped": self.descoped,
-            "blocked": False,
+            "blocked": self.blocked,
             "waiting": self.waiting,
             "tasks": {"done": self.done, "open": self.open},
         }
+        if self.partial:
+            item["tasks"]["partial"] = self.partial
         for key in ("started_at", "finished_at", "updated_at", "lead_time_days"):
             value = getattr(self, key)
             if value is not None:
@@ -79,28 +115,80 @@ def is_descoped(spec_text: str) -> bool:
     return _DESCOPED.search(head) is not None
 
 
-def count_tasks(tasks_text: str) -> tuple[int, int, list[str]]:
-    """``(erledigt, offen, Texte offener Betreiber-Tasks)`` aus ``tasks.md``."""
-    done = open_ = 0
+def _split_code_spans(text: str) -> list[tuple[str, bool]]:
+    """Zerlegt ``text`` in ``(Teil, ist_code_span)``; die Teile ergeben zusammen wieder ``text``."""
+    parts: list[tuple[str, bool]] = []
+    position = 0
+    for match in _CODE_SPAN.finditer(text):
+        if match.start() > position:
+            parts.append((text[position : match.start()], False))
+        parts.append((match.group(0), True))
+        position = match.end()
+    if position < len(text):
+        parts.append((text[position:], False))
+    return parts
+
+
+def has_operator_marker(text: str) -> bool:
+    """Betreiber-Marker außerhalb von Code-Spans."""
+    return any(_OPERATOR.search(part) for part, code in _split_code_spans(text) if not code)
+
+
+def remove_operator_marker(text: str) -> str:
+    """Entfernt den Marker außerhalb von Code-Spans; Code-Spans bleiben im Text erhalten."""
+    joined = "".join(
+        part if code else _OPERATOR.sub("", part) for part, code in _split_code_spans(text)
+    )
+    return " ".join(joined.split())
+
+
+def count_tasks(tasks_text: str) -> TaskCounts:
+    """Zählt Tasks in ``tasks.md`` nach den Board-Ableitungsregeln (Spec 010 FR-007).
+
+    Task-Zeile: Aufzählung (``-``, ``*``, ``+``, nummeriert; auch eingerückt) mit Checkbox
+    ``[ ]``, ``[x]``, ``[X]`` oder ``[~]``. Ein Codeblock beginnt nur mit einem Fence am
+    Zeilenanfang (höchstens 3 Leerzeichen Einrückung), der nicht zu einer Aufzählung gehört; Zeilen
+    in Codeblöcken zählen nicht.
+    """
+    done = partial = open_ = 0
     operator: list[str] = []
-    in_fence = False
+    fence: str | None = None  # Zeichen und Länge des öffnenden Fence
+    in_list = False
     for line in tasks_text.splitlines():
-        if _FENCE.match(line):
-            in_fence = not in_fence
+        fence_match = _FENCE.match(line)
+        if fence is not None:
+            closes = (
+                fence_match is not None
+                and fence_match.group(2)[0] == fence[0]
+                and len(fence_match.group(2)) >= len(fence)
+                and not line[fence_match.end() :].strip()
+            )
+            if closes:
+                fence = None
             continue
-        if in_fence:
+        if fence_match and not (in_list and fence_match.group(1)):
+            fence = fence_match.group(2)
+            in_list = False
             continue
+        stripped = line.strip()
+        if _BULLET.match(line):
+            in_list = True
+        elif stripped and line == line.lstrip():
+            in_list = False  # unabgesetzte Zeile ohne Aufzählung beendet die Aufzählung
         match = _TASK_LINE.match(line)
         if not match:
             continue
-        if match.group(1) == " ":
+        mark, text = match.group(1), match.group(2)
+        if mark == " ":
             open_ += 1
-            if _OPERATOR.search(match.group(2)):
-                text = " ".join(_OPERATOR.sub("", match.group(2)).split())
-                operator.append(text or match.group(2).strip())
+            if has_operator_marker(text):
+                shown = remove_operator_marker(text)
+                operator.append(shown or text.strip())
+        elif mark == "~":
+            partial += 1
         else:
             done += 1
-    return done, open_, operator
+    return TaskCounts(done, partial, open_, operator)
 
 
 def title_of(spec_text: str, directory: str) -> str:
@@ -134,6 +222,7 @@ def station(
     done: int,
     open_: int,
     descoped: bool,
+    partial: int = 0,
     deploy: tuple[str, int] | None,
     verified: tuple[str, int] | None,
     last_tasks: tuple[str, int] | None,
@@ -141,8 +230,9 @@ def station(
 ) -> str | None:
     """Spec-Station nach Spec 001 FR-006: die höchste zutreffende Bedingung gewinnt.
 
-    Ein Deploy-Marker zählt nur, wenn er nach (oder mit) dem letzten Commit an ``tasks.md`` liegt.
-    Abgeschaltete Stationen (``stages``) werden nie vergeben.
+    ``[~]``-Tasks (``partial``) zählen als begonnen, aber nicht als erledigt: Mit ihnen ist die
+    Umsetzung nicht fertig. Ein Deploy-Marker zählt nur, wenn er nach (oder mit) dem letzten Commit
+    an ``tasks.md`` liegt. Abgeschaltete Stationen (``stages``) werden nie vergeben.
     """
     if descoped or not has_spec:
         return None
@@ -151,9 +241,9 @@ def station(
     deploy_counts = deploy is not None and (last_tasks is None or deploy[1] >= last_tasks[1])
     if stages.get("deployed", True) and deploy_counts:
         return "deployed"
-    if has_tasks and done > 0 and open_ == 0:
+    if has_tasks and done > 0 and open_ == 0 and partial == 0:
         return "implemented"
-    if has_tasks and done > 0:
+    if has_tasks and done + partial > 0:
         return "implementing"
     if has_tasks:
         return "tasked"
@@ -189,8 +279,13 @@ def scan_specs(
     stages: dict[str, bool],
     started_specs: set[str],
     notes: list[str],
+    extra_descoped: frozenset[str] = frozenset(),
 ) -> list[SpecInfo]:
-    """Alle Specs, neueste zuerst. ``started_specs``: Specs, für die je ein Lauf existierte."""
+    """Alle Specs, neueste zuerst. ``started_specs``: Specs, für die je ein Lauf existierte.
+
+    ``extra_descoped``: Spec-Verzeichnisse, die ein Plugin als zurückgestellt meldet (zusätzlich zu
+    ``**Status**: Descoped`` in der spec.md).
+    """
     base = root / "specs"
     if not base.is_dir():
         return []
@@ -205,8 +300,8 @@ def scan_specs(
         if not (has_spec or has_plan or has_tasks):
             continue
         number = int(name[:3])
-        done, open_, operator_tasks = count_tasks(tasks_text or "")
-        descoped = is_descoped(spec_text or "")
+        done, partial, open_, operator_tasks = count_tasks(tasks_text or "")
+        descoped = is_descoped(spec_text or "") or name in extra_descoped
         clarification_open = has_open_clarification(spec_text or "") and not descoped
         marks = history.markers.get(number, {})
         stage = station(
@@ -216,6 +311,7 @@ def scan_specs(
             has_tasks=has_tasks,
             done=done,
             open_=open_,
+            partial=partial,
             descoped=descoped,
             deploy=marks.get("deploy"),
             verified=marks.get("verified"),
@@ -234,7 +330,14 @@ def scan_specs(
                     "source": "spec.md",
                 }
             )
-        elif not descoped and has_tasks and done == 0 and open_ > 0 and name not in started_specs:
+        elif (
+            not descoped
+            and has_tasks
+            and done == 0
+            and partial == 0
+            and open_ > 0
+            and name not in started_specs
+        ):
             # Spec 006 FR-003: Tasks vorhanden, 0 erledigt, nie ein Lauf gestartet. Eine Taskliste
             # ohne Tasks (0/0) hat nichts, das freigegeben werden könnte (Spec 001, Randfälle).
             waiting = "approval"
@@ -259,7 +362,7 @@ def scan_specs(
         started = history.first_seen.get(name)
         finished: str | None = None
         lead: float | None = None
-        if stage in DONE_STAGES:
+        if is_finished(stage, open_, partial):
             verified_mark = marks.get("verified") if stages.get("verified", True) else None
             last_tasks = history.last_tasks.get(name)
             finished = (
@@ -276,6 +379,7 @@ def scan_specs(
                 waiting=waiting,
                 done=done,
                 open=open_,
+                partial=partial,
                 started_at=started,
                 finished_at=finished,
                 updated_at=history.last_touched.get(name),

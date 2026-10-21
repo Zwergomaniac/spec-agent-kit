@@ -24,10 +24,11 @@ from spec_agent_kit.board.runs_view import (
     collect_runs,
     read_event_log,
 )
-from spec_agent_kit.board.specs import DONE_STAGES, SpecInfo, scan_specs
+from spec_agent_kit.board.specs import SpecInfo, scan_specs
 from spec_agent_kit.config import EffectiveConfig
 from spec_agent_kit.pipeline import runs as run_store
 from spec_agent_kit.pipeline.events import clip
+from spec_agent_kit.plugins import PluginResult, list_spec_dirs, run_plugins
 from spec_agent_kit.push import outbox
 
 NOTES_MAX: Final[int] = contracts.LIMITS["NOTES_MAX"]
@@ -68,6 +69,9 @@ def _ticker(
     items: list[dict[str, Any]] = []
     for entry in history.ticker[:TICKER_MAX]:
         item: dict[str, Any] = {"ts": entry["ts"], "kind": entry["kind"]}
+        commit = entry.get("commit")
+        if isinstance(commit, str) and commit:
+            item["commit"] = commit
         number = entry.get("number")
         if isinstance(number, int) and number in numbers:
             item["spec"] = numbers[number]
@@ -134,9 +138,9 @@ def _repair(doc: dict[str, Any]) -> None:
 def _metrics(specs: list[SpecInfo], attention: list[dict[str, str]]) -> dict[str, Any]:
     leads = [s.lead_time_days for s in specs if s.lead_time_days is not None]
     return {
-        "in_progress": sum(1 for s in specs if s.stage == "implementing"),
-        "done": sum(1 for s in specs if s.stage in DONE_STAGES),
-        "blocked": 0,
+        "in_progress": sum(1 for s in specs if s.in_progress),
+        "done": sum(1 for s in specs if s.finished),
+        "blocked": sum(1 for s in specs if s.blocked),
         "waiting": len(attention),
         "mean_lead_time_days": round(sum(leads) / len(leads), 1) if leads else None,
     }
@@ -172,13 +176,27 @@ def build_board(
 
     all_runs = _guard("Läufe", notes, [], lambda: collect_runs(root, cfg, log, now, notes))
     started_specs = {r["spec"] for r in all_runs}
-    specs = _guard(
-        "Specs", notes, [], lambda: scan_specs(root, history, stages, started_specs, notes)
+    plugin_result = _guard(
+        "Plugins",
+        notes,
+        PluginResult(),
+        lambda: run_plugins(root, list(cfg.data.get("plugins") or []), list_spec_dirs(root)),
     )
+    notes.extend(plugin_result.notes)
+    descoped_extra = frozenset(plugin_result.descoped)
+    specs = _guard(
+        "Specs",
+        notes,
+        [],
+        lambda: scan_specs(root, history, stages, started_specs, notes, descoped_extra),
+    )
+    for info in specs:
+        info.blocked = info.dir in plugin_result.blocked
 
     runs = [] if snapshot else all_runs[:RUNS_MAX]
     stale_hours = int(cfg.data["pipeline"]["stale_hours"])
     attention: list[dict[str, str]] = [a for s in specs for a in s.attention]
+    attention += plugin_result.attention
     if not snapshot:
         attention += attention_for_runs(all_runs, stale_hours)
     recency = {s.dir: i for i, s in enumerate(specs)}

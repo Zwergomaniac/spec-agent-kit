@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -166,7 +167,7 @@ def test_operator_tasks_one_entry_per_open_task(board_repo: Path, cfg: Effective
 
 def test_task_counting() -> None:
     text = "- [ ] a\n- [x] b\n- [X] c\n* [ ] d [operator]\n```\n- [ ] im Code\n```\n- nichts\n"
-    assert count_tasks(text) == (2, 2, ["d"])
+    assert count_tasks(text) == (2, 0, 2, ["d"])
 
 
 @pytest.mark.usefixtures("fixed_now")
@@ -334,6 +335,9 @@ def test_empty_project_is_a_valid_board(tmp_path: Path) -> None:
 def test_ticker_text_is_opt_in(board_repo: Path, cfg: EffectiveConfig) -> None:
     hidden = build_board(board_repo, cfg)  # share_commit_subjects ist false
     assert hidden["ticker"] and all("text" not in t for t in hidden["ticker"])
+    assert all(
+        re.fullmatch(r"[0-9a-f]{7}", t["commit"]) for t in hidden["ticker"]
+    )  # Spec 010 FR-003
     shown = build_board(board_repo, cfg, share_text=True)
     assert all("text" in t for t in shown["ticker"])
     shared = build_board(
