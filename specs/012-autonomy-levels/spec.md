@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-21
 
-**Status**: Planned
+**Status**: Implemented (Kit 0.3.0)
 
 **Input**: Betreiber 2026-10-21 beim produktiven Einsatz in ImmoAgent: „Darf der Main-Agent nicht mergen, pushen oder deployen? Das gefällt mir gar nicht.“ Die Entscheidungen fielen im Chat am selben Tag.
 
