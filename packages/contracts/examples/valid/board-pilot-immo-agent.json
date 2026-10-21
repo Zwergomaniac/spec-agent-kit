@@ -60,7 +60,8 @@
       "waiting": null,
       "tasks": {
         "done": 0,
-        "open": 5
+        "open": 5,
+        "partial": 1
       }
     },
     {
@@ -380,7 +381,8 @@
       "ts": "2026-10-19T12:40:00+02:00",
       "spec": "088-kartenansicht",
       "kind": "commit",
-      "text": "feat(088): Kartenlayer umschalten"
+      "text": "feat(088): Kartenlayer umschalten",
+      "commit": "a1b2c3d"
     },
     {
       "ts": "2026-10-16T17:00:00+02:00",

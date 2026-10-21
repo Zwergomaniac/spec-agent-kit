@@ -101,6 +101,7 @@ def defaults() -> dict[str, Any]:
             "test_fast": [],
             "test_full": [],
             "lint": [],
+            "prepare": [],
             "environment_failures": [],
         },
         "guard": {"protected_paths": [], "clean_ignore": []},

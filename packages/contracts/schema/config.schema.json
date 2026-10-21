@@ -104,6 +104,9 @@
         },
         "environment_failures": {
           "$ref": "#/$defs/stringList"
+        },
+        "prepare": {
+          "$ref": "#/$defs/stringList"
         }
       }
     },
@@ -237,10 +240,26 @@
     "plugins": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/nonEmptyString"
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "const": "legacy-status"
+              }
+            ]
+          },
+          "options": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
-      "maxItems": 0,
-      "description": "In v1 nur reserviert; muss leer sein."
+      "maxItems": 10,
+      "description": "Plugins nach Name (Spec 010). Standard: leer."
     }
   },
   "required": [
