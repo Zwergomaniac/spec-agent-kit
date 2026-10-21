@@ -93,3 +93,7 @@ deploy:
 
 dashboard:
   url: null                       # sobald das Dashboard läuft, hier die URL eintragen
+  share_commit_subjects: true     # Commit-Betreffe im Ticker auch online (Spec 010)
+
+plugins:
+  - name: legacy-status           # blockers.yml, deferred-decisions.md, feature-status.yml (Spec 010)

@@ -17,6 +17,7 @@ from spec_agent_kit.pipeline import RefusedError
 from spec_agent_kit.pipeline.git import run_git
 
 TICKER_LIMIT: Final[int] = 30
+COMMIT_SHORT: Final[int] = 7
 RS: Final[str] = "\x1e"
 US: Final[str] = "\x1f"
 
@@ -81,7 +82,7 @@ class GitHistory:
     marker_commits: list[MarkerCommit] = field(default_factory=list)
     """Alle Marker-Commits, neueste zuerst."""
     ticker: list[dict[str, object]] = field(default_factory=list)
-    """Neueste zuerst: ``{ts, number, kind, text}``."""
+    """Neueste zuerst: ``{ts, number, kind, text, commit}`` (``commit``: kurzer Hash)."""
 
     @classmethod
     def read(cls, root: Path) -> GitHistory:
@@ -122,6 +123,7 @@ class GitHistory:
                     "number": int(spec_match.group(1)) if spec_match else None,
                     "kind": marker[0] if marker else "commit",
                     "text": subject,
+                    "commit": sha[:COMMIT_SHORT],
                 }
             )
         history.ticker = list(reversed(entries))[:TICKER_LIMIT]

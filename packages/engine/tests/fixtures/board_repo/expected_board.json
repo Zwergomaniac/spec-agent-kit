@@ -318,144 +318,168 @@
     {
       "ts": "2026-10-10T08:00:00+02:00",
       "kind": "commit",
+      "commit": "926ec9d",
       "spec": "006-export",
       "text": "docs(006): spec"
     },
     {
       "ts": "2026-10-09T13:00:00+02:00",
       "kind": "commit",
+      "commit": "c323d86",
       "spec": "005-notify",
       "text": "docs(005): tasks"
     },
     {
       "ts": "2026-10-09T12:00:00+02:00",
       "kind": "commit",
+      "commit": "8638e0a",
       "spec": "005-notify",
       "text": "docs(005): spec"
     },
     {
       "ts": "2026-10-09T10:00:00+02:00",
       "kind": "commit",
+      "commit": "1a14fa1",
       "spec": "003-search",
       "text": "feat(003): erste Tasks"
     },
     {
       "ts": "2026-10-08T14:00:00+02:00",
       "kind": "commit",
+      "commit": "61aba91",
       "spec": "003-search",
       "text": "docs(003): tasks"
     },
     {
       "ts": "2026-10-08T13:00:00+02:00",
       "kind": "commit",
+      "commit": "ef53588",
       "spec": "003-search",
       "text": "docs(003): plan"
     },
     {
       "ts": "2026-10-08T12:00:00+02:00",
       "kind": "commit",
+      "commit": "e4f50ca",
       "spec": "003-search",
       "text": "docs(003): spec"
     },
     {
       "ts": "2026-10-08T10:00:00+02:00",
       "kind": "commit",
+      "commit": "8d7b73e",
       "spec": "004-billing",
       "text": "feat(004): rest"
     },
     {
       "ts": "2026-10-07T10:00:00+02:00",
       "kind": "deploy",
+      "commit": "06608ae",
       "spec": "004-billing",
       "text": "deploy(004): erste Stufe"
     },
     {
       "ts": "2026-10-06T10:00:00+02:00",
       "kind": "commit",
+      "commit": "2a81bc5",
       "spec": "004-billing",
       "text": "docs(004): tasks"
     },
     {
       "ts": "2026-10-06T09:00:00+02:00",
       "kind": "commit",
+      "commit": "d8fbb2a",
       "spec": "004-billing",
       "text": "docs(004): plan"
     },
     {
       "ts": "2026-10-06T08:00:00+02:00",
       "kind": "commit",
+      "commit": "af4afce",
       "spec": "004-billing",
       "text": "docs(004): spec"
     },
     {
       "ts": "2026-10-05T14:00:00+02:00",
       "kind": "deploy",
+      "commit": "e8860ef",
       "spec": "002-importer",
       "text": "deploy(002): importer"
     },
     {
       "ts": "2026-10-05T09:00:00+02:00",
       "kind": "commit",
+      "commit": "df90b30",
       "spec": "002-importer",
       "text": "feat(002): importer"
     },
     {
       "ts": "2026-10-04T10:00:00+02:00",
       "kind": "commit",
+      "commit": "47ba59f",
       "spec": "002-importer",
       "text": "docs(002): tasks"
     },
     {
       "ts": "2026-10-04T09:00:00+02:00",
       "kind": "commit",
+      "commit": "d2faea7",
       "spec": "002-importer",
       "text": "docs(002): plan"
     },
     {
       "ts": "2026-10-04T08:00:00+02:00",
       "kind": "commit",
+      "commit": "861991e",
       "spec": "002-importer",
       "text": "docs(002): spec"
     },
     {
       "ts": "2026-10-03T08:00:00+02:00",
       "kind": "verified",
+      "commit": "700facb",
       "spec": "001-foundation",
       "text": "verified(001): foundation geprüft"
     },
     {
       "ts": "2026-10-02T12:00:00+02:00",
       "kind": "deploy",
+      "commit": "8b5f66d",
       "spec": "001-foundation",
       "text": "deploy(001): foundation live"
     },
     {
       "ts": "2026-10-02T10:00:00+02:00",
       "kind": "commit",
+      "commit": "ec6d89d",
       "spec": "001-foundation",
       "text": "feat(001): alles"
     },
     {
       "ts": "2026-10-01T12:00:00+02:00",
       "kind": "commit",
+      "commit": "be602a5",
       "spec": "001-foundation",
       "text": "docs(001): tasks"
     },
     {
       "ts": "2026-10-01T11:00:00+02:00",
       "kind": "commit",
+      "commit": "c1c84f1",
       "spec": "001-foundation",
       "text": "docs(001): plan"
     },
     {
       "ts": "2026-10-01T10:00:00+02:00",
       "kind": "commit",
+      "commit": "15a974f",
       "spec": "001-foundation",
       "text": "docs(001): spec"
     },
     {
       "ts": "2026-10-01T09:00:00+02:00",
       "kind": "commit",
+      "commit": "dd32665",
       "text": "chore: init"
     }
   ],

@@ -45,3 +45,27 @@ def test_real_project_specs_give_a_valid_board_without_exception() -> None:
     stages = Counter(s["stage"] for s in doc["specs"])
     print("\nSpecs:", len(doc["specs"]), "Stationen:", dict(stages))
     print("Hinweise:", doc["notes"])
+
+
+def test_real_project_with_the_legacy_status_plugin_reports_the_old_board_numbers() -> None:
+    """Spec 010 SC-002: Kennzahlen mit Plugin (Config nur im Speicher, nichts wird geschrieben)."""
+    root = Path(os.environ[ENV])
+    if not (root / "specs").is_dir() and root.name == "specs":
+        root = root.parent
+    cfg = build_effective(
+        root,
+        {
+            "schema": "sak.config/1",
+            "project": {"key": "immo-agent", "name": "ImmoAgent"},
+            "plugins": [{"name": "legacy-status"}],
+        },
+    )
+    before = _status(root)
+    doc = build_board(root, cfg)
+    assert contracts.validate_board(doc) == []
+    assert _status(root) == before
+    descoped = [s["dir"] for s in doc["specs"] if s["descoped"]]
+    kinds = Counter(a["kind"] for a in doc["attention"])
+    print("\nKennzahlen:", doc["metrics"])
+    print("Specs:", len(doc["specs"]), "descoped:", len(descoped), "Aufmerksamkeit:", dict(kinds))
+    print("Hinweise:", doc["notes"])

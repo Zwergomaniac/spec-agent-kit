@@ -71,6 +71,59 @@ deploy/dashboard/       Dockerfile, compose.snippet.yml (edge-caddy-Netz extern)
    - Auslöser: am Ende der Hooks, im Hintergrund, oder manuell.
 4. Das Dashboard speichert pro Projekt den letzten Snapshot und alle Events (Retention 30 Tage). Daraus entstehen Portfolio, Projekt- und Lauf-Ansichten.
 
+## Board-Ableitungsregeln
+
+Das Board entsteht bei jedem Aufruf neu aus `specs/`, Git, Läufen und Events (Spec 006, Spec 010). Diese Regeln gelten lokal (`sak board`, `sak board serve`) und im Push gleich. Sie sind absichtlich eigenständig und weichen an einigen Stellen vom alten ImmoAgent-Board ab (siehe unten).
+
+**Task-Zeilen (`tasks.md`)**
+
+- Eine Task-Zeile ist jede Markdown-Aufzählung mit Checkbox: Aufzählungszeichen `-`, `*`, `+` oder eine Nummer mit `.` oder `)`, auch eingerückt (Unteraufgaben zählen mit). Die Checkbox ist `[ ]` (offen), `[x]` oder `[X]` (erledigt) oder `[~]` (teilweise).
+- Eine Task-ID (`T001`) ist nicht nötig. Zeilen ohne Aufzählungszeichen, mit `[]` oder mit `-[ ]` (ohne Leerzeichen) zählen nicht.
+- `[~]` ist weder erledigt noch offen. Es erscheint als eigenes Feld `tasks.partial` (nur wenn größer 0). Eine Spec mit teilweisen Tasks hat die Umsetzung nicht abgeschlossen.
+- Ein Codeblock beginnt nur mit einem Fence (mindestens drei Backticks oder Tilden) am Zeilenanfang, höchstens 3 Leerzeichen eingerückt, und nur wenn er nicht zu einer Aufzählung gehört. Ein eingerückter Fence in der Folgezeile einer Aufzählung (ab 4 Leerzeichen immer, bei 1 bis 3 Leerzeichen innerhalb einer Aufzählung) ist Text, kein Codeblock. Der Block endet mit einem Fence derselben Art und mindestens derselben Länge. Zeilen darin zählen nicht.
+- Code-Spans (`` `…` ``) werden für die Marker-Erkennung ignoriert: `` `**[Betreiber]**` `` im Text macht aus einer Task keine Betreiber-Aufgabe. Im angezeigten Grund bleiben Code-Spans erhalten. Nur der Marker außerhalb von Code-Spans wird entfernt.
+- Betreiber-Aufgaben: je offene Task mit `[operator]` oder `**[Betreiber]**` außerhalb von Code-Spans ein Eintrag `operator_task`. Teilweise und erledigte Tasks erzeugen keinen.
+
+**Station, „fertig“ und „in Arbeit“**
+
+- Die Station folgt Spec 001 FR-006 (höchste zutreffende Bedingung). `implemented` setzt voraus: mindestens eine erledigte Task, keine offene, keine teilweise. Mit offenen oder teilweisen Tasks (und mindestens einer erledigten oder teilweisen) ist die Station `implementing`.
+- Marker (`deploy(…)`, `verified(…)`) sind Fakten und bleiben erhalten: Eine Spec mit Marker bleibt `deployed` bzw. `verified`, auch wenn später Tasks offen sind.
+- **Fertig** (Kennzahl `done`) ist eine Spec, wenn ihre Station `implemented`, `deployed` oder `verified` ist **und** sie 0 offene und 0 teilweise Tasks hat. Durchlaufzeit und `finished_at` gibt es nur für fertige Specs.
+- **In Arbeit** (`in_progress`) ist eine Spec in Station `implementing` oder mit fertiger Station, aber offenen bzw. teilweisen Tasks. Beides schließt sich aus: Jede Spec zählt höchstens einmal.
+- **Blockiert** (`blocked`) zählt Specs mit `blocked: true`. Diese Markierung setzt nur ein Plugin (`legacy-status`); ohne Plugin ist der Wert 0.
+- **Wartet** (`waiting`) zählt alle Aufmerksamkeitseinträge: `escalation`, `stale_run`, `approval`, `clarification`, `operator_task` und, durch Plugins, `blocker` und `decision`.
+
+**Zurückgestellt (`descoped`)**
+
+- Quelle 1: `**Status**: Descoped` im Kopf der `spec.md` (vor der ersten `## `-Überschrift, Groß- und Kleinschreibung egal).
+- Quelle 2: ein Plugin. `legacy-status` liest `.specify/feature-status.yml` (`feature_status_report.specs[].status: descoped`). Quellen sind damit konfigurierbar (`plugins:` und deren `options`), nicht fest verdrahtet.
+- Eine zurückgestellte Spec hat keine Station und erzeugt weder `approval`, `clarification` noch `operator_task`.
+
+**Plugins (`plugins:` in der Config)**
+
+- Ein Plugin liefert zurückgestellte Specs, blockierte Specs und Aufmerksamkeitseinträge. Es läuft bei jedem Board-Aufbau, vor der Spec-Ableitung.
+- Ein Fehler in einem Plugin bringt das Board nie zum Absturz: Das Plugin liefert dann nichts und ein Hinweis in `notes` nennt den Grund. Ungültige Einträge eines Plugins werden wie andere ungültige Listeneinträge verworfen und gemeldet.
+- `legacy-status` (Optionen `blockers_file`, `decisions_file`, `status_file`; Pfade im Projekt): `.specify/blockers.yml` setzt `blocked` für jeden Eintrag, ein `blocker`-Eintrag entsteht nur bei `actionable: blocked` oder `partial`. `.specify/deferred-decisions.md` erzeugt je offener Frage (Abschnitt „Offen“) einen Eintrag `decision`. Fehlende Dateien ergeben einen Hinweis.
+
+**Ticker und Zeiten**
+
+- Jeder Ticker-Eintrag trägt `commit` (kurzer Hash, 7 Zeichen). Der Betreff (`text`) erscheint nur mit `share_commit_subjects: true` oder lokal.
+- Die Textausgabe `sak board --text` zeigt die Zeit lokal mit Zone, zum Beispiel `2026-10-21 14:03 UTC+02:00`. Im Board-Dokument bleiben alle Zeiten RFC 3339.
+
+**Bewusste Abweichungen vom alten ImmoAgent-Board**
+
+| Thema | Altes Board | Kit | Wirkung (ImmoAgent) |
+|---|---|---|---|
+| Task-Zeile | nur `- [ ] T123` (mit ID, nur `-`) | jede Aufzählung mit Checkbox, ID egal | andere Task-Zahlen bei 037, 038, 041, 063 |
+| Fertig | Status `done`: alle Tasks mit ID erledigt | Station ab `implemented` und 0 offene, 0 teilweise Tasks | 63 statt 61 (037 und 041 hatten keine Task-IDs) |
+| In Arbeit | Status `partial` | Station `implementing`, oder fertige Station mit Resttasks (066 bleibt `deployed`, zählt aber als in Arbeit) | gleiche Zahl (16) |
+| `[~]` | eigener Zähler; 0 offen und teilweise ergibt `descoped` | eigenes Feld `tasks.partial`, verhindert „fertig“; `descoped` nur aus den Quellen oben | 018, 048 bleiben in Arbeit |
+| Blockiert | Specs mit Eintrag in `blockers.yml` | gleich, über das Plugin | 4 und 4 |
+| Entscheidung | offene Zeilen in `deferred-decisions.md` | gleich, über das Plugin | 0 und 0 |
+| Freigabe | Status `not-started` (keine Task erledigt) | Tasks vorhanden, keine erledigt, nie ein Lauf gestartet | 084, 085, 088 warten nach dem Import der Läufe nicht mehr auf Freigabe |
+| Betreiber-Aufgabe | keine Einträge | je offene Task mit Marker außerhalb von Code-Spans | 9 zusätzliche Einträge (092, 093) |
+| Zeit im Text | UTC ohne Kennzeichnung | lokale Zeit mit Zone | |
+
 ## Bewusste Abweichungen von ImmoAgent (Constitution VI)
 
 | ImmoAgent | v1 | Grund |

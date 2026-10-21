@@ -30,3 +30,4 @@ deploy:
 
 dashboard:
   url: null                     # im Pilot zu prüfen; bis dahin push: manual
+  share_commit_subjects: true   # Commit-Betreffe im Ticker auch online (Spec 010)

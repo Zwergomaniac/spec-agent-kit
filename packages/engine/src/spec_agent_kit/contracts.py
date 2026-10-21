@@ -6,6 +6,7 @@ Die JSON-Schemas unter ``schemas/`` sind eine byte-gleiche Kopie von
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import secrets
@@ -49,6 +50,12 @@ def vocabulary() -> dict[str, list[str]]:
     """Die Ebenen des Vokabulars (Ebene -> erlaubte Maschinenwerte)."""
     levels: dict[str, list[str]] = _load_json("vocabulary.json")["levels"]
     return levels
+
+
+def vocabulary_version() -> int:
+    """Versionsnummer des Vokabulars (``vocabulary.json``)."""
+    version: int = _load_json("vocabulary.json")["version"]
+    return version
 
 
 def label(level: str, value: str, locale: str = DEFAULT_LOCALE) -> str:
@@ -247,3 +254,13 @@ def new_ulid(timestamp_ms: int | None = None) -> str:
             rand = secrets.randbits(80)
         _ulid_state = (now, rand)
     return _encode((now << 80) | rand)
+
+
+def deterministic_ulid(timestamp_ms: int, seed: str) -> str:
+    """ULID mit festem Zeitteil und einem aus ``seed`` abgeleiteten Zufallsteil (80 Bit).
+
+    Gleiche Eingabe ergibt immer dieselbe ID. Das braucht der Import alter Historie
+    (``sak migrate legacy-pipeline``), damit ein zweiter Lauf keine Duplikate erzeugt.
+    """
+    digest = hashlib.sha256(seed.encode("utf-8")).digest()
+    return _encode((timestamp_ms << 80) | int.from_bytes(digest[:10], "big"))
