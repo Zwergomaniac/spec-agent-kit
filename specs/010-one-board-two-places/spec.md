@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-21
 
-**Status**: Draft (nicht geplant)
+**Status**: Planned
 
 **Input**: Feedback des Betreibers vom 2026-10-21 beim sak-Trial in ImmoAgent. Er hat das lokale Board und specboard.prozessfit.de nebeneinander verglichen:
 - Das lokale Board und das Online-Board sehen völlig verschieden aus. Erwartet war dasselbe Design, lokal nur ohne Portfolio.
@@ -69,15 +69,42 @@ Herkunft: sak-Trial ImmoAgent, Befund 5 (Bericht vom 2026-10-21). Gefunden wurde
 
 **Acceptance**: Für ImmoAgent stimmen die Kennzahlen mit dem alten Board überein, bis auf bewusst andere Definitionen. Jede verbleibende Abweichung ist in der UI erklärt (US3). Für jeden der 7 Punkte gibt es einen Regressionstest mit minimalem Fixture.
 
+## Clarifications
+
+### Session 2026-10-21 (Planer, Defaults nach Betreiber-Auftrag „alles Offene abarbeiten“)
+
+- Q: Wie kommt die UI in die vendorte Engine? → A: `apps/dashboard-web` bekommt ein Build-Ziel `build:local`, das nach `packages/engine/src/spec_agent_kit/board/web/` baut. Das Ergebnis wird eingecheckt wie generierte Contracts, `pnpm board:check` prüft die Aktualität. Es ist Teil der Engine und wird deshalb über Lock/Upgrade verteilt. Das alte `static/board.html` entfällt.
+- Q: Events im lokalen Modus? → A: Ja. `sak board serve` bedient dieselben Lese-Endpunkte wie das Dashboard (Teilmenge, ohne Auth). Die UI erkennt den lokalen Modus über `/api/meta` (`mode: "local"`).
+- Q: Import Kern oder Plugin? → A: Kernbefehl `sak migrate legacy-pipeline`, weil das Format der Ursprung des Kits ist (ImmoAgent 093). Ohne `--apply` zeigt er nur einen Plan.
+- Q: Contract `plugins`? → A: Rückwärtskompatible Erweiterung von `sak.config/1`: `plugins` wird eine Liste von `{name, options?}` mit Enum-Namen; erstes Plugin `legacy-status`.
+- Q: Altes ImmoAgent-Board abschalten? → A: Nein, es bleibt bis zur Rückmigration.
+- Q: „Fertig“ bei `deployed` mit offenen Tasks (US6 Punkt 6)? → A: Die Station bleibt `deployed` (Marker ist ein Fakt). Für Kennzahlen gilt eine Spec als fertig erst bei Station ≥ `implemented` UND 0 offenen bzw. teilweisen Tasks, sonst als „in Arbeit“.
+- Q: `[~]`? → A: Die Board-Ableitung zählt es als neues optionales Feld `tasks.partial`, also nicht erledigt und nicht offen (Contract-Erweiterung, wie in ImmoAgent 092).
+
 ## Requirements *(mandatory)*
 
-Noch nicht ausgearbeitet. Wird bei `/speckit-clarify` und `/speckit-plan` ergänzt. Offene Punkte für die Klärung:
+- **FR-001** (US1): `sak board serve` liefert die gebaute Dashboard-UI aus. Es stellt diese Endpunkte bereit, jeweils mit gleicher Form wie das zentrale Dashboard:
+  - `GET /api/meta` (zusätzlich `mode: "local"`, `project_key`)
+  - `GET /api/projects/<key>` (Board live gebaut, höchstens alle 2 s neu)
+  - `GET /api/projects/<key>/runs/<runId>`
+  - `GET /api/projects/<key>/events?run=&since=&limit=`
 
-- Wie kommt die gebaute UI in die vendorte Engine (Größe, Upgrade über das Lock, Build-Schritt im Kit)?
-- Liefert der lokale Modus auch Events für die Lauf-Ansicht (`/events.json`), oder nur das Board-Dokument?
-- Ist der Import Teil des Kerns oder ein Plugin für ImmoAgent?
-- Ändert sich mit dem Plugin-Mechanismus der Contract `plugins` in `sak.config/1` (heute `maxItems: 0`)?
-- Soll das alte ImmoAgent-Board nach dem Import abgeschaltet werden, oder bleibt es bis zur Rückmigration?
+  Loopback und Host-Prüfung bleiben. Die UI zeigt im lokalen Modus kein Portfolio, keinen Admin-Bereich und keinen Login. Die Startroute ist `#/project/<key>`.
+- **FR-002** (US1): Gleiche Darstellung lokal und online. Lokal ist der Ticker-Text immer sichtbar.
+- **FR-003** (US2): Contract-Erweiterung: optionales `ticker[].commit` (7–40 hex). Der Collector füllt es mit dem kurzen Hash. Die UI zeigt per Hover oder Fokus Hash, lokale Zeit, Spec und Betreff (falls vorhanden). Die Beispiel-Configs für ImmoAgent und AI-Forge setzen `share_commit_subjects: true`, die Vorlage bleibt bei `false`.
+- **FR-004** (US3): Jede Kennzahl-Kachel und jede Spaltenüberschrift hat einen Tooltip mit der Definition. Die Texte stehen zentral in der Web-App und entsprechen Spec 006 FR-006 sowie dieser Spec.
+- **FR-005** (US4): `sak migrate legacy-pipeline [--source <dir>] [--apply]` liest `<dir>/events.jsonl` und `<dir>/runs/*/run.json` (Default `.specify/pipeline`) und erzeugt v1-Events und Läufe unter `.spec-agent/state/`, nach Spec 001 Anhang A.
+  - Lauf-ID aus Spec-Nummer und Zeit von `run_started`.
+  - Event-IDs deterministisch aus Inhalt und Zeit, damit ein Import idempotent ist und keine Duplikate am Dashboard entstehen.
+  - `aborted` bleibt `aborted`.
+  - Unbekannte Arten werden gezählt und gemeldet.
+- **FR-006** (US5): Plugin `legacy-status`, aktiviert per `plugins: [{name: legacy-status}]`. Es liest:
+  - `.specify/blockers.yml` → `blocker`-Einträge und `specs[].blocked`
+  - `.specify/deferred-decisions.md` → `decision`-Einträge
+  - `.specify/feature-status.yml` → descoped
+
+  Formate wie bei ImmoAgent (Referenz: `ImmoAgent/.specify/scripts/python/feature_status.py`). Fehlt eine Datei, folgt ein Hinweis in `notes`, kein Fehler.
+- **FR-007** (US6): Die Parser-Regeln aus US6 Punkt 1–7 werden umgesetzt und in `docs/architecture.md` als „Board-Ableitungsregeln“ dokumentiert. Task-Zeile ist jede Markdown-Aufzählung (`-`, `*`, `+`, nummeriert, auch eingerückt) mit Checkbox `[ ]`, `[x]`, `[X]` oder `[~]`. Codeblöcke beginnen nur mit einem Fence am Zeilenanfang nach höchstens 3 Leerzeichen und nicht als Fortsetzung einer Aufzählung. Code-Spans werden für Marker-Erkennung ignoriert, im angezeigten Grund aber erhalten.
 
 ## Success Criteria *(mandatory)*
 

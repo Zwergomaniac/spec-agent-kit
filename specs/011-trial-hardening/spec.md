@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-21
 
-**Status**: Draft (nicht geplant; Befund 1 vorab als Hotfix umgesetzt)
+**Status**: Planned (US1 als Hotfix 0.1.1 umgesetzt)
 
 **Input**: Bericht „sak-Trial ImmoAgent“ vom 2026-10-20/21: Kit-Commit `4d78cb3` von GitHub, ImmoAgent-Branch `sak-trial`, Nur-Prüfungs-Lauf `084-20261020-221040`. Die Befunde zur Board-Ableitung (Befund 5) stehen in Spec 010 US6.
 
@@ -59,9 +59,42 @@ Befund 11: In frischen Worktrees fehlen gitignorierte, erzeugte Dateien (z. B. `
 - **B15 (niedrig):** `doctor`/`dashboard` meldet ok, wenn das Dashboard erreichbar ist, auch ohne Schlüssel. Ok soll es erst sein, wenn ein Schlüssel vorhanden ist; optional folgt eine Auth-Probe ohne Datenänderung.
 - **Zu US3 (Worktrees), Vorschlag des Planers:** Worktrees legt nur sak selbst an und räumt sie selbst wieder auf. Sie liegen an einem festen Ort (z. B. `<repo>.sak-runs/<lauf-id>`), erscheinen auf dem Board und werden mit `merged` bzw. `aborted` entfernt. `doctor` meldet übrig gebliebene Worktrees. Gemeinsame Dashboard-Einstellungen und der Schlüssel werden aus dem Haupt-Checkout geerbt.
 
+### User Story 8 – Lauf-Kontext übersteht das Kompaktieren (Priority: P2)
+
+Frage des Betreibers 2026-10-21: Kann das Framework `/compact` auslösen? Nein. Hooks und Skills können keine eingebauten Befehle ausführen. Das Kit kann aber dafür sorgen, dass der Orchestrator nach einer Kompaktierung (automatisch oder manuell) den laufenden Lauf nicht verliert. Außerdem kann es gute Zeitpunkte vorschlagen.
+
+**Acceptance**:
+1. **Given** ein aktiver Lauf, **When** die Sitzung kompaktiert wird, **Then** speist ein `SessionStart`-Hook (Matcher `compact`) eine Kurzfassung ein: Lauf-ID, Spec, Zustand, Runde, aktive Rollen, Muss-Befunde der letzten Runde, nächster Schritt laut Skill. Ohne aktiven Lauf: keine Ausgabe.
+2. **Given** ein Lauf endet (`merged`, `escalated`, `aborted`, `reviewed`), **When** der Skill seinen Abschlussbericht schreibt, **Then** schlägt er dem Betreiber vor, jetzt `/compact` auszuführen.
+
+## Clarifications
+
+### Session 2026-10-21 (Planer, Defaults nach Betreiber-Auftrag „alles Offene abarbeiten“)
+
+- **US2/B14:**
+  - Die UI-Prüfer-Anweisung lenkt Playwright-Ausgaben um (`--output` bzw. `PLAYWRIGHT_HTML_REPORT` nach `.spec-agent/state/runs/<id>/ui/`), verbietet Links und Junctions und verlangt quotierte Pfade.
+  - `init` schlägt `clean_ignore` für `test-results/` und `playwright-report/` vor, wenn Playwright erkannt wird.
+  - Neu ist `sak run cleanup <run>`: Es entfernt Links unter `runs/<id>/`, ohne ihnen zu folgen. Der Skill ruft es am Lauf-Ende auf; `abort` und `combine` rufen es selbst.
+- **US3:** Kit-verwaltete Worktrees gehören zur späteren Spec „Parallelbetrieb“ (Regel siehe Nachtrag). In 011 gilt:
+  - Erkennt die Engine einen Git-Worktree, erbt sie Dashboard-URL und Schlüssel aus dem Haupt-Checkout (git common dir).
+  - `preflight` warnt, wenn das Sitzungsverzeichnis (`CLAUDE_PROJECT_DIR`) nicht der Checkout des Laufs ist.
+- **US4:**
+  - `init` liest `pyproject.toml`: pytest bzw. ruff in `optional-dependencies.<x>` ergibt `--extra <x>`, in `dependency-groups` ergibt nichts Zusätzliches.
+  - `doctor --probe-commands` führt pytest-Befehle mit `--collect-only -q` aus (Timeout 60 s), andere Befehle nur mit `--version`, falls sinnvoll. Ohne Option wird nur geprüft, ob das Programm auffindbar ist.
+- **US5:** Die Ergänzung im Code-Prüfer-Prompt prüft indirekte Auswirkungen auf `escalation.topics`. Das Eval steht als Dokument unter `docs/evals/indirect-escalation.md` und beschreibt Fall 084 anonymisiert.
+- **US6:**
+  - `--format json|text` für `init`, `upgrade` und `doctor` (Default `json` auf stdout, nichts doppelt).
+  - Die bypass-Warnung erkennt `defaultMode` korrekt, auch im verschachtelten `permissions.defaultMode`.
+  - `status`: `ok` ist false bei `last_error`. 403 nennt das Projekt.
+  - Der Plan listet die allow- und deny-Regeln einzeln.
+  - `doctor` erklärt die Lock-Zahl.
+- **B12/B13/B15:** wie im Nachtrag beschrieben. Die vom Kit erzeugten allow-Einträge werden im Lock unter `settings_allow` vermerkt und beim Upgrade ersetzt.
+- **US7:** `commands.prepare[]` (Contract aus 010 Strang 0) wird von Builder und Prüfern vor dem Testen ausgeführt (Prompt) und von `doctor --probe-commands` mitgeprüft.
+- **US8:** `sak hook session-start` (stdin: Hook-Payload) gibt bei `source == "compact"` und aktivem Lauf JSON mit `hookSpecificOutput.additionalContext` aus, sonst nichts. Der Fragment-Eintrag `SessionStart` mit Matcher `compact` läuft über den Starter.
+
 ## Requirements *(mandatory)*
 
-Noch nicht ausgearbeitet. Folgt bei `/speckit-clarify` und `/speckit-plan`.
+Die User Stories 1–8 und B12–B15 in Verbindung mit den Clarifications sind die Anforderungen. Jede wird mit einem Test abgesichert, oder es wird begründet, warum kein Test möglich ist (SC-002).
 
 ## Success Criteria *(mandatory)*
 
