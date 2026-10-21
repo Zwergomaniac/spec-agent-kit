@@ -187,11 +187,18 @@ def analyze_pyproject(directory: Path) -> dict[str, dict[str, str]]:
 
 
 def split_command(command: str) -> list[str]:
-    """Zerlegt einen Befehl in Wörter (ohne Shell); ``[]`` bei unbalancierten Anführungszeichen."""
+    """Zerlegt einen Befehl in Wörter (ohne Shell); ``[]`` bei unbalancierten Anführungszeichen.
+
+    Unter Windows bleiben Backslashes in Pfaden erhalten (kein POSIX-Escape).
+    """
+    windows_style = os.name == "nt" and chr(92) in command
     try:
-        return shlex.split(command, posix=True)
+        words = shlex.split(command, posix=not windows_style)
     except ValueError:
         return []
+    if windows_style:
+        words = [w[1:-1] if len(w) >= 2 and w[0] == w[-1] and w[0] in "\"'" else w for w in words]
+    return words
 
 
 def uv_run_parts(tokens: Sequence[str]) -> tuple[list[str], int] | None:

@@ -119,7 +119,7 @@ export const lockVersionSchema = z.string().regex(new RegExp("^[0-9]+[.][0-9]+[.
 
 export const lockSha256Schema = z.string().regex(new RegExp("^[0-9a-f]{64}$"))
 
-export const lockSchema = z.object({ "schema": z.literal("sak.lock/1"), "kit_version": lockVersionSchema, "installed_at": timestampSchema, "upgraded_at": z.union([timestampSchema, z.null()]), "files": z.record(lockSha256Schema).describe("Relativer POSIX-Pfad im Zielprojekt -> SHA-256."), "settings_fragment_hash": lockSha256Schema }).strict()
+export const lockSchema = z.object({ "schema": z.literal("sak.lock/1"), "kit_version": lockVersionSchema, "installed_at": timestampSchema, "upgraded_at": z.union([timestampSchema, z.null()]), "files": z.record(lockSha256Schema).describe("Relativer POSIX-Pfad im Zielprojekt -> SHA-256."), "settings_fragment_hash": lockSha256Schema, "settings_allow": z.array(z.string().min(1).max(300)).max(200).describe("Seit Kit 0.2.0 (optional, rückwärtskompatibel): die permissions.allow-Einträge, die das Kit in .claude/settings.json eingetragen hat. Beim Upgrade ersetzt das Kit genau diese Einträge; fremde Einträge bleiben. Fehlt das Feld (Lock vor 0.2.0), gelten nur bekannte Kit-Muster als Kit-eigen.").optional() }).strict()
 
 export type SakEvent = z.infer<typeof eventSchema>
 export type Board = z.infer<typeof boardSchema>

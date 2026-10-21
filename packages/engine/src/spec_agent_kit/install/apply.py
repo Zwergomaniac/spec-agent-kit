@@ -7,7 +7,6 @@ Danach laufen ``uv sync`` und ``config check``. Es wird nie committet.
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Final
@@ -31,6 +30,7 @@ from spec_agent_kit.install.plan import (
     Action,
     Plan,
 )
+from spec_agent_kit.install.tools import find_uv
 
 SYNC_TIMEOUT_SECONDS: Final[int] = 600
 _KEEP_DIRS: Final[frozenset[str]] = frozenset(
@@ -103,7 +103,7 @@ def _write_action(plan: Plan, action: Action) -> None:
 
 
 def _uv_executable() -> str | None:
-    return os.environ.get("UV") or shutil.which("uv")
+    return find_uv()
 
 
 def uv_sync(target: Path) -> dict[str, Any]:

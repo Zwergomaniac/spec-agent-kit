@@ -11,10 +11,13 @@ from install_support import OWN_SETTINGS, REAL_KIT_ROOT
 
 from spec_agent_kit.install.doctor import REQUIRED_DENY
 from spec_agent_kit.install.settings import (
+    LEGACY_KIT_ALLOW,
     allow_entries,
     dumps_settings,
     merge_settings,
+    merge_settings_detailed,
     parse_settings,
+    unsafe_mode_in,
 )
 
 FRAGMENT: dict[str, Any] = json.loads(
@@ -36,7 +39,10 @@ def test_existing_hooks_and_settings_stay_untouched() -> None:
     merged, warnings = merge_settings(original, FRAGMENT)
     assert original == OWN_SETTINGS  # die Eingabe wird nicht verändert
     assert warnings == []
-    assert merged["hooks"]["SessionStart"] == OWN_SETTINGS["hooks"]["SessionStart"]
+    # Der eigene SessionStart-Hook bleibt an erster Stelle, der Kit-Hook (compact) kommt dazu.
+    session = merged["hooks"]["SessionStart"]
+    assert session[0] == OWN_SETTINGS["hooks"]["SessionStart"][0]
+    assert session[1:] == FRAGMENT["hooks"]["SessionStart"]
     assert merged["env"] == OWN_SETTINGS["env"]
     assert merged["permissions"]["defaultMode"] == "acceptEdits"
     assert set(merged["hooks"]) == {"SessionStart", "SubagentStart", "SubagentStop"}
@@ -112,7 +118,7 @@ def test_upgrade_replaces_old_direct_uv_hooks_with_the_starter_version() -> None
     original = copy.deepcopy(old)
     merged, _ = merge_settings(old, FRAGMENT)
     assert old == original
-    assert merged["hooks"]["SessionStart"] == [FOREIGN_HOOK]
+    assert merged["hooks"]["SessionStart"] == [FOREIGN_HOOK, *FRAGMENT["hooks"]["SessionStart"]]
     assert merged["hooks"]["SubagentStart"] == [FOREIGN_HOOK, FRAGMENT["hooks"]["SubagentStart"][0]]
     assert merged["hooks"]["SubagentStop"] == [FRAGMENT["hooks"]["SubagentStop"][0], FOREIGN_HOOK]
     assert ".spec-agent/engine" not in json.dumps(merged["hooks"])
@@ -202,3 +208,87 @@ def test_allow_entries_turn_paths_into_wildcards() -> None:
 
 def test_required_deny_rules_match_the_fragment() -> None:
     assert set(REQUIRED_DENY) == set(FRAGMENT["permissions"]["deny"])
+
+
+# --- Spec 011: SessionStart, Herkunft der allow-Einträge, unsicherer Modus ------------------
+
+
+def test_session_start_hook_is_added_once_with_the_compact_matcher() -> None:
+    once, _ = merge_settings(OWN_SETTINGS, FRAGMENT)
+    twice, _ = merge_settings(once, FRAGMENT)
+    kit_entries = [
+        entry for entry in twice["hooks"]["SessionStart"] if ".spec-agent/sak" in json.dumps(entry)
+    ]
+    assert len(kit_entries) == 1 and kit_entries[0]["matcher"] == "compact"
+    assert kit_entries[0]["hooks"][0]["command"].endswith("hook session-start || true")
+    assert twice == once
+
+
+def test_owned_allow_entries_are_replaced_and_foreign_ones_stay() -> None:
+    existing = {
+        "permissions": {"allow": ["Bash(npm test)", "Bash(old *)", "Bash(git status)", "Bash(x)"]}
+    }
+    result = merge_settings_detailed(existing, FRAGMENT, ["Bash(new *)"], ["Bash(old *)"])
+    allow = result.merged["permissions"]["allow"]
+    assert "Bash(old *)" not in allow
+    assert allow[:3] == ["Bash(npm test)", "Bash(git status)", "Bash(x)"]  # fremd, Reihenfolge
+    assert "Bash(new *)" in allow
+    assert result.allow_removed == ["Bash(old *)"]
+    assert "Bash(new *)" in result.allow_added
+    # Eigentum: nur, was das Kit ergänzt hat (git status war schon da).
+    assert "Bash(git status)" not in result.allow_owned
+    assert "Bash(new *)" in result.allow_owned
+    assert "Bash(git diff)" in result.allow_owned
+    assert result.legacy_lock is False
+
+
+def test_an_owned_entry_that_is_still_wanted_stays_owned() -> None:
+    first = merge_settings_detailed(None, FRAGMENT, ["Bash(a *)"], [])
+    second = merge_settings_detailed(first.merged, FRAGMENT, ["Bash(a *)"], first.allow_owned)
+    assert second.allow_added == [] and second.allow_removed == []
+    assert second.allow_owned == first.allow_owned
+    assert second.merged == first.merged
+
+
+def test_without_owned_list_only_known_kit_patterns_are_replaced() -> None:
+    existing = {
+        "permissions": {
+            "allow": ["Bash(git switch *)", "Bash(git merge *)", "Bash(npm test)", "Bash(old *)"]
+        }
+    }
+    result = merge_settings_detailed(existing, FRAGMENT, ["Bash(new *)"], None)
+    assert result.legacy_lock is True
+    assert set(result.allow_removed) == LEGACY_KIT_ALLOW
+    allow = result.merged["permissions"]["allow"]
+    assert "Bash(npm test)" in allow and "Bash(old *)" in allow  # Herkunft unbekannt: bleibt
+
+
+def test_a_fresh_install_owns_nothing_beforehand() -> None:
+    existing = {"permissions": {"allow": ["Bash(git merge *)"]}}
+    result = merge_settings_detailed(existing, FRAGMENT, [], [])
+    assert "Bash(git merge *)" in result.merged["permissions"]["allow"]
+    assert result.allow_removed == []
+
+
+@pytest.mark.parametrize(
+    ("settings", "expected"),
+    [
+        ({"permissions": {"defaultMode": UNSAFE}}, True),
+        ({"defaultMode": UNSAFE}, True),
+        ({"permissions": {"defaultMode": UNSAFE.lower()}}, True),
+        ({"permissions": {"defaultMode": " " + UNSAFE + " "}}, True),
+        ({"permissions": {"defaultMode": "acceptEdits"}}, False),
+        ({"permissions": {"defaultMode": 7}}, False),
+        ({"permissions": []}, False),
+        ({}, False),
+        (None, False),
+        ([UNSAFE], False),
+    ],
+)
+def test_unsafe_mode_detection(settings: Any, expected: bool) -> None:
+    assert unsafe_mode_in(settings) is expected
+
+
+def test_unsafe_mode_at_the_top_level_is_warned_about_too() -> None:
+    _, warnings = merge_settings({"defaultMode": UNSAFE}, FRAGMENT)
+    assert len(warnings) == 1 and "defaultMode" in warnings[0]

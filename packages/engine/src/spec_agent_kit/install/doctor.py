@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import time
 import urllib.error
@@ -13,7 +12,7 @@ from pathlib import Path
 from typing import Any, Final
 
 from spec_agent_kit import __version__
-from spec_agent_kit.config import ConfigError, load_config
+from spec_agent_kit.config import ConfigError, key_source, load_config
 from spec_agent_kit.config.check import check as check_config
 from spec_agent_kit.install import InstallError
 from spec_agent_kit.install.kit import (
@@ -24,8 +23,15 @@ from spec_agent_kit.install.kit import (
     sha256_of,
 )
 from spec_agent_kit.install.lock import read_lock
-from spec_agent_kit.install.settings import ENGINE_MARKER, STARTER_MARKER
+from spec_agent_kit.install.probe import probe_commands
+from spec_agent_kit.install.settings import (
+    ENGINE_MARKER,
+    STARTER_MARKER,
+    unsafe_mode_in,
+    unsafe_mode_warning,
+)
 from spec_agent_kit.install.speckit import detect_version
+from spec_agent_kit.install.tools import find_sh
 
 DASHBOARD_TIMEOUT_SECONDS: Final[float] = 3.0
 HOOK_TIMEOUT_SECONDS: Final[float] = 10.0
@@ -33,6 +39,11 @@ PROBE_PAYLOAD: Final[str] = (
     '{"hook_event_name": "SubagentStart", "agent_type": "sak-doctor-probe", "session_id": "probe"}'
 )
 REQUIRED_HOOK_EVENTS: Final[tuple[str, ...]] = ("SubagentStart", "SubagentStop")
+OPTIONAL_HOOK_EVENTS: Final[tuple[str, ...]] = ("SessionStart",)
+"""Hooks, die nur eine Warnung auslösen, wenn sie fehlen (seit Kit 0.2.0)."""
+SESSION_PROBE_PAYLOAD: Final[str] = (
+    '{"hook_event_name": "SessionStart", "source": "compact", "session_id": "probe"}'
+)
 REQUIRED_DENY: Final[tuple[str, ...]] = (
     "Bash(git push)",
     "Bash(git push *)",
@@ -73,7 +84,17 @@ def _check_lock(root: Path) -> Check:
         shown = ", ".join(missing[:3])
         return _entry("lock", False, f"{len(missing)} verwaltete Dateien fehlen, z. B. {shown}")
     note = f"; {len(modified)} lokal geändert (erlaubt)" if modified else ""
-    return _entry("lock", True, f"Kit {lock.kit_version}, {len(lock.files)} Dateien im Lock{note}")
+    engine_files = sum(1 for path in lock.files if path.startswith(f"{ENGINE_TARGET}/"))
+    other_files = len(lock.files) - engine_files
+    explanation = (
+        f"davon {engine_files} Dateien der vendorten Engine und {other_files} Agents, Skills, "
+        "Starter; config.yml, lock.json und settings.json sind nicht im Lock"
+    )
+    return _entry(
+        "lock",
+        True,
+        f"Kit {lock.kit_version}, {len(lock.files)} Dateien im Lock ({explanation}){note}",
+    )
 
 
 def _check_config(root: Path) -> Check:
@@ -130,6 +151,19 @@ def _check_settings(root: Path) -> Check:
             )
         else:
             problems.append(f"Hook {event} fehlt")
+    for event in OPTIONAL_HOOK_EVENTS:
+        entries = hooks.get(event) if isinstance(hooks, dict) else None
+        if not any(
+            STARTER_MARKER in str(hook.get("command", ""))
+            for entry in (entries if isinstance(entries, list) else [])
+            if isinstance(entry, dict)
+            for hook in entry.get("hooks", [])
+            if isinstance(hook, dict)
+        ):
+            warnings.append(
+                f"Hook {event} fehlt (der Lauf-Kontext übersteht ein Kompaktieren nicht); "
+                "sak upgrade ergänzt ihn"
+            )
     permissions = settings.get("permissions", {}) if isinstance(settings, dict) else {}
     deny = permissions.get("deny", []) if isinstance(permissions, dict) else []
     missing = [
@@ -177,9 +211,14 @@ def _check_hook_probe(root: Path) -> Check:
     starter = root / LAUNCHER_SH_TARGET
     if not starter.is_file():
         return _entry("hook_probe", False, f"{LAUNCHER_SH_TARGET} fehlt (Starter für die Hooks)")
-    sh = shutil.which("sh")
+    sh = find_sh()
     if sh is None:
-        return _entry("hook_probe", False, "keine POSIX-Shell (sh) gefunden; Hooks brauchen sie")
+        return _entry(
+            "hook_probe",
+            False,
+            "keine POSIX-Shell (sh) gefunden (PATH und die Orte von Git for Windows geprüft); "
+            "Hooks brauchen sie. Git for Windows installieren oder sh in den PATH aufnehmen",
+        )
     env = _probe_env(sh)
     env["CLAUDE_PROJECT_DIR"] = str(root)
 
@@ -222,10 +261,6 @@ def _check_hook_probe(root: Path) -> Check:
         return _entry(
             "hook_probe", False, "Der Hook schreibt etwas auf stdout; Hooks müssen still bleiben"
         )
-    if (hook.stdout or "").strip():
-        return _entry(
-            "hook_probe", False, "Der Hook schreibt etwas auf stdout; Hooks müssen still bleiben"
-        )
     if elapsed >= HOOK_TIMEOUT_SECONDS:
         return _entry("hook_probe", False, f"Hook-Probe dauerte {elapsed:.1f} s (Limit 10 s)")
     try:
@@ -233,6 +268,9 @@ def _check_hook_probe(root: Path) -> Check:
     except (subprocess.TimeoutExpired, OSError) as exc:
         return _entry("hook_probe", False, f"sak version über den Starter scheiterte: {exc}")
     shown = (version.stdout or "").strip()
+    session_problem = _session_probe(run)
+    if session_problem is not None:
+        return _entry("hook_probe", False, session_problem)
     try:
         reported = json.loads(shown).get("version")
     except (ValueError, AttributeError):
@@ -249,6 +287,71 @@ def _check_hook_probe(root: Path) -> Check:
         True,
         f"Starter läuft im Hook-Test (minimaler PATH), Kit {__version__}, {elapsed:.1f} s",
     )
+
+
+def _session_probe(run: Any) -> str | None:
+    """``hook session-start`` mit Beispiel-Payload: Exit 0, still oder gültiges JSON (US8)."""
+    try:
+        proc = run("hook", "session-start", stdin=SESSION_PROBE_PAYLOAD)
+    except subprocess.TimeoutExpired:
+        return f"hook session-start brauchte länger als {HOOK_TIMEOUT_SECONDS:.0f} s"
+    except OSError as exc:
+        return f"hook session-start nicht ausführbar: {exc}"
+    if proc.returncode != 0:
+        return f"hook session-start endete mit Exit {proc.returncode}"
+    text = (proc.stdout or "").strip()
+    if not text:
+        return None
+    try:
+        output = json.loads(text)["hookSpecificOutput"]
+        if output["hookEventName"] != "SessionStart" or not isinstance(
+            output["additionalContext"], str
+        ):
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        return (
+            "hook session-start schreibt keine gültige Hook-Ausgabe (JSON mit hookSpecificOutput)"
+        )
+    return None
+
+
+def _check_default_mode(root: Path) -> Check | None:
+    """Warnt, wenn ``defaultMode`` auf dem gefährlichen Modus steht (Befund 7); sonst ``None``."""
+    hits: list[str] = []
+    for relative in (SETTINGS_TARGET, ".claude/settings.local.json"):
+        path = root / relative
+        try:
+            data = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+        except (OSError, ValueError):
+            continue
+        if unsafe_mode_in(data):
+            hits.append(relative)
+    if not hits:
+        return None
+    entry = _entry("default_mode", True, "Warnung: " + unsafe_mode_warning(", ".join(hits)), False)
+    entry["warning"] = True
+    return entry
+
+
+def _check_commands(root: Path, probe: bool) -> Check:
+    """Befehle aus ``commands.*``: Programm auffindbar; mit ``probe`` auch ausgeführt (Spec 011)."""
+    try:
+        commands = load_config(root).data["commands"]
+    except ConfigError:
+        return _entry("commands", True, "übersprungen (Config ungültig)", required=probe)
+    items = probe_commands(root, commands, run=probe)
+    if not items:
+        return _entry("commands", True, "keine Befehle konfiguriert", required=probe)
+    failed = [i for i in items if not i["ok"]]
+    mode = "ausgeführt (--collect-only bzw. --version)" if probe else "nur Auffindbarkeit"
+    if failed:
+        shown = "; ".join(f"{i['command']}: {i['detail']}" for i in failed[:3])
+        detail = f"{len(failed)} von {len(items)} Befehlen nicht in Ordnung ({mode}): {shown}"
+    else:
+        detail = f"{len(items)} Befehle in Ordnung ({mode})"
+    entry = _entry("commands", not failed, detail, required=probe)
+    entry["items"] = items
+    return entry
 
 
 def _check_gitignore(root: Path) -> Check:
@@ -278,7 +381,8 @@ def _check_speckit(root: Path) -> Check:
         return _entry("speckit", False, exc.errors[0]["message"])
 
 
-def _check_dashboard(url: str) -> Check:
+def _check_dashboard(root: Path, url: str) -> Check:
+    """Erreichbar und Schlüssel vorhanden (Spec 011 B15); ohne Schlüssel ist es nicht ok."""
     target = url.rstrip("/") + "/healthz"
     try:
         with urllib.request.urlopen(target, timeout=DASHBOARD_TIMEOUT_SECONDS) as response:
@@ -287,12 +391,32 @@ def _check_dashboard(url: str) -> Check:
         status = exc.code
     except (urllib.error.URLError, OSError, ValueError) as exc:
         return _entry("dashboard", False, f"{target} nicht erreichbar: {exc}", required=False)
-    ok = status < 500
-    return _entry("dashboard", ok, f"{target} antwortet mit {status}", required=False)
+    reachable = status < 500
+    try:
+        source = key_source(root, load_config(root))
+    except ConfigError:
+        source = None
+    if reachable and source is None:
+        return _entry(
+            "dashboard",
+            False,
+            f"{target} antwortet mit {status}, aber es gibt keinen Schlüssel "
+            "(sak dashboard connect oder die Umgebungsvariable setzen)",
+            required=False,
+        )
+    suffix = f"; Schlüssel vorhanden ({source})" if source else ""
+    return _entry(
+        "dashboard", reachable, f"{target} antwortet mit {status}{suffix}", required=False
+    )
 
 
-def run_doctor(root: Path, engine_running_from: Path | None = None) -> dict[str, Any]:
-    """Alle Prüfungen. ``ok`` ist falsch, sobald eine Pflichtprüfung fehlschlägt."""
+def run_doctor(
+    root: Path, engine_running_from: Path | None = None, probe_commands: bool = False
+) -> dict[str, Any]:
+    """Alle Prüfungen. ``ok`` ist falsch, sobald eine Pflichtprüfung fehlschlägt.
+
+    Mit ``probe_commands`` laufen die Testbefehle probeweise und zählen als Pflichtprüfung.
+    """
     checks = [
         _check_lock(root),
         _check_config(root),
@@ -301,12 +425,16 @@ def run_doctor(root: Path, engine_running_from: Path | None = None) -> dict[str,
         _check_hook_probe(root),
         _check_gitignore(root),
         _check_speckit(root),
+        _check_commands(root, probe_commands),
     ]
+    mode = _check_default_mode(root)
+    if mode is not None:
+        checks.append(mode)
     try:
         url = load_config(root).data["dashboard"]["url"]
     except ConfigError:
         url = None
     if url:
-        checks.append(_check_dashboard(str(url)))
+        checks.append(_check_dashboard(root, str(url)))
     ok = all(c["ok"] for c in checks if c["required"])
     return {"ok": ok, "checks": checks}

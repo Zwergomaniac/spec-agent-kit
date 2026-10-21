@@ -1,0 +1,12 @@
+{
+  "schema": "sak.lock/1",
+  "kit_version": "0.2.0",
+  "installed_at": "2026-10-20T10:20:00Z",
+  "upgraded_at": "2026-10-21T08:00:00Z",
+  "files": {},
+  "settings_fragment_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "settings_allow": [
+    "Bash(uv run --project .spec-agent/engine sak *)",
+    "Bash(git status)"
+  ]
+}

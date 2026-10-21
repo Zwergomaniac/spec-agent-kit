@@ -65,7 +65,7 @@ def add_parsers(sub: Any) -> None:
     ls.add_argument("--all", action="store_true", help="Auch beendete Läufe")
 
     hook = sub.add_parser("hook", help="Hook-Einstiege (enden immer mit Exit 0)")
-    hook.add_argument("hook_command", choices=["subagent-start", "subagent-stop"])
+    hook.add_argument("hook_command", choices=["subagent-start", "subagent-stop", "session-start"])
 
     event = sub.add_parser("event", help="Ereignisse")
     e = event.add_subparsers(dest="event_command", required=True)

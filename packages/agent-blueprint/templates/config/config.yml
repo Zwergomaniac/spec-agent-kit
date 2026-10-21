@@ -39,6 +39,8 @@ commands:
   #  - uv run pytest -q
   lint: []
   #  - uv run ruff check .
+  prepare: []                 # Vorbereitung eines frischen Checkouts (Worktree): Builder und Prüfer führen sie vor dem Testen aus
+  #  - pnpm install --frozen-lockfile
   environment_failures: []    # Textmuster, die einen Fehlschlag als umgebungsbedingt kennzeichnen
 
 # Nur nötig, wenn pipeline.roles.ui_review.enabled true ist:

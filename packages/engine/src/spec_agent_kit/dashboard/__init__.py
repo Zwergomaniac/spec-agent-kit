@@ -438,8 +438,14 @@ def status(root: Path, env: Mapping[str, str] | None = None) -> tuple[int, dict[
     environment = os.environ if env is None else env
     source = key_source(root, cfg, environment)
     cursor = outbox.read_cursor(root)
-    return 0, {
-        "ok": True,
+    problems: list[str] = []
+    if dashboard["url"] and source is None:
+        problems.append("kein Schlüssel vorhanden (sak dashboard connect)")
+    if cursor.last_error:
+        problems.append(f"letzter Push-Fehler: {cursor.last_error}")
+    return (0 if not problems else 1), {
+        "ok": not problems,
+        "problems": problems,
         "url": dashboard["url"],
         "key": {
             "present": source is not None,

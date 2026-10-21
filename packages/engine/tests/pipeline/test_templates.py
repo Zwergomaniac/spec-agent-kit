@@ -240,6 +240,14 @@ def test_fragment_hooks() -> None:
         )
 
 
+def test_fragment_session_start_hook_runs_through_the_starter_on_compact() -> None:
+    (entry,) = fragment()["hooks"]["SessionStart"]
+    assert entry["matcher"] == "compact"
+    (hook,) = entry["hooks"]
+    assert hook["type"] == "command" and hook["timeout"] <= 5
+    assert hook["command"] == 'sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook session-start || true'
+
+
 def test_fragment_permissions() -> None:
     permissions = fragment()["permissions"]
     allow, deny = permissions["allow"], permissions["deny"]

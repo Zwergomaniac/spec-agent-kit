@@ -72,6 +72,8 @@ describe('POST /api/ingest (Vertragstests, SC-002)', () => {
   it('lehnt eine Hülle für ein anderes Projekt als das des Schlüssels ab (403)', async () => {
     const res = await ctx.ingestAs(tokenA, ingestRequest('proj-b', [makeEvent('proj-b')]))
     expect(res.status).toBe(403)
+    // Das erwartete Projekt wird genannt (nie der Schlüssel), damit der Push-Client es melden kann.
+    expect(await res.json()).toEqual({ error: 'project mismatch', expected: 'proj-a' })
     expect(count(ctx, 'events')).toBe(0)
   })
 
