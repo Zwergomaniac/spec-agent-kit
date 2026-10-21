@@ -1,6 +1,6 @@
 [project]
 name = "spec-agent-kit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Engine und CLI (sak) des Spec Agent Kit"
 requires-python = ">=3.11"
 dependencies = [

@@ -16,6 +16,41 @@ if [ -z "$uv" ]; then
     uv=$(command -v uv 2>/dev/null) || uv=""
 fi
 if [ -z "$uv" ]; then
+    # Windows (Git Bash/MSYS): Orte ueber LOCALAPPDATA/USERPROFILE, ggf. per cygpath umgewandelt.
+    posix_path() {
+        if command -v cygpath >/dev/null 2>&1; then
+            cygpath -u -- "$1" 2>/dev/null && return 0
+        fi
+        # Ohne cygpath: "C:\x\y" -> "/c/x/y" in reinem sh (tr aus dem Standardumfang).
+        rest=${1#?:}
+        drive=${1%"$rest"}
+        drive=${drive%:}
+        case "$drive" in
+            [A-Za-z])
+                lower=$(printf '%s' "$drive" | tr 'A-Z' 'a-z')
+                slashed=$(printf '%s' "$rest" | tr '\\' '/')
+                printf '/%s%s\n' "$lower" "$slashed"
+                ;;
+            *) printf '%s\n' "$1" ;;
+        esac
+    }
+    if [ -n "${LOCALAPPDATA:-}" ]; then
+        winget=$(posix_path "$LOCALAPPDATA")/Microsoft/WinGet
+        for candidate in "$winget/Links/uv.exe" "$winget"/Packages/astral-sh.uv_*/uv.exe; do
+            if [ -x "$candidate" ]; then
+                uv=$candidate
+                break
+            fi
+        done
+    fi
+    if [ -z "$uv" ] && [ -n "${USERPROFILE:-}" ]; then
+        candidate=$(posix_path "$USERPROFILE")/.local/bin/uv.exe
+        if [ -x "$candidate" ]; then
+            uv=$candidate
+        fi
+    fi
+fi
+if [ -z "$uv" ]; then
     for candidate in "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv" /opt/homebrew/bin/uv /usr/local/bin/uv; do
         if [ -x "$candidate" ]; then
             uv=$candidate

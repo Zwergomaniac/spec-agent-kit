@@ -16,6 +16,7 @@ from install_support import (
     write,
 )
 
+from spec_agent_kit.install import doctor as doctor_module
 from spec_agent_kit.install.kit import Kit, sha256_of
 
 REVIEWER = ".claude/agents/sak-code-reviewer.md"
@@ -455,6 +456,11 @@ def test_smoke_init_doctor_local_change_version_bump_upgrade(
 ) -> None:
     _installed(sak, init_args, target)
     write(target, ".spec-agent/engine/.venv/pyvenv.cfg", "home = x\n")
+    monkeypatch.setattr(  # die echte Hook-Probe braucht ein echtes uv (siehe test_install_doctor)
+        doctor_module,
+        "_check_hook_probe",
+        lambda root: {"check": "hook_probe", "ok": True, "detail": "ersetzt", "required": True},
+    )
     monkeypatch.chdir(target)
     code, doctor = sak("doctor")
     assert code == 0, doctor
@@ -472,3 +478,30 @@ def test_smoke_init_doctor_local_change_version_bump_upgrade(
     assert (target / (DOCS + ".sak-new")).is_file()
     code, doctor = sak("doctor")
     assert code == 0, doctor  # lokal geänderte Dateien sind erlaubt
+
+
+def test_upgrade_replaces_old_direct_uv_hooks_and_keeps_foreign_ones(
+    kit: Kit, target: Path, sak: Sak, init_args: list[str]
+) -> None:
+    import json
+
+    _installed(sak, init_args, target)
+    path = target / ".claude/settings.json"
+    settings = read_json(path)
+    old = (
+        'uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" sak hook subagent-start || true'
+    )
+    settings["hooks"]["SubagentStart"] = [
+        {"hooks": [{"type": "command", "command": "echo fremd"}]},
+        {"matcher": "sak-.*", "hooks": [{"type": "command", "command": old, "timeout": 5}]},
+    ]
+    text = json.dumps(settings, indent=2) + "\n"
+    path.write_text(text, encoding="utf-8", newline="\n")
+    git(target, "commit", "-q", "-am", "alte Hooks")
+    bump_version(kit, "0.2.0")
+    _upgrade(sak, target, "--apply")
+    entries = read_json(path)["hooks"]["SubagentStart"]
+    commands = [h["command"] for e in entries for h in e["hooks"]]
+    assert commands[0] == "echo fremd"
+    assert commands[1:] == ['sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook subagent-start || true']
+    assert len(entries) == 2

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import threading
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -12,15 +13,29 @@ from typing import Any
 import pytest
 from install_support import Sak, git, read_json, write
 
+from spec_agent_kit import __version__
+from spec_agent_kit.install import doctor as doctor_module
 from spec_agent_kit.install.doctor import run_doctor
 from spec_agent_kit.install.kit import Kit
 
-CHECKS = {"lock", "config", "engine", "hooks_and_deny", "gitignore", "speckit"}
+CHECKS = {"lock", "config", "engine", "hooks_and_deny", "hook_probe", "gitignore", "speckit"}
+REAL_PROBE = doctor_module._check_hook_probe
 
 
 @pytest.fixture
-def ready(kit: Kit, target: Path, sak: Sak, init_args: list[str]) -> Path:
-    """Ein initialisiertes Projekt mit (angetäuschter) Engine-Umgebung."""
+def ready(
+    kit: Kit, target: Path, sak: Sak, init_args: list[str], monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    """Ein initialisiertes Projekt mit (angetäuschter) Engine-Umgebung.
+
+    Die echte Hook-Probe braucht ein funktionierendes uv; hier ist sie ersetzt, die Probe-Tests
+    unten rufen ``REAL_PROBE`` mit einem unechten uv auf.
+    """
+    monkeypatch.setattr(
+        doctor_module,
+        "_check_hook_probe",
+        lambda root: {"check": "hook_probe", "ok": True, "detail": "ersetzt", "required": True},
+    )
     code, out = sak(*init_args, "--apply")
     assert code == 0, out
     write(target, ".spec-agent/engine/.venv/pyvenv.cfg", "home = x\n")
@@ -223,3 +238,94 @@ def test_doctor_writes_nothing(ready: Path, sak: Sak) -> None:
     before = git(ready, "status", "--porcelain", "-uall")
     sak("doctor", str(ready))
     assert git(ready, "status", "--porcelain", "-uall") == before
+
+
+# ------------------------------------------------------------------------------- Hook-Probe
+
+
+def _fake_uv(path: Path, version: str = __version__) -> str:
+    """Ein unechtes uv als sh-Skript: ``sak version`` liefert JSON, alles andere endet still."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = (
+        "#!/bin/sh\n"
+        'case "$*" in\n'
+        f"  *' sak version') echo '{{\"version\": \"{version}\"}}' ;;\n"
+        "esac\n"
+        "exit 0\n"
+    )
+    path.write_bytes(body.encode())
+    path.chmod(0o755)
+    return path.as_posix()
+
+
+needs_sh = pytest.mark.skipif(shutil.which("sh") is None, reason="kein sh vorhanden")
+
+
+@needs_sh
+def test_hook_probe_passes_with_a_working_starter(
+    ready: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SAK_UV", _fake_uv(tmp_path / "bin" / "uv"))
+    check = REAL_PROBE(ready)
+    assert check["ok"] is True, check
+    assert check["check"] == "hook_probe"
+
+
+@needs_sh
+def test_hook_probe_fails_with_exit_127_when_uv_is_missing(
+    ready: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SAK_UV", (tmp_path / "gibt-es-nicht").as_posix())
+    check = REAL_PROBE(ready)
+    assert check["ok"] is False
+    assert check["required"] is True
+    assert "127" in check["detail"] and "SAK_UV" in check["detail"]
+
+
+@needs_sh
+def test_hook_probe_fails_on_a_wrong_kit_version(
+    ready: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SAK_UV", _fake_uv(tmp_path / "bin" / "uv", version="9.9.9"))
+    check = REAL_PROBE(ready)
+    assert check["ok"] is False
+    assert __version__ in check["detail"]
+
+
+def test_hook_probe_fails_without_the_starter(ready: Path) -> None:
+    (ready / ".spec-agent/sak").unlink()
+    check = REAL_PROBE(ready)
+    assert check["ok"] is False
+    assert ".spec-agent/sak" in check["detail"]
+
+
+@needs_sh
+def test_failing_probe_makes_the_doctor_fail(
+    ready: Path, sak: Sak, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(doctor_module, "_check_hook_probe", REAL_PROBE)
+    monkeypatch.setenv("SAK_UV", (tmp_path / "gibt-es-nicht").as_posix())
+    code, result = sak("doctor", str(ready))
+    assert code == 1
+    assert _by_name(result)["hook_probe"]["ok"] is False
+
+
+def test_hook_entries_pointing_at_the_starter_pass_without_warning(ready: Path, sak: Sak) -> None:
+    _, result = sak("doctor", str(ready))
+    check = _by_name(result)["hooks_and_deny"]
+    assert check["ok"] is True
+    assert "warning" not in check
+
+
+def test_old_direct_uv_hook_is_a_warning_pointing_to_upgrade(ready: Path, sak: Sak) -> None:
+    path = ready / ".claude/settings.json"
+    settings = read_json(path)
+    settings["hooks"]["SubagentStart"][0]["hooks"][0]["command"] = (
+        'uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" sak hook subagent-start || true'
+    )
+    path.write_text(json.dumps(settings), encoding="utf-8")
+    code, result = sak("doctor", str(ready))
+    check = _by_name(result)["hooks_and_deny"]
+    assert code == 0, result
+    assert check["ok"] is True and check["warning"] is True
+    assert "sak upgrade" in check["detail"] and "SubagentStart" in check["detail"]
