@@ -22,8 +22,8 @@ from spec_agent_kit.config import (
     CONFIG_RELATIVE_PATH,
     ConfigError,
     NotInitializedError,
+    key_source,
     load_config,
-    read_dashboard_key,
     schema_errors,
 )
 from spec_agent_kit.config.defaults import DASHBOARD_KEY_RELATIVE_PATH
@@ -436,15 +436,14 @@ def status(root: Path, env: Mapping[str, str] | None = None) -> tuple[int, dict[
         return 1, {"ok": False, "errors": exc.errors}
     dashboard = cfg.data["dashboard"]
     environment = os.environ if env is None else env
-    in_env = bool(environment.get(dashboard["token_env"], "").strip())
-    in_file = key_file(root).is_file() and bool(read_dashboard_key(root, cfg, {}))
+    source = key_source(root, cfg, environment)
     cursor = outbox.read_cursor(root)
     return 0, {
         "ok": True,
         "url": dashboard["url"],
         "key": {
-            "present": in_env or in_file,
-            "source": "env" if in_env else ("file" if in_file else None),
+            "present": source is not None,
+            "source": source,
             "env_var": dashboard["token_env"],
             "file": DASHBOARD_KEY_RELATIVE_PATH,
         },

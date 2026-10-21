@@ -1,0 +1,12 @@
+{
+  "$comment": "Regeln für `sak init`: Werkzeuge, deren Ausgabeordner im Projekt den Prüf-Snapshot verändern. Init schlägt für Fundorte `guard.clean_ignore`-Einträge vor (Spec 011 US2). Wird nur vom Kit gelesen und nicht ins Zielprojekt kopiert.",
+  "artifact_tools": [
+    {
+      "id": "playwright",
+      "label": "Playwright",
+      "config_files": ["playwright.config.*"],
+      "packages": ["@playwright/test", "playwright"],
+      "artifacts": ["test-results/", "playwright-report/"]
+    }
+  ]
+}

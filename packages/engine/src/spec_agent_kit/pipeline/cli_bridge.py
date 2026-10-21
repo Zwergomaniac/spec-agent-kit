@@ -50,6 +50,10 @@ def add_parsers(sub: Any) -> None:
     ):
         p = r.add_parser(name, help=text)
         p.add_argument("run")
+    cl = r.add_parser(
+        "cleanup", help="Entfernt Links und Junctions unter runs/<id>/ (Ziele bleiben)"
+    )
+    cl.add_argument("run")
     r.add_parser("snapshot", help="Hash des Arbeitsstands")
     rc = r.add_parser("reviewer-check", help="Prüft, dass ein Prüfer nichts verändert hat")
     rc.add_argument("hash")
@@ -97,6 +101,8 @@ def run_command(args: argparse.Namespace, ctx: Ctx) -> dict[str, Any]:
         return commands.cmd_return(ctx, args.run, reason=args.reason)
     if name == "abort":
         return commands.cmd_abort(ctx, args.run, reason=args.reason)
+    if name == "cleanup":
+        return commands.cmd_cleanup(ctx, args.run)
     if name == "guard":
         return commands.cmd_guard(ctx, args.run)
     if name == "snapshot":

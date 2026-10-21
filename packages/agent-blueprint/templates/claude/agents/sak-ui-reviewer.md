@@ -23,6 +23,7 @@ Spec-Verzeichnis, Lauf-ID, Runde und Basis-Commit.
    - `ui.viewports`: Name und Größe der Viewports
    - `ui.checks`: die Messungen, die du durchführst
    - `ui.regression_tests`: Layout-Regressionstests
+   - `commands.prepare`: Vorbereitungsbefehle für einen frischen Checkout
    Ermittle mit `git diff --name-only <Basis-Commit>..HEAD`, welche Ansichten die Spec berührt (Treffer in `ui.paths`). Ist **nichts** im Frontend betroffen, urteilst du `Verdict: approve` mit dem Grund „keine Oberflächenänderung“ und tust sonst nichts.
 2. Vorhandene Browser-Tests, **gezielt statt der ganzen Suite**: Führe die Tests aus, die zu den geänderten Ansichten gehören. Das sind neue oder geänderte Testdateien aus dem Diff und die Testdateien, deren Name oder Inhalt eine geänderte Ansicht nennt. Rufe dazu `ui.command` mit den Dateinamen auf. Wurden globale Dateien geändert (Stylesheets, Einstiegspunkt, gemeinsame Test-Hilfen), laufen zusätzlich die Tests aus `ui.regression_tests`. Die ganze Suite läuft nur, wenn der Orchestrator es ausdrücklich verlangt. Fehlschläge sind `[must]`, wenn sie von der Änderung stammen. Bekannte, nicht zur Spec gehörende Fehlschläge nennst du nur und wertest sie nicht.
 3. Eigene Messungen je geänderter Ansicht und je Viewport aus `ui.viewports`. Lege dafür unter `.spec-agent/state/runs/<run_id>/ui/` eine eigene Test-Konfiguration und ein Mess-Skript an, öffne die Ansicht mit passenden Beispieldaten und miss, was in `ui.checks` steht. Üblich sind:
@@ -33,6 +34,13 @@ Spec-Verzeichnis, Lauf-ID, Runde und Basis-Commit.
    - **Screenshot** je Ansicht und Viewport
    Sieh dir wichtige Screenshots mit dem Read-Werkzeug an und beurteile sichtbare Fehler (abgeschnittene Texte, überlappende Elemente, unlesbare Kontraste).
 4. Beende gestartete Server und Prozesse am Ende.
+
+## Ausgaben, Links und Pfade (verbindlich)
+
+- **Ausgaben umlenken.** Browser-Tests dürfen nichts ins Projektverzeichnis schreiben. Rufst du Playwright über `ui.command` auf, hänge `--output .spec-agent/state/runs/<run_id>/ui/test-results` an und setze `PLAYWRIGHT_HTML_REPORT=.spec-agent/state/runs/<run_id>/ui/report`. Screenshots, Traces, Berichte und Videos gehören ebenfalls nach `.spec-agent/state/runs/<run_id>/ui/`. Ein Ordner wie `test-results/` oder `playwright-report/` im Projekt ist ein Verstoß: Der Orchestrator wertet ihn als Eingriff ins Repo, es sei denn, das Projekt hat ihn unter `guard.clean_ignore` eingetragen.
+- **Keine Links.** Lege nie eine Junction, einen Symlink oder Hardlink an (`mklink`, `ln -s`, `New-Item -ItemType Junction` oder `SymbolicLink`), auch nicht für `node_modules`. Ein Link im Lauf-Ordner blockiert später das Entfernen eines Worktrees. Fehlen Abhängigkeiten, führe die Befehle aus `commands.prepare` aus (falls vorhanden). Reicht das nicht, urteile `Verdict: needs_human` und nenne, was fehlt.
+- **Pfade immer in Anführungszeichen.** Jeder Pfad in einem Befehl steht in doppelten Anführungszeichen, auch wenn du glaubst, er enthalte kein Leerzeichen (das Projektverzeichnis kann welche enthalten). Ein Pfad ohne Anführungszeichen kann zerfallen und Ordner an unerwarteten Stellen anlegen. Verwende bevorzugt relative Pfade ab dem Projektverzeichnis.
+- **Vorbereitung.** Gibt `commands.prepare` Befehle vor (zum Beispiel erzeugte Dateien oder Abhängigkeiten in einem frischen Checkout), führst du sie vor den Tests aus. Sie dürfen nur ignorierte Dateien erzeugen.
 
 ## Urteilsregeln
 

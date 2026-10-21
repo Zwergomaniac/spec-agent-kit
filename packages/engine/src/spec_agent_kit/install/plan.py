@@ -21,7 +21,7 @@ import yaml
 from spec_agent_kit import contracts
 from spec_agent_kit.config import ConfigError, read_raw, schema_errors
 from spec_agent_kit.config.defaults import defaults
-from spec_agent_kit.install import InstallError
+from spec_agent_kit.install import InstallError, detect
 from spec_agent_kit.install.kit import (
     CONFIG_TARGET,
     LOCK_TARGET,
@@ -83,6 +83,7 @@ class Plan:
     config_keys: list[dict[str, Any]] = field(default_factory=list)
     speckit_version: str | None = None
     lock: Lock | None = None
+    suggestions: list[dict[str, Any]] = field(default_factory=list)
 
     def changes(self) -> list[Action]:
         """Alle Aktionen außer ``skip``."""
@@ -128,6 +129,7 @@ class Plan:
         for key in self.config_keys:
             lines.append(f"  ? Config-Schlüssel {key['path']} fehlt (Default: {key['default']!r})")
         lines.extend(f"WARNUNG: {w}" for w in self.warnings)
+        lines.extend(f"VORSCHLAG: {item['text']}" for item in self.suggestions)
         if self.is_empty:
             lines.append("Nichts zu tun.")
         else:
@@ -148,6 +150,7 @@ class Plan:
             "conflicts": [a.path for a in self.conflicts],
             "config_keys": self.config_keys,
             "warnings": self.warnings,
+            "suggestions": self.suggestions,
             "text": self.text(),
         }
 
@@ -308,6 +311,7 @@ def render_config(
     test_fast: Sequence[str] = (),
     test_full: Sequence[str] = (),
     lint: Sequence[str] = (),
+    clean_ignore: Sequence[str] = (),
 ) -> str:
     """Ersetzt die Platzhalter der Vorlage und trägt die Optionen ein. Kommentare bleiben."""
     text = template.replace("__PROJECT_KEY__", key)
@@ -317,6 +321,7 @@ def render_config(
         ("test_fast", test_fast),
         ("test_full", test_full),
         ("lint", lint),
+        ("clean_ignore", clean_ignore),
     ):
         if not commands:
             continue
@@ -447,6 +452,51 @@ def _finish(
 # ---------------------------------------------------------------------------
 
 
+def _init_suggestions(
+    target: Path,
+    commands: Sequence[str],
+    clean_ignore: Sequence[str],
+    rules: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Vorschläge aus der Projekt-Erkennung (Spec 011 US2, US4). Es wird nichts geschrieben."""
+    found: list[dict[str, Any]] = []
+    for tool in detect.detect_artifact_tools(target, rules):
+        missing = [e for e in tool["entries"] if e not in clean_ignore]
+        if not missing:
+            continue
+        where = f"{tool['directory'] or '.'}: {tool['evidence']}"
+        option = " ".join(f"--clean-ignore {e}" for e in missing)
+        found.append(
+            {
+                "kind": "clean_ignore",
+                "tool": tool["id"],
+                "entries": missing,
+                "reason": f"{tool['label']} erkannt ({where})",
+                "text": (
+                    f"{tool['label']} erkannt ({where}); dessen Ausgabeordner ließen sonst jeden "
+                    f"Prüflauf mit review_integrity eskalieren. guard.clean_ignore ergänzen: "
+                    f"{option}"
+                ),
+            }
+        )
+    for command in dict.fromkeys(commands):
+        suggestion = detect.suggest_command(command, target)
+        if suggestion is not None:
+            found.append(
+                {
+                    "kind": "command",
+                    "command": suggestion["command"],
+                    "suggested": suggestion["suggested"],
+                    "reason": suggestion["reason"],
+                    "text": (
+                        f"Befehl '{suggestion['command']}' wahrscheinlich nicht lauffähig: "
+                        f"{suggestion['reason']}. Vorschlag: {suggestion['suggested']}"
+                    ),
+                }
+            )
+    return found
+
+
 def build_init_plan(
     kit: Kit,
     target: Path,
@@ -459,6 +509,7 @@ def build_init_plan(
     test_fast: Sequence[str] = (),
     test_full: Sequence[str] = (),
     lint: Sequence[str] = (),
+    clean_ignore: Sequence[str] = (),
     allow_dirty: bool = False,
     now: str | None = None,
 ) -> Plan:
@@ -523,6 +574,7 @@ def build_init_plan(
         test_fast=test_fast,
         test_full=test_full,
         lint=lint,
+        clean_ignore=clean_ignore,
     )
     problems = check_rendered(config_text)
     if problems:
@@ -540,6 +592,10 @@ def build_init_plan(
             f"({placeholder_command}, {placeholder_url}). In .spec-agent/config.yml anpassen "
             "oder mit --no-ui initialisieren."
         )
+
+    plan.suggestions.extend(
+        _init_suggestions(target, [*test_fast, *test_full, *lint], clean_ignore, kit.detectors())
+    )
 
     extra = allow_entries([*test_fast, *test_full, *lint])
     plan.actions.append(_settings_action(kit, target, extra, plan.warnings))

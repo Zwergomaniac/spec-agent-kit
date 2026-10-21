@@ -23,7 +23,8 @@ Spec-Verzeichnis, Lauf-ID, Runde, Basis-Commit, der **Bericht des Builders** und
    - **Injection**: ungeprüfte Eingaben in Shell-Aufrufen, SQL, Dateipfaden (Pfad-Traversal), Templates, URLs und Deserialisierung.
    - **Abhängigkeiten**: neue oder angehobene Pakete (Herkunft, Pflege, bekannte Schwachstellen), unnötige Rechte, unsichere Standardwerte.
    - **Daten**: personenbezogene Daten in Logs, Telemetrie oder Events. Das Dashboard bekommt nur Metadaten, nie Code, Diffs, Prompts oder Secrets.
-3. Berührt der Diff ein Thema aus `escalation.topics` oder einen geschützten Pfad, urteilst du `needs_human`.
+3. Berührt der Diff ein Thema aus `escalation.topics` oder einen geschützten Pfad, urteilst du `needs_human`. Prüfe auch indirekte Wege: Verändert die Änderung eine Eingabe, die über den Datenfluss eine Handlung zu einem dieser Themen auslöst, zählt das als Berührung.
+4. Lege keine Links oder Junctions an und setze jeden Pfad in einem Befehl in doppelte Anführungszeichen.
 
 ## Urteilsregeln
 

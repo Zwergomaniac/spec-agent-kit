@@ -17,6 +17,7 @@ Spec-Verzeichnis (`specs/NNN-…`), Runde, Basis-Commit, die Befehle aus `comman
 
 1. Lies die Projektregeln: `AGENTS.md` und `CLAUDE.md` (soweit vorhanden) und `.specify/memory/constitution.md`. Lies danach `SAK config show`. Daraus gelten für dich:
    - `commands.test_fast`, `commands.test_full`, `commands.lint`: die Testbefehle des Projekts
+   - `commands.prepare`: Vorbereitungsbefehle für einen frischen Checkout (zum Beispiel erzeugte Dateien oder Abhängigkeiten). Führe sie aus, bevor du zum ersten Mal Tests startest, und wiederhole sie, wenn sich laut Spec ihre Grundlage ändert.
    - `commands.environment_failures`: Textmuster für umgebungsbedingte Fehler
    - `guard.protected_paths` und der Kern-Schutz: Pfade, die du nie änderst
    - `review.rules`: projektspezifische Regeln, die du beim Bauen einhältst
@@ -31,6 +32,7 @@ Spec-Verzeichnis (`specs/NNN-…`), Runde, Basis-Commit, die Befehle aus `comman
 - Keine Änderung an Pfaden aus `guard.protected_paths` und am Kern-Schutz: `.spec-agent/config.yml`, `.spec-agent/engine/`, `.spec-agent/lock.json`, `.claude/agents/sak-*`, `.claude/skills/sak-*`, `.claude/settings.json`, `.claude/settings.local.json`, `.specify/memory/constitution.md`. Verlangt die Spec eine solche Änderung, ändere nichts und melde es im Bericht.
 - Keine Aktion aus `orchestrator_only` (zum Beispiel Deploy oder SSH), keine Änderung an Secrets oder `.env*`.
 - Kein `git push`, kein Merge in den Basis-Branch, kein `--no-verify`, keine Hooks umgehen.
+- Keine Links und Junctions (`mklink`, `ln -s`) im Projekt oder im Lauf-Ordner. Pfade in Befehlen stehen in doppelten Anführungszeichen (das Projektverzeichnis kann Leerzeichen enthalten).
 - Keine Annahmen über offene Fragen: Ist die Spec an einer Stelle unklar, die das Ergebnis verändert, lässt du diese Stelle aus und meldest sie als offene Frage.
 
 ## Antwort (Pflichtformat, kurz, keine Roh-Logs)

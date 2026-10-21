@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fnmatch
+import os
 import subprocess
 from collections.abc import Iterable
 from pathlib import Path
@@ -114,3 +115,48 @@ def exclude_specs(patterns: Iterable[str]) -> list[str]:
         else:
             specs.append(f":(exclude){pattern.rstrip('/')}")
     return specs
+
+
+def _self_ignoring(directory: Path) -> bool:
+    """Werkzeug-Caches (``.pytest_cache`` u. a.) haben eine eigene ``.gitignore`` mit ``*``."""
+    try:
+        lines = (directory / ".gitignore").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return False
+    return any(line.strip() == "*" for line in lines)
+
+
+def new_top_level_dirs(root: Path, clean_ignore: Iterable[str]) -> list[str]:
+    """Top-Level-Ordner, die ``git status`` nicht sicher sieht (zum Beispiel leere Ordner).
+
+    Nicht gezählt werden ``.git``, Ordner aus ``clean_ignore``, von Git ignorierte Ordner und
+    sich selbst ignorierende Werkzeug-Caches. Der Prüfer-Snapshot hält die Liste fest, damit ein
+    Prüfer, der versehentlich Ordner anlegt (etwa durch einen Pfad mit Leerzeichen ohne
+    Anführungszeichen), auffällt (Spec 011 B14).
+    """
+    ignore = list(clean_ignore)
+    try:
+        names = sorted(
+            e.name for e in os.scandir(root) if e.name != ".git" and e.is_dir(follow_symlinks=True)
+        )
+    except OSError:
+        return []
+    names = [n for n in names if not matches_any(f"{n}/", ignore)]
+    names = [n for n in names if not _self_ignoring(root / n)]
+    if not names:
+        return []
+    try:
+        proc = subprocess.run(
+            [*_GIT, "check-ignore", "-z", "--stdin"],
+            cwd=root,
+            input="\x00".join(f"{n}/" for n in names) + "\x00",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except OSError:
+        return names
+    ignored = {p.rstrip("/") for p in proc.stdout.split("\x00") if p}
+    return [n for n in names if n not in ignored]

@@ -327,6 +327,7 @@ def _install(args: argparse.Namespace) -> int:
                 test_fast=args.test_fast,
                 test_full=args.test_full,
                 lint=args.lint,
+                clean_ignore=args.clean_ignore,
                 allow_dirty=args.allow_dirty,
             )
         else:
@@ -420,6 +421,12 @@ def _add_install_parsers(sub: Any) -> None:
     init.add_argument("--test-fast", action="append", default=[], help="Befehl, wiederholbar")
     init.add_argument("--test-full", action="append", default=[], help="Befehl, wiederholbar")
     init.add_argument("--lint", action="append", default=[], help="Befehl, wiederholbar")
+    init.add_argument(
+        "--clean-ignore",
+        action="append",
+        default=[],
+        help="guard.clean_ignore-Eintrag (zum Beispiel test-results/), wiederholbar",
+    )
     upgrade = sub.add_parser("upgrade", help="Kit-Dateien im Zielprojekt nachrüsten")
     upgrade.add_argument("target", help="Zielprojekt")
     for command in (init, upgrade):
