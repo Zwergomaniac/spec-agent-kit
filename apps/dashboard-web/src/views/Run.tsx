@@ -9,6 +9,7 @@ import { eventTypeLabel, describeEvent } from '@/eventText'
 import { fmtDateTime, fmtDuration } from '@/format'
 import { usePolled } from '@/hooks'
 import { labelOf, runStateTone, verdictTone } from '@/labels'
+import { useMode } from '@/mode'
 import { links, safeLink } from '@/router'
 import type { BoardRun, BoardStation, SakEvent } from '@/types'
 
@@ -116,14 +117,19 @@ function RunSummary({ run }: { run: BoardRun }) {
 }
 
 export function Run({ projectKey, runId }: { projectKey: string; runId: string }) {
+  const { local } = useMode()
   const { data, error, updatedAt, refresh } = usePolled(() => api.run(projectKey, runId), `run:${projectKey}:${runId}`)
 
   const crumbs = (
     <nav aria-label="Brotkrumen" className="mb-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-      <a href={links.portfolio()} className="hover:underline">
-        Portfolio
-      </a>
-      <ChevronRight className="size-3" />
+      {local ? null : (
+        <>
+          <a href={links.portfolio()} className="hover:underline">
+            Portfolio
+          </a>
+          <ChevronRight className="size-3" />
+        </>
+      )}
       <a href={safeLink(() => links.project(projectKey))} className="font-mono hover:underline">
         {projectKey}
       </a>

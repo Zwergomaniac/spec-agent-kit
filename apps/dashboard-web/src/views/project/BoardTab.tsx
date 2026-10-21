@@ -10,6 +10,7 @@ import { SpecCard } from '@/components/SpecCard'
 import { StageColumn } from '@/components/StageColumn'
 import { Ticker } from '@/components/Ticker'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { HUMAN_COLUMN_DEFINITION, stageDefinition } from '@/definitions'
 import { labelOf } from '@/labels'
 import type { Board, BoardRun } from '@/types'
 
@@ -43,13 +44,13 @@ export function BoardTab({ projectKey, board }: { projectKey: string; board: Boa
             style={{ '--board-cols': columnCount } as CSSProperties}
             data-testid="board-columns"
           >
-          <StageColumn id="human" title="Mensch prüft / entscheidet" count={board.attention.length} highlight={board.attention.length > 0}>
+          <StageColumn id="human" title="Mensch prüft / entscheidet" count={board.attention.length} highlight={board.attention.length > 0} definition={HUMAN_COLUMN_DEFINITION}>
             <AttentionList items={board.attention} compact />
           </StageColumn>
           {vocabulary.levels.stage.map((stage) => {
             const specs = staged.filter((s) => s.stage === stage)
             return (
-              <StageColumn key={stage} id={stage} title={labelOf('stage', stage)} count={specs.length}>
+              <StageColumn key={stage} id={stage} title={labelOf('stage', stage)} count={specs.length} definition={stageDefinition(stage)}>
                 <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
                   {specs.map((s) => (
                     <SpecCard key={s.dir} spec={s} projectKey={projectKey} run={runBySpec.get(s.dir)} />

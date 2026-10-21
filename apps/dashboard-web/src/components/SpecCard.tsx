@@ -6,7 +6,9 @@ import { links, safeLink } from '@/router'
 import type { BoardRun, BoardSpec } from '@/types'
 
 export function SpecCard({ spec, projectKey, run }: { spec: BoardSpec; projectKey: string; run?: BoardRun }) {
-  const total = spec.tasks.done + spec.tasks.open
+  const partial = spec.tasks.partial ?? 0
+  // Teilweise erledigte Tasks (`[~]`) zählen weder als erledigt noch als offen, gehören aber zur Gesamtzahl.
+  const total = spec.tasks.done + spec.tasks.open + partial
   const pct = total === 0 ? 0 : Math.round((spec.tasks.done / total) * 100)
 
   return (
@@ -23,6 +25,7 @@ export function SpecCard({ spec, projectKey, run }: { spec: BoardSpec; projectKe
           </div>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums">
             {spec.tasks.done} von {total} Tasks
+            {partial > 0 ? <span data-testid="tasks-partial"> · {partial} teilweise</span> : null}
           </p>
         </div>
       ) : null}

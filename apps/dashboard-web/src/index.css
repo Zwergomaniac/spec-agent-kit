@@ -98,6 +98,7 @@
     border-color: var(--border);
   }
   html {
+    scroll-padding-top: 5rem;
     color-scheme: light;
   }
   html.dark {

@@ -1,5 +1,6 @@
 const dateTime = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
-const timeOnly = new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' })
+const dateTimeZone = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'long' })
+const timeOnly =new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' })
 const dateOnly = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' })
 
 function valid(iso: string | null | undefined): iso is string {
@@ -8,6 +9,11 @@ function valid(iso: string | null | undefined): iso is string {
 
 export function fmtDateTime(iso: string | null | undefined): string {
   return valid(iso) ? dateTime.format(new Date(iso)) : '–'
+}
+
+/** Lokale Zeit mit Zeitzone, z. B. „21.10.2026, 11:30:15 MESZ“. */
+export function fmtDateTimeZone(iso: string | null | undefined): string {
+  return valid(iso) ? dateTimeZone.format(new Date(iso)) : '–'
 }
 
 export function fmtTime(ms: number): string {

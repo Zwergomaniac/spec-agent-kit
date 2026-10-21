@@ -13,6 +13,8 @@
     "test": "pnpm -r test && uv run --project packages/engine pytest",
     "dashboard:local": "node apps/dashboard-api/scripts/local.mjs",
     "dashboard:project": "node apps/dashboard-api/scripts/local.mjs project",
+    "board:build": "pnpm --filter @sak/dashboard-web run build:local",
+    "board:check": "node apps/dashboard-web/scripts/board-check.mjs",
     "contracts:gen": "pnpm --filter @sak/contracts run gen",
     "contracts:check": "pnpm --filter @sak/contracts run check"
   }

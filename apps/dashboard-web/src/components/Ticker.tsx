@@ -1,10 +1,11 @@
 import { CheckCheck, GitCommit, Rocket, Newspaper } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { fmtDateTime, fmtRelative } from '@/format'
+import { fmtDateTime, fmtDateTimeZone, fmtRelative } from '@/format'
 import { labelOf } from '@/labels'
 import type { Board } from '@/types'
 import { EmptyState } from './states'
+import { Tip } from './Tip'
 
 const ICONS: Record<string, ReactNode> = {
   commit: <GitCommit />,
@@ -26,7 +27,7 @@ export function Ticker({ entries }: { entries: Board['ticker'] }) {
         ) : (
           <ol className="max-h-72 space-y-3 overflow-y-auto pr-1">
             {entries.map((t, i) => (
-              <li key={`${t.ts}-${i}`} className="flex gap-3 text-sm">
+              <Tip key={`${t.ts}-${i}`} as="li" testId="ticker-item" className="flex gap-3 text-sm outline-offset-2 hover:bg-accent/50" content={<TickerDetails entry={t} />}>
                 <span className="mt-0.5 text-muted-foreground [&_svg]:size-4">{ICONS[t.kind] ?? <Newspaper />}</span>
                 <div className="min-w-0">
                   <p className="leading-snug">
@@ -38,11 +39,27 @@ export function Ticker({ entries }: { entries: Board['ticker'] }) {
                     {fmtRelative(t.ts)}
                   </p>
                 </div>
-              </li>
+              </Tip>
             ))}
           </ol>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Hover- und Fokus-Details eines Ticker-Eintrags: Hash, lokale Zeit mit Zone, Spec, Betreff (Spec 010 FR-003). */
+function TickerDetails({ entry }: { entry: Board['ticker'][number] }) {
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+      <dt className="text-muted-foreground">Commit</dt>
+      <dd className="font-mono">{entry.commit ? entry.commit.slice(0, 12) : 'nicht verfügbar'}</dd>
+      <dt className="text-muted-foreground">Zeit</dt>
+      <dd>{fmtDateTimeZone(entry.ts)}</dd>
+      <dt className="text-muted-foreground">Spec</dt>
+      <dd className="font-mono [overflow-wrap:anywhere]">{entry.spec ?? '–'}</dd>
+      <dt className="text-muted-foreground">Betreff</dt>
+      <dd className="[overflow-wrap:anywhere]">{entry.text ?? <span className="text-muted-foreground">nicht geteilt</span>}</dd>
+    </dl>
   )
 }
