@@ -114,5 +114,6 @@ def defaults() -> dict[str, Any]:
             "token_env": "SAK_DASHBOARD_TOKEN",
             "share_commit_subjects": False,
         },
+        "autonomy": {"push": "manual", "deploy": "after_approval", "remote": "origin"},
         "plugins": [],
     }

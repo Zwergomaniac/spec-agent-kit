@@ -46,6 +46,7 @@ def add_parsers(sub: Any) -> None:
         ("guard", "Prüft geänderte Pfade gegen den Schutz"),
         ("combine", "Bildet das Gesamturteil der Runde"),
         ("merge", "Merged einen freigegebenen Lauf (--no-ff, kein Push)"),
+        ("push", "Pusht den Basis-Branch eines gemergten Laufs (nur bei autonomy.push)"),
         ("show", "Zeigt einen Lauf"),
     ):
         p = r.add_parser(name, help=text)
@@ -115,6 +116,8 @@ def run_command(args: argparse.Namespace, ctx: Ctx) -> dict[str, Any]:
         return commands.cmd_combine(ctx, args.run)
     if name == "merge":
         return commands.cmd_merge(ctx, args.run)
+    if name == "push":
+        return commands.cmd_push(ctx, args.run)
     if name == "list":
         return commands.cmd_list(ctx, include_all=args.all)
     if name == "show":

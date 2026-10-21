@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fnmatch
 import os
+import re
 import subprocess
 from collections.abc import Iterable
 from pathlib import Path
@@ -26,6 +27,49 @@ def run_git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
             stdin=subprocess.DEVNULL,
             check=False,
         )
+    except OSError as exc:
+        raise RefusedError(f"git ist nicht aufrufbar: {exc}") from exc
+
+
+PUSH_TIMEOUT_S = 60
+"""Zeitlimit für ``push_branch`` (Spec 012 FR-003)."""
+
+_CREDENTIALS = re.compile(r"(://)[^/@\s]+@")
+
+
+def redact(text: str) -> str:
+    """Entfernt Zugangsdaten aus URLs (``https://user:token@host`` wird ``https://***@host``)."""
+    return _CREDENTIALS.sub(r"\1***@", text)
+
+
+def remotes(root: Path) -> list[str]:
+    return git(root, "remote").split()
+
+
+def push_branch(root: Path, remote: str, branch: str) -> subprocess.CompletedProcess[str]:
+    """``git push <remote> <branch>:<branch>``: nie mit Force, nie mit Tags, nie mit Rückfrage.
+
+    ``push.followTags`` wird ausgeschaltet, damit auch eine Nutzerkonfiguration keine Tags mitnimmt.
+    Bei Zeitüberschreitung ist ``returncode`` 124 und ``stderr`` enthält den Grund.
+    """
+    refspec = f"{branch}:{branch}"
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    try:
+        return subprocess.run(
+            [*_GIT, "-c", "push.followTags=false", "push", remote, refspec],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdin=subprocess.DEVNULL,
+            env=env,
+            timeout=PUSH_TIMEOUT_S,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        message = f"Zeitüberschreitung nach {PUSH_TIMEOUT_S} s"
+        return subprocess.CompletedProcess([], 124, "", message)
     except OSError as exc:
         raise RefusedError(f"git ist nicht aufrufbar: {exc}") from exc
 
