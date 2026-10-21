@@ -11,3 +11,7 @@ Default-Route ist Portfolio. Jede Kernansicht ist direkt verlinkbar (Hash-Router
 - Routen: Contracts-Deep-Links (`#/portfolio`, `#/project/:key?tab=board|runs|attention|conflicts`, `#/run/:key/:runId`) plus die UI-Routen `#/login` (mit `?next=`) und `#/admin` in `src/router.ts`. Der Tab `conflicts` ist in v1 nur ein Hinweis, bis es Parallelbetrieb gibt.
 - Tests: `pnpm --filter @sak/dashboard-web test` (vitest). E2E braucht vorher `pnpm build` (Server auf Port 3100) und läuft nicht in der CI.
 - Warnungstexte des Portfolios (`idle`, `no_push_24h`) sind UI-Texte in `ProjectCard.tsx`, kein Vokabular (siehe `docs/follow-ups.md`).
+- Lokaler Modus (Spec 010): /api/meta mit mode: "local" und project_key (vor dem ersten Rendern in src/mode.tsx erkannt) schaltet Portfolio, Admin und Login ab; Start ist #/project/<key>. Es gibt dann keine Auth-Aufrufe.
+- pnpm board:build (uild:local, Vite-Mode oard-local) baut die UI mit relativen Pfaden nach packages/engine/src/spec_agent_kit/board/web/ (eingecheckt, generiert, nicht von Hand ändern). pnpm board:check baut neu und prüft per git diff, dass es aktuell ist.
+- Tooltips: Definitionen zentral in src/definitions.ts, Komponente src/components/Tip.tsx (Hover und Fokus, Escape schließt).
+- E2E lokal: 2e/mock-board-server.ts imitiert sak board serve; 2e/local-mode.spec.ts prüft Modus, Ticker-Hover, Tooltips und den Screenshot-Vergleich lokal gegen online.

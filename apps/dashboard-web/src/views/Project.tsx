@@ -1,5 +1,6 @@
 import { isProjectTab, type ProjectTab } from '@sak/contracts'
 import { ChevronRight, FileQuestion } from 'lucide-react'
+import { useEffect } from 'react'
 import { api, ApiError } from '@/api'
 import { EmptyState, ErrorState, LastUpdated, LoadingView, PageHeader } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { fmtDateTime } from '@/format'
 import { usePolled } from '@/hooks'
 import { labelOf } from '@/labels'
+import { useMode } from '@/mode'
 import { links, navigate } from '@/router'
 import { AttentionTab } from './project/AttentionTab'
 import { BoardTab } from './project/BoardTab'
@@ -15,13 +17,22 @@ import { RunsTab } from './project/RunsTab'
 
 export function Project({ projectKey, tab }: { projectKey: string; tab: ProjectTab }) {
   const { data, error, updatedAt, refresh } = usePolled(() => api.project(projectKey), `project:${projectKey}`)
+  const { local, setProjectName } = useMode()
+  const name = data?.project.name
+  useEffect(() => {
+    if (local && name) setProjectName(name)
+  }, [local, name, setProjectName])
 
   const crumbs = (
     <nav aria-label="Brotkrumen" className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-      <a href={links.portfolio()} className="hover:underline">
-        Portfolio
-      </a>
-      <ChevronRight className="size-3" />
+      {local ? null : (
+        <>
+          <a href={links.portfolio()} className="hover:underline">
+            Portfolio
+          </a>
+          <ChevronRight className="size-3" />
+        </>
+      )}
       <span className="font-mono">{projectKey}</span>
     </nav>
   )
@@ -31,9 +42,11 @@ export function Project({ projectKey, tab }: { projectKey: string; tab: ProjectT
       <>
         <PageHeader title="Projekt nicht gefunden">{crumbs}</PageHeader>
         <EmptyState title={`Es gibt kein Projekt „${projectKey}“`} icon={<FileQuestion />}>
-          <a href={links.portfolio()} className="underline">
-            Zurück zum Portfolio
-          </a>
+          {local ? null : (
+            <a href={links.portfolio()} className="underline">
+              Zurück zum Portfolio
+            </a>
+          )}
         </EmptyState>
       </>
     )
@@ -77,7 +90,7 @@ export function Project({ projectKey, tab }: { projectKey: string; tab: ProjectT
           Dieses Projekt hat noch kein Board eingeliefert. Sobald der erste Push ankommt, erscheint es hier.
         </EmptyState>
       ) : (
-        <Tabs value={tab} onValueChange={(v) => isProjectTab(v) && navigate(links.project(projectKey, v))}>
+        <Tabs value={tab} data-testid="project-tabs" onValueChange={(v) => isProjectTab(v) && navigate(links.project(projectKey, v))}>
           <TabsList aria-label="Projektansicht">
             <TabsTrigger value="board">Board</TabsTrigger>
             <TabsTrigger value="runs">Läufe</TabsTrigger>

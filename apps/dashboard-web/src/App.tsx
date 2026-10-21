@@ -4,8 +4,10 @@ import { api } from './api'
 import { AuthProvider, useAuth } from './auth'
 import { LoadingView } from './components/states'
 import { Button } from './components/ui/button'
+import { Badge } from './components/ui/badge'
 import { usePolled } from './hooks'
-import { links, navigate, useRoute, type Route } from './router'
+import { ModeProvider, useMode, type LocalInfo } from './mode'
+import { links, navigate, replaceRoute, useRoute, type Route } from './router'
 import { useTheme } from './theme'
 import { Admin } from './views/Admin'
 import { Login } from './views/Login'
@@ -30,17 +32,17 @@ function titleFor(route: Route): string {
   }
 }
 
-function Shell({ children, authenticated }: { children: React.ReactNode; authenticated: boolean }) {
+function Shell({ children, authenticated, onLogout }: { children: React.ReactNode; authenticated: boolean; onLogout?: () => void }) {
   const route = useRoute()
   const { mode, cycle } = useTheme()
-  const { logout } = useAuth()
+  const { local, projectName } = useMode()
   const Icon = mode === 'dark' ? Moon : mode === 'light' ? Sun : Monitor
   const navClass = (active: boolean): string =>
     `inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition-colors hover:bg-accent ${active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}`
 
   useEffect(() => {
-    document.title = `${titleFor(route)} · Spec Agent Dashboard`
-  }, [route])
+    document.title = local ? `${titleFor(route)} · Lokal · Spec Agent Dashboard` : `${titleFor(route)} · Spec Agent Dashboard`
+  }, [route, local])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -49,13 +51,19 @@ function Shell({ children, authenticated }: { children: React.ReactNode; authent
       </a>
       <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-[2400px] items-center gap-3 px-4 sm:px-6 lg:px-10">
-          <a href={links.portfolio()} className="flex items-center gap-2 font-semibold tracking-tight">
+          <a href={local ? links.project(local.projectKey) : links.portfolio()} className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground" aria-hidden>
               <LayoutGrid className="size-4" />
             </span>
             <span className="hidden sm:inline">Spec Agent Dashboard</span>
           </a>
-          {authenticated ? (
+          {local ? (
+            <div className="ml-2 flex min-w-0 items-center gap-2 text-sm" data-testid="local-indicator">
+              <Badge variant="info">Lokal</Badge>
+              <span className="truncate font-medium">{projectName ?? local.projectKey}</span>
+            </div>
+          ) : null}
+          {authenticated && !local ? (
             <nav aria-label="Hauptnavigation" className="ml-2 flex items-center gap-1">
               <a href={links.portfolio()} className={navClass(route.view === 'portfolio')} aria-current={route.view === 'portfolio' ? 'page' : undefined}>
                 <LayoutGrid className="size-4" /> Portfolio
@@ -69,8 +77,8 @@ function Shell({ children, authenticated }: { children: React.ReactNode; authent
             <Button variant="ghost" size="icon" onClick={cycle} aria-label={`Darstellung: ${THEME_LABEL[mode]} (umschalten)`} title={`Darstellung: ${THEME_LABEL[mode]}`}>
               <Icon />
             </Button>
-            {authenticated ? (
-              <Button variant="ghost" size="sm" onClick={() => void logout()}>
+            {authenticated && !local ? (
+              <Button variant="ghost" size="sm" onClick={() => void onLogout?.()}>
                 <LogOut /> <span className="hidden sm:inline">Abmelden</span>
               </Button>
             ) : null}
@@ -111,7 +119,7 @@ function View({ route }: { route: Route }) {
 
 function Routed() {
   const route = useRoute()
-  const { status } = useAuth()
+  const { status, logout } = useAuth()
 
   // Angemeldet auf #/login: weiter zum Rücksprungziel oder zum Portfolio.
   useEffect(() => {
@@ -135,16 +143,32 @@ function Routed() {
     )
   }
   return (
-    <Shell authenticated>
+    <Shell authenticated onLogout={logout}>
       <View route={route} />
     </Shell>
   )
 }
 
-export function App() {
+/** Lokaler Modus: nur die Ansichten des einen Projekts. Alles andere führt zur Projektansicht; es gibt keine Auth-Aufrufe. */
+function LocalRouted({ local }: { local: LocalInfo }) {
+  const route = useRoute()
+  const allowed = (route.view === 'project' || route.view === 'run') && route.projectKey === local.projectKey
+  useEffect(() => {
+    if (!allowed) replaceRoute(links.project(local.projectKey))
+  }, [allowed, local.projectKey])
+  return <Shell authenticated>{allowed ? <View route={route} /> : null}</Shell>
+}
+
+export function App({ local = null }: { local?: LocalInfo | null }) {
   return (
-    <AuthProvider>
-      <Routed />
-    </AuthProvider>
+    <ModeProvider local={local}>
+      {local ? (
+        <LocalRouted local={local} />
+      ) : (
+        <AuthProvider>
+          <Routed />
+        </AuthProvider>
+      )}
+    </ModeProvider>
   )
 }

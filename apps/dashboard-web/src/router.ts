@@ -43,6 +43,12 @@ export function navigate(hash: string): void {
   else window.location.hash = hash
 }
 
+/** Ersetzt die aktuelle Route, ohne einen Verlaufseintrag anzulegen (Umleitung im lokalen Modus). */
+export function replaceRoute(hash: string): void {
+  window.history.replaceState(null, '', hash)
+  window.dispatchEvent(new HashChangeEvent('hashchange'))
+}
+
 export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
   useEffect(() => {

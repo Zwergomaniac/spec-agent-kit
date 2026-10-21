@@ -1,12 +1,14 @@
-import { CheckCircle2, Hourglass, Octagon, Timer, Wrench } from 'lucide-react'
+import { CheckCircle2, Hourglass, Info, Octagon, Timer, Wrench } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Tip } from '@/components/Tip'
 import { Card } from '@/components/ui/card'
+import { KPI_DEFINITIONS, type KpiId } from '@/definitions'
 import { fmtDays } from '@/format'
 import { cn } from '@/lib/utils'
 import type { Board } from '@/types'
 
 interface Kpi {
-  id: string
+  id: KpiId
   label: string
   value: ReactNode
   icon: ReactNode
@@ -26,7 +28,12 @@ export function Kpis({ metrics }: { metrics: Board['metrics'] }) {
       {items.map((k) => (
         <Card key={k.id} className="gap-1 py-4" data-testid={`kpi-${k.id}`}>
           <div className="flex items-center justify-between px-4">
-            <dt className="text-xs text-muted-foreground">{k.label}</dt>
+            <dt className="text-xs text-muted-foreground">
+              <Tip content={KPI_DEFINITIONS[k.id]} className="inline-flex items-center gap-1 underline decoration-muted-foreground/50 decoration-1 underline-offset-4" testId={`kpi-tip-${k.id}`}>
+                {k.label}
+                <Info className="size-3" aria-hidden />
+              </Tip>
+            </dt>
             <span className={cn('text-muted-foreground [&_svg]:size-4', k.tone)}>{k.icon}</span>
           </div>
           <dd className="px-4 text-2xl font-semibold tabular-nums">{k.value}</dd>

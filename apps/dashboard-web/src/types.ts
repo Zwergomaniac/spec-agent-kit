@@ -65,4 +65,7 @@ export interface AdminProject {
 export interface MetaResponse {
   kit_version: string
   vocabulary_version: number
+  /** Nur `sak board serve` setzt `mode: "local"` und `project_key` (Spec 010 FR-001). */
+  mode?: 'local'
+  project_key?: string
 }
