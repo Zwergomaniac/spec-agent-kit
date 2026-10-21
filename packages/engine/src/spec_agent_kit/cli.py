@@ -20,7 +20,13 @@ from typing import Any
 from spec_agent_kit import __version__
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
-from spec_agent_kit.board.serve import DEFAULT_PORT, FALLBACK_LAST_PORT, bind_server
+from spec_agent_kit.board.serve import (
+    DEFAULT_PORT,
+    FALLBACK_LAST_PORT,
+    WEB_MISSING_MESSAGE,
+    bind_server,
+    web_available,
+)
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
@@ -188,6 +194,9 @@ def _board_serve(args: argparse.Namespace) -> int:
             )
         _emit({"ok": False, "error": message})
         return EXIT_USAGE
+    if not web_available():
+        server.server_close()
+        return _reject([{"path": "board/web", "message": WEB_MISSING_MESSAGE}])
     host, port = server.server_address[:2]
     url = f"http://{host}:{port}"
     result: dict[str, Any] = {"ok": True, "url": url, "hint": "Strg+C beendet"}

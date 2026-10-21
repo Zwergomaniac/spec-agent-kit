@@ -38,3 +38,18 @@ def fixed_now(monkeypatch: pytest.MonkeyPatch) -> datetime:
 @pytest.fixture
 def cfg(board_repo: Path) -> EffectiveConfig:
     return load_config(board_repo)
+
+
+@pytest.fixture
+def web_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Eine kleine „gebaute UI“ (Strang B liefert die echte nach ``board/web/``)."""
+    target = tmp_path / "web"
+    (target / "assets").mkdir(parents=True)
+    (target / "index.html").write_text(
+        '<!doctype html><title>Board</title><script type="module" src="./assets/app.js"></script>',
+        encoding="utf-8",
+    )
+    (target / "assets" / "app.js").write_text("console.log('board')\n", encoding="utf-8")
+    (target / "assets" / "app.css").write_text("body{margin:0}\n", encoding="utf-8")
+    monkeypatch.setattr("spec_agent_kit.board.serve.WEB_DIR", target)
+    return target

@@ -19,6 +19,8 @@ from spec_agent_kit import cli
 from spec_agent_kit.board import serve
 from spec_agent_kit.board.serve import bind_server
 
+pytestmark = pytest.mark.usefixtures("web_dir")
+
 
 def _free_range(width: int = 4) -> int:
     """Erster Port einer zusammenhängenden freien Strecke der Breite ``width``."""
