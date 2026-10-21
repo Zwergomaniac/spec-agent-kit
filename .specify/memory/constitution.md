@@ -45,7 +45,12 @@ Projektdateien zerstört, wird nicht eingesetzt.
 - Diese Freigaben trifft immer ein Mensch:
   - Start jeder Umsetzung („umsetzen“ je Spec)
   - Release eskalierter Läufe
-  - Deploy
+  - Deploy (nach ausdrücklichem OK führt der Orchestrator ihn selbst aus; Projekt-Einstellung
+    `autonomy.deploy: never` verbietet auch das)
+- Merge und Push nach einem Lauf in `approved` darf der Orchestrator selbst ausführen, wenn das Projekt
+  es per `autonomy.push: after_merge` erlaubt: nur über `sak run merge` / `sak run push`, nur der
+  Basis-Branch, nur fast-forward, nie `--force`. Direktes `git push` bleibt per Deny-Regel gesperrt,
+  Subagents pushen nie. Default für neue Projekte: `autonomy.push: manual`.
 - Jeder Schreibzugriff auf das Dashboard ist authentifiziert (Schlüssel je Projekt), validiert und
   größenbegrenzt. Lesen erfordert eine Admin-Anmeldung.
 
@@ -121,7 +126,7 @@ verschiedenen Rechnern funktionieren.
   - README-Statusmatrix aktualisiert
 - **Branches und Commits:**
   - Ein Branch je Spec (`NNN-slug`).
-  - Commits nur auf Anweisung, nie Push ohne Freigabe.
+  - Commits nur auf Anweisung; Push nur mit Freigabe oder gemäß `autonomy.push` des Projekts (Prinzip IV).
   - Deploy-Marker im Format `deploy(NNN): …`, `verified(NNN): …`.
 
 ## Governance
@@ -136,4 +141,4 @@ verschiedenen Rechnern funktionieren.
   - PATCH: Klarstellung
 - Jeder Plan und jedes Review prüft die Einhaltung. Verstöße ohne Begründung blockieren die Umsetzung.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-20
+**Version**: 1.1.0 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-21
