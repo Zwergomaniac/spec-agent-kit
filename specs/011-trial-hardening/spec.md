@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-21
 
-**Status**: Planned (US1 als Hotfix 0.1.1 umgesetzt)
+**Status**: Implemented (Kit 0.2.0)
 
 **Input**: Bericht „sak-Trial ImmoAgent“ vom 2026-10-20/21: Kit-Commit `4d78cb3` von GitHub, ImmoAgent-Branch `sak-trial`, Nur-Prüfungs-Lauf `084-20261020-221040`. Die Befunde zur Board-Ableitung (Befund 5) stehen in Spec 010 US6.
 
