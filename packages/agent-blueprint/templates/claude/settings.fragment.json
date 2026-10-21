@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/.spec-agent/engine\" sak hook subagent-start || true",
-            "timeout": 5
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.spec-agent/sak\" hook subagent-start || true",
+            "timeout": 10
           }
         ]
       }
@@ -18,8 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/.spec-agent/engine\" sak hook subagent-stop || true",
-            "timeout": 5
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.spec-agent/sak\" hook subagent-stop || true",
+            "timeout": 10
           }
         ]
       }

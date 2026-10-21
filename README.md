@@ -104,7 +104,7 @@ Geführt geht es im Kit-Repo mit dem Skill `/sak-init`: er stellt die Fragen, ze
 
 ## Im Zielprojekt arbeiten
 
-Im Zielprojekt steht die Engine unter `.spec-agent/engine`. Empfohlener Aufruf ist der Starter, den Init und Upgrade mit installieren: `.spec-agent\sak` (Windows, `sak.cmd`) bzw. `.spec-agent/sak` (POSIX). Er findet uv auch ohne PATH (Reihenfolge: `SAK_UV`, PATH, bekannte Installationsorte) und reicht den Exit-Code von `sak` durch. Abkürzung hier: `SAK` = der Starter (gleichwertig: `uv run --project .spec-agent/engine sak`).
+Im Zielprojekt steht die Engine unter `.spec-agent/engine`. Empfohlener Aufruf ist der Starter, den Init und Upgrade mit installieren: `.spec-agent\sak` (Windows, `sak.cmd`) bzw. `.spec-agent/sak` (POSIX). Er findet uv auch ohne PATH (Reihenfolge: `SAK_UV`, PATH, bekannte Installationsorte) und reicht den Exit-Code von `sak` durch. Abkürzung hier: `SAK` = der Starter (gleichwertig: `uv run --project .spec-agent/engine sak`). Die Hooks in `.claude/settings.json` rufen ebenfalls den POSIX-Starter auf (`sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook …`), damit sie auch ohne uv im PATH der Sitzung laufen; `sak doctor` prüft das mit einer echten Hook-Probe, `sak upgrade` stellt alte Einträge um.
 
 ```sh
 # Pipeline: im Claude-Code-Chat, erst nach ausdrücklichem „umsetzen“ für genau diese Spec

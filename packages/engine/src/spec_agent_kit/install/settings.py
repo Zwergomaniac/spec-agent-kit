@@ -1,8 +1,9 @@
 """Additiver Merge des Settings-Fragments in ``.claude/settings.json`` (Spec 005 FR-005).
 
-Bestehende Einträge und ``defaultMode`` bleiben unverändert. Ergänzt werden nur Hook-Einträge des
-Kits (wenn für das Ereignis noch kein Befehl mit ``.spec-agent/engine`` existiert) sowie fehlende
-Einträge in ``permissions.allow`` und ``permissions.deny``.
+Bestehende fremde Einträge und ``defaultMode`` bleiben unverändert. Hook-Einträge des Kits (Befehl
+mit ``.spec-agent/``, auch die alten Fassungen mit ``.spec-agent/engine``) werden durch die Fassung
+des Fragments ersetzt, nicht ergänzt; das ist idempotent. Außerdem werden fehlende Einträge in
+``permissions.allow`` und ``permissions.deny`` ergänzt.
 """
 
 from __future__ import annotations
@@ -13,6 +14,9 @@ from collections.abc import Iterable
 from typing import Any, Final
 
 ENGINE_MARKER: Final[str] = ".spec-agent/engine"
+KIT_MARKER: Final[str] = ".spec-agent/"
+"""Kit-eigene Hook-Befehle erkennt man daran (Starter ``.spec-agent/sak`` und alte Engine-Pfade)."""
+STARTER_MARKER: Final[str] = ".spec-agent/sak"
 # Der gefährliche Modus wird nur erkannt, nie gesetzt; das Wort entsteht hier zusammengesetzt, damit
 # der Grep-Test (Constitution IV) in Engine und Vorlagen keinen Treffer findet.
 _UNSAFE_MODE: Final[str] = "bypass" + "Permissions"
@@ -44,17 +48,28 @@ def allow_entries(commands: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(entries))
 
 
-def _mentions_engine(entries: Any) -> bool:
-    if not isinstance(entries, list):
-        return False
+def _is_kit_hook(hook: Any) -> bool:
+    return isinstance(hook, dict) and KIT_MARKER in str(hook.get("command", ""))
+
+
+def _replace_kit_entries(current: Any, wanted: list[Any]) -> list[Any]:
+    """Entfernt Kit-Hooks aus ``current`` und setzt ``wanted`` an die Stelle des ersten Treffers."""
+    entries = current if isinstance(current, list) else []
+    result: list[Any] = []
+    insert_at: int | None = None
     for entry in entries:
         hooks = entry.get("hooks") if isinstance(entry, dict) else None
-        if not isinstance(hooks, list):
+        if not isinstance(hooks, list) or not any(_is_kit_hook(h) for h in hooks):
+            result.append(entry)
             continue
-        for hook in hooks:
-            if isinstance(hook, dict) and ENGINE_MARKER in str(hook.get("command", "")):
-                return True
-    return False
+        if insert_at is None:
+            insert_at = len(result)
+        remaining = [h for h in hooks if not _is_kit_hook(h)]
+        if remaining:  # fremde Hooks im selben Eintrag bleiben erhalten
+            result.append({**entry, "hooks": remaining})
+    position = len(result) if insert_at is None else insert_at
+    result[position:position] = copy.deepcopy(wanted)
+    return result
 
 
 def _union(existing: Any, wanted: Iterable[str]) -> list[Any]:
@@ -78,10 +93,7 @@ def merge_settings(
     if not isinstance(hooks, dict):
         hooks = {}
     for event, entries in fragment.get("hooks", {}).items():
-        current = hooks.get(event)
-        if _mentions_engine(current):
-            continue
-        hooks[event] = [*(current if isinstance(current, list) else []), *copy.deepcopy(entries)]
+        hooks[event] = _replace_kit_entries(hooks.get(event), entries)
     if hooks:
         merged["hooks"] = hooks
 

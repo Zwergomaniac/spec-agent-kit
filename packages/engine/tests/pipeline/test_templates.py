@@ -205,10 +205,9 @@ def test_fragment_hooks() -> None:
         (entry,) = hooks[event]
         assert entry["matcher"] == "sak-.*"
         (hook,) = entry["hooks"]
-        assert hook["type"] == "command" and hook["timeout"] == 5
+        assert hook["type"] == "command" and hook["timeout"] == 10
         assert hook["command"] == (
-            'uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" '
-            f"sak hook subagent-{phase} || true"
+            f'sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook subagent-{phase} || true'
         )
 
 

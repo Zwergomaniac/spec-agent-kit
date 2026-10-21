@@ -300,3 +300,33 @@ def test_launcher_templates_name_all_lookup_places() -> None:
     ):
         assert fragment in sh
     assert sh.startswith("#!/bin/sh\n") and "\r" not in sh
+
+
+@posix_sh
+def test_sh_finds_uv_at_the_winget_package_location_via_localappdata(tmp_path: Path) -> None:
+    folder = _make_sh_home(tmp_path)
+    local = tmp_path / "Local App Data"
+    _fake_uv(local / "Microsoft" / "WinGet" / "Packages" / "astral-sh.uv_Test" / "uv.exe", 5)
+    env = _sh_env(tmp_path, LOCALAPPDATA=str(local))  # Windows-Schreibweise, sh wandelt um
+    result = _run_sh(folder, env, "version")
+    assert result.returncode == 5, result.stderr
+    assert "uv: run --project" in result.stdout
+
+
+@posix_sh
+def test_sh_prefers_the_winget_links_over_packages(tmp_path: Path) -> None:
+    folder = _make_sh_home(tmp_path)
+    winget = tmp_path / "Local" / "Microsoft" / "WinGet"
+    _fake_uv(winget / "Links" / "uv.exe", 6)
+    _fake_uv(winget / "Packages" / "astral-sh.uv_Test" / "uv.exe", 5)
+    result = _run_sh(folder, _sh_env(tmp_path, LOCALAPPDATA=str(tmp_path / "Local")), "version")
+    assert result.returncode == 6, result.stderr
+
+
+@posix_sh
+def test_sh_finds_uv_exe_in_userprofile_local_bin(tmp_path: Path) -> None:
+    folder = _make_sh_home(tmp_path)
+    profile = tmp_path / "profile"
+    _fake_uv(profile / ".local" / "bin" / "uv.exe", 4)
+    result = _run_sh(folder, _sh_env(tmp_path, USERPROFILE=str(profile)), "version")
+    assert result.returncode == 4, result.stderr

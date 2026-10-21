@@ -66,25 +66,76 @@ def test_extra_allow_entries_are_added() -> None:
     assert "Bash(uv run pytest -q *)" in merged["permissions"]["allow"]
 
 
-def test_hook_is_not_added_when_the_event_already_calls_the_engine() -> None:
-    own = {
+OLD_START = {
+    "matcher": "sak-.*",
+    "hooks": [
+        {
+            "type": "command",
+            "command": 'uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" sak hook '
+            "subagent-start || true",
+            "timeout": 5,
+        }
+    ],
+}
+OLD_STOP = {
+    "matcher": "sak-.*",
+    "hooks": [
+        {
+            "type": "command",
+            "command": 'uv run --project "$CLAUDE_PROJECT_DIR/.spec-agent/engine" sak hook '
+            "subagent-stop || true",
+            "timeout": 5,
+        }
+    ],
+}
+FOREIGN_HOOK = {"matcher": "x-.*", "hooks": [{"type": "command", "command": "echo fremd"}]}
+
+
+def test_fragment_hooks_call_the_posix_starter_with_timeout_10() -> None:
+    for event, name in (("SubagentStart", "subagent-start"), ("SubagentStop", "subagent-stop")):
+        (entry,) = FRAGMENT["hooks"][event]
+        (hook,) = entry["hooks"]
+        assert hook["command"] == f'sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook {name} || true'
+        assert hook["timeout"] == 10
+        assert "uv run" not in hook["command"]
+        assert ".spec-agent/engine" not in hook["command"]
+
+
+def test_upgrade_replaces_old_direct_uv_hooks_with_the_starter_version() -> None:
+    old = {
         "hooks": {
-            "SubagentStart": [
-                {
-                    "matcher": "x-.*",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": "uv run --project .spec-agent/engine sak hook",
-                        }
-                    ],
-                }
-            ]
+            "SessionStart": [FOREIGN_HOOK],
+            "SubagentStart": [FOREIGN_HOOK, OLD_START],
+            "SubagentStop": [OLD_STOP, FOREIGN_HOOK],
         }
     }
-    merged, _ = merge_settings(own, FRAGMENT)
-    assert merged["hooks"]["SubagentStart"] == own["hooks"]["SubagentStart"]
-    assert len(merged["hooks"]["SubagentStop"]) == 1  # für Stop fehlte der Eintrag
+    original = copy.deepcopy(old)
+    merged, _ = merge_settings(old, FRAGMENT)
+    assert old == original
+    assert merged["hooks"]["SessionStart"] == [FOREIGN_HOOK]
+    assert merged["hooks"]["SubagentStart"] == [FOREIGN_HOOK, FRAGMENT["hooks"]["SubagentStart"][0]]
+    assert merged["hooks"]["SubagentStop"] == [FRAGMENT["hooks"]["SubagentStop"][0], FOREIGN_HOOK]
+    assert ".spec-agent/engine" not in json.dumps(merged["hooks"])
+    again, _ = merge_settings(merged, FRAGMENT)
+    assert again == merged  # zweiter Lauf ändert nichts
+
+
+def test_foreign_hook_sharing_an_entry_with_a_kit_hook_survives() -> None:
+    mixed = {
+        "matcher": "sak-.*",
+        "hooks": [{"type": "command", "command": "echo fremd"}, OLD_START["hooks"][0]],
+    }
+    merged, _ = merge_settings({"hooks": {"SubagentStart": [mixed]}}, FRAGMENT)
+    commands = [h["command"] for e in merged["hooks"]["SubagentStart"] for h in e["hooks"]]
+    assert commands.count("echo fremd") == 1
+    assert sum(".spec-agent/sak" in c for c in commands) == 1
+    assert not any(".spec-agent/engine" in c for c in commands)
+
+
+def test_duplicate_kit_entries_collapse_to_one() -> None:
+    existing = {"hooks": {"SubagentStart": [OLD_START, FOREIGN_HOOK, OLD_START]}}
+    merged, _ = merge_settings(existing, FRAGMENT)
+    assert merged["hooks"]["SubagentStart"] == [FRAGMENT["hooks"]["SubagentStart"][0], FOREIGN_HOOK]
 
 
 def test_hook_of_the_target_for_the_same_event_is_kept_and_ours_is_appended() -> None:
