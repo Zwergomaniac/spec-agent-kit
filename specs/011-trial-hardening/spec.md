@@ -51,6 +51,14 @@ Befund 6 (mittel, fachlich wichtig): Die alte Pipeline eskalierte 084 („Score 
 
 Befund 11: In frischen Worktrees fehlen gitignorierte, erzeugte Dateien (z. B. `web/src/api/schema.d.ts`, `node_modules`). Vorschlag: optionaler Config-Eintrag `commands.prepare`, den Builder und Prüfer vor dem Testen ausführen.
 
+### Nachtrag 2026-10-21: Befunde aus dem Upgrade auf 0.1.1 (Trial Teil 2a)
+
+- **B12 (mittel):** `sak doctor` über `sak.cmd` aus PowerShell oder cmd meldet `hook_probe` als nicht ok („keine POSIX-Shell (sh) gefunden“), obwohl Git-Bash installiert ist. Die Hooks selbst laufen in Claude Code über Git-Bash und funktionieren. Die Probe soll `sh` an bekannten Orten suchen (`%ProgramFiles%\Git\usr\bin\sh.exe`, `%ProgramFiles%\Git\bin\sh.exe`, `%LOCALAPPDATA%\Programs\Git\…`), analog zur uv-Suche.
+- **B13 (niedrig):** Das Upgrade räumt überholte `permissions.allow`-Einträge des Kits nicht auf, zum Beispiel alte Testbefehle nach einer Config-Änderung. Kit-eigene allow-Einträge sollen sich wiedererkennen lassen (Herkunft im Lock vermerken) und beim Upgrade ersetzt werden. Fremde Einträge bleiben.
+- **B14 (hoch, zu US2):** Der UI-Prüfer hat eine Junction `.spec-agent/state/runs/<id>/ui/node_modules` angelegt, die `git worktree remove` blockierte. Außerdem hat er durch einen Pfad mit Leerzeichen ohne Anführungszeichen die Ordner `Department/` und `Repos/` im Projekt erzeugt. Anforderung: Die Prüfer-Anweisung verbietet Links bzw. Junctions und verlangt quotierte Pfade. Ein Aufräumschritt am Lauf-Ende entfernt Links unter `runs/<id>/`. `reviewer-check` erkennt neue Top-Level-Ordner.
+- **B15 (niedrig):** `doctor`/`dashboard` meldet ok, wenn das Dashboard erreichbar ist, auch ohne Schlüssel. Ok soll es erst sein, wenn ein Schlüssel vorhanden ist; optional folgt eine Auth-Probe ohne Datenänderung.
+- **Zu US3 (Worktrees), Vorschlag des Planers:** Worktrees legt nur sak selbst an und räumt sie selbst wieder auf. Sie liegen an einem festen Ort (z. B. `<repo>.sak-runs/<lauf-id>`), erscheinen auf dem Board und werden mit `merged` bzw. `aborted` entfernt. `doctor` meldet übrig gebliebene Worktrees. Gemeinsame Dashboard-Einstellungen und der Schlüssel werden aus dem Haupt-Checkout geerbt.
+
 ## Requirements *(mandatory)*
 
 Noch nicht ausgearbeitet. Folgt bei `/speckit-clarify` und `/speckit-plan`.
