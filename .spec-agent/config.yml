@@ -1,0 +1,16 @@
+# Projektkonfiguration des Kits selbst (Dogfooding: Board und Push zu specboard).
+# Die Engine läuft direkt aus packages/engine, es gibt keine vendorte Kopie.
+schema: sak.config/1
+
+project:
+  key: spec-agent-kit
+  name: Spec Agent Kit
+  base_branch: main
+
+stages:
+  deployed: false
+  verified: false
+
+dashboard:
+  url: https://specboard.prozessfit.de
+  share_commit_subjects: true

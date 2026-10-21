@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-21
 
-**Status**: Planned
+**Status**: Implemented
 
 **Input**: Feedback des Betreibers vom 2026-10-21 beim sak-Trial in ImmoAgent. Er hat das lokale Board und specboard.prozessfit.de nebeneinander verglichen:
 - Das lokale Board und das Online-Board sehen völlig verschieden aus. Erwartet war dasselbe Design, lokal nur ohne Portfolio.

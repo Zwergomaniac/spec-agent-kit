@@ -14,33 +14,35 @@ Am Ende merged der Planer. Die Agents haken hier nicht ab, das macht der Planer.
 
 ## Strang 0 – Contracts
 
-- [ ] T001 `board.schema.json`: optionales `ticker[].commit` (Pattern 7–40 hex), optionales `specs[].tasks.partial` (≥ 0).
-- [ ] T002 `config.schema.json`:
+- [X] T001 `board.schema.json`: optionales `ticker[].commit` (Pattern 7–40 hex), optionales `specs[].tasks.partial` (≥ 0).
+- [X] T002 `config.schema.json`:
   - `plugins` als Liste von `{name: enum ["legacy-status"], options?: object}` mit `maxItems` 10
   - optionales `commands.prepare[]` (für Spec 011 US7)
 
   Defaults in der Engine anpassen.
-- [ ] T003 Beispiele (gültig und ungültig), `pnpm contracts:gen`, Tests in TS und Python grün.
+- [X] T003 Beispiele (gültig und ungültig), `pnpm contracts:gen`, Tests in TS und Python grün.
 
 ## Strang A – Engine
 
-- [ ] A01 [US6] Parser-Regeln (FR-007) in `board/specs.py`, mit je einem Regressionstest pro Punkt 1–7 aus US6 (minimale Fixtures).
-- [ ] A02 [US6] Kennzahl „fertig“ nach Clarification (Station ≥ implemented UND 0 offen bzw. teilweise); `tasks.partial` befüllen; `--text` mit lokaler Zeit und Zone.
-- [ ] A03 [US2] `ticker[].commit` befüllen (kurzer Hash). Beispiel-Configs ImmoAgent und AI-Forge: `share_commit_subjects: true`.
-- [ ] A04 [US5] Plugin-Mechanismus (Laden nach Config, Fehler isoliert, Hinweis statt Absturz) und Plugin `legacy-status` (FR-006). Tests mit Fixtures im ImmoAgent-Format (Formate aus `ImmoAgent/.specify/scripts/python/feature_status.py`, nur lesen).
-- [ ] A05 [US4] `sak migrate legacy-pipeline` (FR-005): Plan ohne `--apply`, deterministische IDs, Idempotenz-Test, Mapping-Tests für alle alten Event-Arten. Optionaler Test gegen eine Kopie von `ImmoAgent/.specify/pipeline` hinter `SAK_IMMOAGENT_PIPELINE` (nur lesen, arbeitet auf einer tmp-Kopie).
-- [ ] A06 [US1] `board/serve.py`: Lese-API nach FR-001 (gleiche Formen wie `apps/dashboard-api`; dort nur lesen), statische Auslieferung von `board/web/` mit SPA-Fallback. `static/board.html` entfernen. Solange `board/web/` fehlt, kommt eine klare Meldung. Tests der API-Formen gegen die Zod-Schemas bzw. die Python-Validierung.
-- [ ] A07 Alles grün (`pytest -q`, `ruff`). Optionaler ImmoAgent-Vergleich hinter `SAK_IMMOAGENT_SPECS`: Zahlen im Bericht.
+- [X] A01 [US6] Parser-Regeln (FR-007) in `board/specs.py`, mit je einem Regressionstest pro Punkt 1–7 aus US6 (minimale Fixtures).
+- [X] A02 [US6] Kennzahl „fertig“ nach Clarification (Station ≥ implemented UND 0 offen bzw. teilweise); `tasks.partial` befüllen; `--text` mit lokaler Zeit und Zone.
+- [X] A03 [US2] `ticker[].commit` befüllen (kurzer Hash). Beispiel-Configs ImmoAgent und AI-Forge: `share_commit_subjects: true`.
+- [X] A04 [US5] Plugin-Mechanismus (Laden nach Config, Fehler isoliert, Hinweis statt Absturz) und Plugin `legacy-status` (FR-006). Tests mit Fixtures im ImmoAgent-Format (Formate aus `ImmoAgent/.specify/scripts/python/feature_status.py`, nur lesen).
+- [X] A05 [US4] `sak migrate legacy-pipeline` (FR-005): Plan ohne `--apply`, deterministische IDs, Idempotenz-Test, Mapping-Tests für alle alten Event-Arten. Optionaler Test gegen eine Kopie von `ImmoAgent/.specify/pipeline` hinter `SAK_IMMOAGENT_PIPELINE` (nur lesen, arbeitet auf einer tmp-Kopie).
+- [X] A06 [US1] `board/serve.py`: Lese-API nach FR-001 (gleiche Formen wie `apps/dashboard-api`; dort nur lesen), statische Auslieferung von `board/web/` mit SPA-Fallback. `static/board.html` entfernen. Solange `board/web/` fehlt, kommt eine klare Meldung. Tests der API-Formen gegen die Zod-Schemas bzw. die Python-Validierung.
+- [X] A07 Alles grün (`pytest -q`, `ruff`). Optionaler ImmoAgent-Vergleich hinter `SAK_IMMOAGENT_SPECS`: Zahlen im Bericht.
 
 ## Strang B – Web
 
-- [ ] B01 [US1] Lokaler Modus: `/api/meta` mit `mode: "local"` → kein Login, Portfolio und Admin ausgeblendet, Start `#/project/<key>`. Der Header zeigt „Lokal“ und den Projektnamen.
-- [ ] B02 [US1] Build-Ziel `build:local` mit Ausgabe nach `packages/engine/src/spec_agent_kit/board/web/` (relative Pfade, keine externen Ressourcen). Root-Skripte `board:build` und `board:check` (bauen und `git diff --exit-code`).
-- [ ] B03 [US2] Ticker: Hover- bzw. Fokus-Details (Hash, lokale Zeit mit Zone, Spec, Betreff), tastaturbedienbar.
-- [ ] B04 [US3] Tooltips für alle Kennzahlen und Spaltenköpfe (Definitionen zentral in einer Datei).
-- [ ] B05 [US6] Anzeige von `tasks.partial`, falls vorhanden.
-- [ ] B06 E2E: lokaler Modus gegen einen Mock-Server mit denselben Endpunkten. Screenshot-Vergleich lokal ↔ online für dieselben Daten (SC-001), Ticker-Hover, Tooltips. Alles grün.
+- [X] B01 [US1] Lokaler Modus: `/api/meta` mit `mode: "local"` → kein Login, Portfolio und Admin ausgeblendet, Start `#/project/<key>`. Der Header zeigt „Lokal“ und den Projektnamen.
+- [X] B02 [US1] Build-Ziel `build:local` mit Ausgabe nach `packages/engine/src/spec_agent_kit/board/web/` (relative Pfade, keine externen Ressourcen). Root-Skripte `board:build` und `board:check` (bauen und `git diff --exit-code`).
+- [X] B03 [US2] Ticker: Hover- bzw. Fokus-Details (Hash, lokale Zeit mit Zone, Spec, Betreff), tastaturbedienbar.
+- [X] B04 [US3] Tooltips für alle Kennzahlen und Spaltenköpfe (Definitionen zentral in einer Datei).
+- [X] B05 [US6] Anzeige von `tasks.partial`, falls vorhanden.
+- [X] B06 E2E: lokaler Modus gegen einen Mock-Server mit denselben Endpunkten. Screenshot-Vergleich lokal ↔ online für dieselben Daten (SC-001), Ticker-Hover, Tooltips. Alles grün.
 
 ## Abschluss (Planer)
 
-- [ ] C01 Merge der Stränge 0, A und B; `board:build` auf main; Gesamttest; Doku (README, architecture: Board-Ableitungsregeln, lokaler Modus); Deploy auf specboard.
+- [X] C01 Merge der Stränge 0, A und B; `board:build` auf main; Gesamttest; Doku (README, architecture: Board-Ableitungsregeln, lokaler Modus); Deploy auf specboard.
+
+Anmerkungen zur Umsetzung (Planer): Strang 0 Merge 0c3f982, Strang B Merge 5043648, Strang A Merge 04cd2ec. Vergleich ImmoAgent (Plugin und Import): Specs 94/94, in Arbeit 16/16, blockiert 4/4, descoped 5/5, fertig 63 statt 61 (037/041 ohne T-IDs), wartet 18 statt 12 (9 Betreiber-Aufgaben neu, 3 Freigaben entfallen nach Import). Lokaler Modus im Browser geprüft (keine Konsolenfehler).
