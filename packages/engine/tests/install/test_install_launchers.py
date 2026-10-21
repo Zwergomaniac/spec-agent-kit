@@ -77,7 +77,7 @@ def test_upgrade_replaces_an_unchanged_launcher(
     template.write_text(
         template.read_text(encoding="utf-8") + "# neu\n", encoding="utf-8", newline="\n"
     )
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     code, plan = sak("upgrade", str(target), "--no-sync", "--apply")
     assert code == 0
     assert {a["path"]: a["action"] for a in plan["actions"]}[SH] == "replace"
@@ -97,7 +97,7 @@ def test_upgrade_keeps_a_locally_changed_launcher_and_writes_sak_new(
     template.write_text(
         template.read_text(encoding="utf-8") + "# neu\n", encoding="utf-8", newline="\n"
     )
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     code, plan = sak("upgrade", str(target), "--no-sync", "--apply")
     assert code == 0
     assert {a["path"]: a["action"] for a in plan["actions"]}[SH] == "conflict"
