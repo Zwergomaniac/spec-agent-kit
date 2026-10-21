@@ -20,7 +20,15 @@ from spec_agent_kit.pipeline.events import clip, events_path
 
 RUNS_MAX: Final[int] = contracts.LIMITS["RUNS_MAX"]
 _CLOSING: Final[frozenset[str]] = frozenset(
-    {"run.released", "run.returned", "run.approved", "run.aborted", "run.taken_over", "run.merged"}
+    {
+        "run.released",
+        "run.returned",
+        "run.approved",
+        "run.aborted",
+        "run.taken_over",
+        "run.merged",
+        "run.pushed",
+    }
 )
 
 
@@ -164,7 +172,9 @@ def _apply_events(
             for item in escalations:
                 item["open"] = False
     # Eine Eskalation bleibt offen, solange der Lauf eskaliert ist (auch pausiert aus `escalated`).
-    still_open = run.get("state") == "escalated" or (
+    # Ausnahme (Spec 012): „Push abgelehnt“ ist eine Eskalation an einem gemergten Lauf; sie bleibt
+    # offen, bis ein späteres `run.pushed` sie schließt.
+    still_open = run.get("state") in {"escalated", "merged"} or (
         run.get("state") == "paused" and run.get("paused_from") == "escalated"
     )
     if not still_open:
@@ -212,6 +222,8 @@ def build_run(
         "stations": stations,
         "escalations": escalations,
     }
+    if any(e.get("type") == "run.pushed" for e in events):
+        item["pushed"] = True
     origin = run.get("origin")
     if isinstance(origin, dict) and origin:
         item["origin"] = {k: str(v)[:100] for k, v in origin.items() if v and k != "source"}
@@ -247,6 +259,17 @@ def attention_for_runs(runs: list[dict[str, Any]], stale_hours: int) -> list[dic
             entries.append(
                 {"kind": "escalation", "spec": run["spec"], "reason": reason, "source": source}
             )
+        if run["state"] == "merged":  # offene „Push abgelehnt“-Meldung (Spec 012 FR-006)
+            open_items = [e for e in run["escalations"] if e["open"]]
+            if open_items:
+                entries.append(
+                    {
+                        "kind": "escalation",
+                        "spec": run["spec"],
+                        "reason": open_items[-1]["reason"],
+                        "source": source,
+                    }
+                )
         if run["active"] and run["stale"]:
             entries.append(
                 {

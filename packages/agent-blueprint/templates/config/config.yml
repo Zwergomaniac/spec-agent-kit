@@ -76,4 +76,11 @@ dashboard:
   # push: auto | manual | off   # Default: auto, sobald url gesetzt ist, sonst manual
   share_commit_subjects: false
 
+# Autonomie-Stufen (Spec 012): was der Orchestrator nach einem Lauf in `approved` selbst tun darf.
+# Die Defaults sind streng. Nur der Betreiber ändert diese Datei.
+# autonomy:
+#   push: manual              # manual (Default) | after_merge: `sak run push` nach dem Merge, nur Basis-Branch, fast-forward
+#   deploy: after_approval    # after_approval (Default): nach ausdrücklichem OK des Betreibers | never: nur der Betreiber
+#   remote: origin            # Ziel des Pushs
+
 plugins: []                   # in v1 nur reserviert

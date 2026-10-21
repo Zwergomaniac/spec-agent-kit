@@ -270,3 +270,29 @@ def test_fragment_sets_no_default_mode() -> None:
     assert "defaultMode" not in data.get("permissions", {})
     assert "defaultMode" not in data
     assert "bypassPermissions" not in FRAGMENT.read_text(encoding="utf-8")
+
+
+# --- Autonomie-Stufen (Spec 012) ---------------------------------------------
+
+
+def test_skill_follows_the_autonomy_levels() -> None:
+    text = SKILL.read_text(encoding="utf-8")
+    assert "SAK run push" in text and "autonomy.push" in text and "autonomy.deploy" in text
+    for needle in (
+        "after_merge",
+        "ohne Rückfrage",
+        "Deploy nur manuell",
+        "ausdrückliche Anweisung",
+        "bleiben beim Betreiber",
+        "kein direktes `git push`",
+    ):
+        assert needle.lower() in text.lower(), needle
+    # Der Skill erlaubt weder Force noch einen Push am Befehl vorbei.
+    assert "--force" not in text.replace("ohne Force", "")
+    assert "git push --" not in text
+
+
+def test_push_is_a_run_subcommand_and_the_deny_rule_stays() -> None:
+    assert "push" in run_subcommands()
+    deny = fragment()["permissions"]["deny"]
+    assert "Bash(git push)" in deny and "Bash(git push *)" in deny

@@ -52,7 +52,9 @@ def _verdicts(root: Path, run: dict[str, Any], cfg: EffectiveConfig) -> dict[int
     return found
 
 
-def _next_step(run: dict[str, Any], roles: dict[str, str], missing: list[str]) -> str:
+def _next_step(
+    run: dict[str, Any], roles: dict[str, str], missing: list[str], *, push: bool = False
+) -> str:
     run_id = run["run_id"]
     state = run["state"]
     builder = roles.get("builder", "sak-builder")
@@ -78,9 +80,14 @@ def _next_step(run: dict[str, Any], roles: dict[str, str], missing: list[str]) -
             f"<rolle> <datei>` ablegen und `{SAK} run combine {run_id}` aufrufen.{pending}"
         )
     if state == "approved":
+        pushing = (
+            f"danach ohne Rückfrage `{SAK} run push {run_id}` (autonomy.push: after_merge)"
+            if push
+            else "ohne Push (autonomy.push: manual)"
+        )
         return (
-            f"Abschluss: Diff sichten, `{SAK} run cleanup {run_id}`, `{SAK} run merge {run_id}` "
-            "(kein Push), dann Kurzbericht an den Betreiber."
+            f"Abschluss: Diff sichten, `{SAK} run cleanup {run_id}`, `{SAK} run merge {run_id}`, "
+            f"{pushing}, dann Kurzbericht an den Betreiber."
         )
     return (
         "Der Lauf ist eskaliert und wartet auf den Betreiber. Berichte kurz (Gate, Grund, offene "
@@ -98,6 +105,7 @@ def build_context(root: Path, payload: dict[str, Any]) -> dict[str, Any] | None:
         return None
     cfg = load_config(root)
     roles = {r: str(cfg.role(r)["agent"]) for r in cfg.active_roles()}
+    push = cfg.data["autonomy"]["push"] == "after_merge"
     review_roles = [r for r in roles if r in ("code_review", "ui_review", "security_review")]
     verdicts = _verdicts(root, run, cfg)
     current = verdicts.get(int(run["round"]), {})
@@ -136,7 +144,7 @@ def build_context(root: Path, payload: dict[str, Any]) -> dict[str, Any] | None:
             )
     else:
         lines.append("Muss-Befunde der letzten Prüfung: keine.")
-    lines.append("Nächster Schritt: " + _next_step(run, roles, missing))
+    lines.append("Nächster Schritt: " + _next_step(run, roles, missing, push=push))
     lines.append(
         f"Stand prüfen: `{SAK} run show {run['run_id']}`. Der Ablauf steht im Skill sak-pipeline."
     )

@@ -43,5 +43,6 @@
     "push": "auto",
     "share_commit_subjects": false
   },
+  "autonomy": { "push": "after_merge", "deploy": "after_approval", "remote": "origin" },
   "plugins": [{ "name": "legacy-status", "options": { "root": ".specify" } }]
 }

@@ -21,6 +21,7 @@ from spec_agent_kit.config import (
     build_effective,
     load_config,
     read_dashboard_key,
+    schema_errors,
 )
 from spec_agent_kit.config.check import check, parse_frontmatter
 from spec_agent_kit.config.defaults import default_agent_name
@@ -521,3 +522,38 @@ def test_cli_check_exit_codes(
 def test_cli_config_requires_subcommand(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["config"]) == 2
     capsys.readouterr()
+
+
+def test_autonomy_defaults_are_strict(tmp_path: Path) -> None:
+    """Spec 012 FR-001: ohne Angabe bleibt der Push manuell, Deploy nach OK, Remote origin."""
+    config = build_effective(tmp_path, {"schema": "sak.config/1", "project": {}})
+    assert config.data["autonomy"] == {
+        "push": "manual",
+        "deploy": "after_approval",
+        "remote": "origin",
+    }
+    partial = build_effective(tmp_path, {"autonomy": {"push": "after_merge"}})
+    assert partial.data["autonomy"] == {
+        "push": "after_merge",
+        "deploy": "after_approval",
+        "remote": "origin",
+    }
+
+
+def test_immoagent_example_pushes_after_merge_and_template_keeps_the_default(
+    tmp_path: Path,
+) -> None:
+    example = build_effective(tmp_path, _example("immoagent.config.yml")).data
+    assert example["autonomy"]["push"] == "after_merge"
+    assert build_effective(tmp_path, _example("ai-forge.config.yml")).data["autonomy"]["push"] == (
+        "manual"
+    )
+    text = (TEMPLATES / "config.yml").read_text(encoding="utf-8")
+    assert "# autonomy:" in text and "push: manual" in text
+
+
+def test_invalid_autonomy_value_is_reported_with_the_allowed_values(tmp_path: Path) -> None:
+    errors = schema_errors(
+        {"schema": "sak.config/1", "project": {}, "autonomy": {"push": "always"}}
+    )
+    assert errors and errors[0]["path"] == "autonomy.push" and "after_merge" in errors[0]["message"]

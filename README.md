@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0). Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -25,7 +25,7 @@ Werte: **implementiert** (Code und Tests vorhanden), **teilweise**, **Konzept** 
 | Baustein | Status | Anmerkung | Ort |
 | --- | --- | --- | --- |
 | Contracts (Schemas, Vokabular, Labels, Deep Links) | implementiert | JSON Schema, generierte Zod-Typen, Python-Validierung; Specs 001, 002 | `packages/contracts`, `packages/engine/src/spec_agent_kit/contracts.py` |
-| Pipeline-Engine (`sak run`, `sak hook`, `sak event`) | implementiert | Zustandsmaschine mit `paused`, Wächter, Urteile, `combine`, `merge` ohne Push, Übernahme verwaister Läufe, Nur-Prüfung, Hooks; Spec 003. Dazu Spec 011: `run cleanup` (Links), Worktree-Erkennung, Lauf-Kontext nach dem Kompaktieren (`hook session-start`) | `packages/engine/src/spec_agent_kit/pipeline` |
+| Pipeline-Engine (`sak run`, `sak hook`, `sak event`) | implementiert | Zustandsmaschine mit `paused`, Wächter, Urteile, `combine`, `merge` ohne Push, `push` nach Autonomie-Stufe, Übernahme verwaister Läufe, Nur-Prüfung, Hooks; Spec 003. Dazu Spec 011: `run cleanup` (Links), Worktree-Erkennung, Lauf-Kontext nach dem Kompaktieren (`hook session-start`) | `packages/engine/src/spec_agent_kit/pipeline` |
 | Rollen, Agents, Orchestrator-Skill | implementiert | Vorlagen für Builder, Code-, UI-, Sicherheits-Prüfer und Doku, Skill `sak-pipeline`, `settings.fragment.json` | `packages/agent-blueprint/templates/claude` |
 | Projektkonfiguration | implementiert | `.spec-agent/config.yml` (`sak.config/1`), `sak config check` und `show`; Spec 004. Die AI-Forge-Beispielwerte sind ungeprüft | `packages/engine/src/spec_agent_kit/config`, `packages/agent-blueprint/templates/config` |
 | Init, Upgrade, Doctor | implementiert | Plan vor `--apply` (mit allen Allow- und Deny-Regeln), `--format json\|text`, `.sak-new` statt Überschreiben, Lockfile mit `settings_allow`, additiver Settings-Merge mit Ersetzen veralteter Kit-Regeln, vendorte Engine, Vorschläge aus der Projekt-Erkennung, `doctor --probe-commands`; Spec 005, 011. Noch nie gegen ein echtes Zielprojekt gelaufen | `packages/engine/src/spec_agent_kit/install` |
@@ -112,6 +112,7 @@ Im Zielprojekt steht die Engine unter `.spec-agent/engine`. Empfohlener Aufruf i
 
 SAK run list [--all]          # offene (mit --all auch beendete) Läufe
 SAK run show <lauf>           # ein Lauf
+SAK run push <lauf>           # Basis-Branch eines gemergten Laufs pushen (nur bei autonomy.push: after_merge)
 SAK config check              # Konfiguration prüfen
 SAK board --text              # Kurzfassung des Boards (höchstens 40 Zeilen); --json ist der Standard
 SAK board serve [--port N] [--open]  # lokale Ansicht auf 127.0.0.1, ohne Netz; --open startet den Browser
@@ -119,6 +120,18 @@ SAK push                      # Events und Board ans Dashboard senden (--backgro
 ```
 
 `board serve` probiert ohne `--port` zuerst 5192, bei Belegung die nächsten freien Ports bis 5212. Mit `--port` gilt genau dieser Port (belegt: Exit 2).
+
+### Autonomie-Stufen
+
+Was der Orchestrator nach einem Lauf in `approved` selbst tun darf, steht im Block `autonomy` der `.spec-agent/config.yml`. Nur der Betreiber ändert ihn. Die Defaults sind streng.
+
+| Schlüssel | Werte (Default zuerst) | Wirkung |
+| --- | --- | --- |
+| `autonomy.push` | `manual`, `after_merge` | `after_merge`: Der Orchestrator führt nach dem Merge ohne Rückfrage `sak run push <lauf>` aus. `manual`: Der Betreiber pusht selbst; `sak run push` lehnt mit Hinweis auf die Config ab. |
+| `autonomy.deploy` | `after_approval`, `never` | `after_approval`: Der Orchestrator deployt nur nach ausdrücklichem OK im Chat. `never`: Der Orchestrator deployt nie, nur der Betreiber. |
+| `autonomy.remote` | `origin` | Ziel des Pushs. |
+
+Merge nach `approved` läuft immer automatisch (`sak run merge`). `sak run push` führt ausschließlich `git push <remote> <basis>:<basis>` aus, ohne `--force`, ohne Tags, mit 60 s Zeitlimit und ohne Zugangsdaten in der Ausgabe. Es lehnt ab, wenn der Lauf nicht `merged` ist, ein anderer Branch als der Basis-Branch ausgecheckt ist, der Basis-Branch den Merge-Commit des Laufs nicht enthält oder die Stufe `manual` gilt. Auch ein Marker-Commit (`deploy(NNN): …`) nach dem Merge desselben Laufs lässt sich so pushen. Ist das Remote weiter (non-fast-forward), wird weder gemergt noch rebased: Der Befehl lehnt ab und der Lauf bekommt einen Aufmerksamkeitseintrag „Push abgelehnt“ (Art `escalation`, Gate `release`), bis ein späterer Push gelingt. Erfolgreiche Pushes erscheinen als Ereignis `run.pushed` (Label „Gepusht“) und als Zusatz „gepusht“ am Lauf. Die Deny-Regel `git push` in den Settings bleibt bestehen: Direkte Pushes und Pushes durch Subagents sind weiterhin gesperrt. Fachliche Eskalationen und das Rundenlimit stoppen den Lauf unverändert bis `release`.
 
 ### Dashboard anbinden
 

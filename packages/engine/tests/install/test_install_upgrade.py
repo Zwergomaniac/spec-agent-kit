@@ -60,7 +60,7 @@ def test_unmodified_file_is_replaced_and_the_lock_hash_is_updated(
     _installed(sak, init_args, target)
     old_lock = read_json(target / ".spec-agent/lock.json")
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     plan_code, plan = sak("upgrade", str(target), "--no-sync")
     assert plan_code == 0
     assert plan["mode"] == "plan"
@@ -74,7 +74,7 @@ def test_unmodified_file_is_replaced_and_the_lock_hash_is_updated(
     lock = read_json(target / ".spec-agent/lock.json")
     assert lock["files"][REVIEWER] == sha256_of(new_text)
     assert lock["files"][REVIEWER] != old_lock["files"][REVIEWER]
-    assert lock["kit_version"] == "0.3.0"
+    assert lock["kit_version"] == "0.4.0"
     assert lock["installed_at"] == old_lock["installed_at"]
     assert lock["upgraded_at"] is not None
     assert out["conflicts"] == []
@@ -89,7 +89,7 @@ def test_locally_modified_file_stays_and_sak_new_is_created(
     write(target, REVIEWER, local)
     git(target, "commit", "-q", "-am", "lokal angepasst")
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert (target / REVIEWER).read_text(encoding="utf-8") == local
     assert (target / (REVIEWER + ".sak-new")).read_bytes() == _template(
@@ -110,7 +110,7 @@ def test_locally_modified_file_with_unchanged_kit_is_left_alone(
     _installed(sak, init_args, target)
     write(target, REVIEWER, (target / REVIEWER).read_text(encoding="utf-8") + "\nLokal.\n")
     git(target, "commit", "-q", "-am", "lokal")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     plan = _upgrade(sak, target)
     assert REVIEWER not in _actions(plan)
     assert plan["conflicts"] == []
@@ -121,7 +121,7 @@ def test_removed_kit_file_is_deleted_when_unchanged(
 ) -> None:
     _installed(sak, init_args, target)
     _template(kit, "sak-docs.md").unlink()
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert _actions(out)[DOCS] == "delete"
     assert not (target / DOCS).exists()
@@ -136,7 +136,7 @@ def test_removed_kit_file_stays_when_modified_and_is_reported(
     write(target, DOCS, (target / DOCS).read_text(encoding="utf-8") + "\nEigener Zusatz.\n")
     git(target, "commit", "-q", "-am", "lokal")
     _template(kit, "sak-docs.md").unlink()
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert (target / DOCS).is_file()
     assert any(DOCS in w and "bleibt" in w for w in out["warnings"])
@@ -150,7 +150,7 @@ def test_removed_kit_file_that_is_already_gone_leaves_the_lock(
     (target / DOCS).unlink()
     git(target, "commit", "-q", "-am", "gelöscht")
     _template(kit, "sak-docs.md").unlink()
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     assert DOCS not in read_json(target / ".spec-agent/lock.json")["files"]
 
@@ -162,7 +162,7 @@ def test_new_kit_file_is_created(kit: Kit, target: Path, sak: Sak, init_args: li
         "packages/agent-blueprint/templates/claude/agents/sak-neu.md",
         "---\nname: x\n---\n",
     )
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert _actions(out)[".claude/agents/sak-neu.md"] == "create"
     assert ".claude/agents/sak-neu.md" in read_json(target / ".spec-agent/lock.json")["files"]
@@ -176,7 +176,7 @@ def test_new_kit_file_colliding_with_a_local_file_is_a_conflict(
     git(target, "add", "-A")
     git(target, "commit", "-q", "-m", "lokal")
     write(kit.root, "packages/agent-blueprint/templates/claude/agents/sak-neu.md", "kit\n")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert out["conflicts"] == [".claude/agents/sak-neu.md"]
     assert (target / ".claude/agents/sak-neu.md").read_text(encoding="utf-8") == "lokal\n"
@@ -199,7 +199,7 @@ def test_engine_files_are_replaced_by_the_new_kit(
     _installed(sak, init_args, target)
     cli = kit.engine / "src/spec_agent_kit/cli.py"
     cli.write_text(cli.read_text(encoding="utf-8") + "\n# neu\n", encoding="utf-8", newline="\n")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     out = _upgrade(sak, target, "--apply")
     assert _actions(out)[".spec-agent/engine/src/spec_agent_kit/cli.py"] == "replace"
     assert (
@@ -207,7 +207,7 @@ def test_engine_files_are_replaced_by_the_new_kit(
     ).read_bytes() == cli.read_bytes()
     assert (target / ".spec-agent/engine/src/spec_agent_kit/__init__.py").read_text(
         encoding="utf-8"
-    ).count("0.3.0") == 1
+    ).count("0.4.0") == 1
 
 
 def test_resolved_conflict_is_adopted_into_the_lock(
@@ -217,7 +217,7 @@ def test_resolved_conflict_is_adopted_into_the_lock(
     write(target, REVIEWER, (target / REVIEWER).read_text(encoding="utf-8") + "\nLokal.\n")
     git(target, "commit", "-q", "-am", "lokal")
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     # Der Betreiber übernimmt die Kit-Fassung und räumt die .sak-new-Datei weg.
     sak_new = target / (REVIEWER + ".sak-new")
@@ -249,7 +249,7 @@ def test_config_is_never_touched_and_missing_keys_are_reported(
     )
     write(target, ".spec-agent/config.yml", minimal)
     git(target, "commit", "-q", "-am", "minimale Config")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     plan = _upgrade(sak, target)
     assert ".spec-agent/config.yml" not in _actions(plan)
     keys = {k["path"]: k["default"] for k in plan["config_keys"]}
@@ -293,7 +293,7 @@ def test_settings_fragment_changes_are_merged_additively(
     import json
 
     fragment.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     settings = read_json(target / ".claude/settings.json")
     assert "Bash(git reset --hard *)" in settings["permissions"]["deny"]
@@ -325,7 +325,7 @@ def test_second_apply_after_a_real_upgrade_is_empty(
 ) -> None:
     _installed(sak, init_args, target)
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     git(target, "add", "-A")
     git(target, "commit", "-q", "-m", "sak upgrade")
@@ -342,7 +342,7 @@ def test_pending_conflict_is_reported_again_but_never_written_twice_differently(
     write(target, REVIEWER, (target / REVIEWER).read_text(encoding="utf-8") + "\nLokal.\n")
     git(target, "commit", "-q", "-am", "lokal")
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     first = snapshot(target)
     git(target, "add", "-A")
@@ -362,9 +362,9 @@ def test_upgrade_requires_an_initialized_project(kit: Kit, target: Path, sak: Sa
 
 
 def test_downgrade_is_rejected(kit: Kit, target: Path, sak: Sak, init_args: list[str]) -> None:
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _installed(sak, init_args, target)
-    bump_version(kit, "0.2.0")
+    bump_version(kit, "0.3.0")
     before = snapshot(target)
     code, out = sak("upgrade", str(target), "--no-sync", "--apply")
     assert code == 1
@@ -377,7 +377,7 @@ def test_dirty_tree_is_rejected_and_allow_dirty_needs_untouched_files(
 ) -> None:
     _installed(sak, init_args, target)
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     write(target, "README.md", "geändert\n")
     code, out = sak("upgrade", str(target), "--no-sync")
     assert code == 1
@@ -415,7 +415,7 @@ def test_uv_sync_runs_in_the_engine_folder_after_apply(
 ) -> None:
     _installed(sak, init_args, target)
     _change_reviewer(kit)
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     calls: list[Path] = []
 
     def fake_sync(root: Path) -> dict[str, Any]:
@@ -471,7 +471,7 @@ def test_smoke_init_doctor_local_change_version_bump_upgrade(
     path.write_text(
         path.read_text(encoding="utf-8") + "\nKit neu.\n", encoding="utf-8", newline="\n"
     )
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     code, out = sak("upgrade", str(target), "--no-sync", "--apply")
     assert code == 0, out
     assert out["conflicts"] == [DOCS]
@@ -498,7 +498,7 @@ def test_upgrade_replaces_old_direct_uv_hooks_and_keeps_foreign_ones(
     text = json.dumps(settings, indent=2) + "\n"
     path.write_text(text, encoding="utf-8", newline="\n")
     git(target, "commit", "-q", "-am", "alte Hooks")
-    bump_version(kit, "0.3.0")
+    bump_version(kit, "0.4.0")
     _upgrade(sak, target, "--apply")
     entries = read_json(path)["hooks"]["SubagentStart"]
     commands = [h["command"] for e in entries for h in e["hooks"]]

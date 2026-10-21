@@ -1,0 +1,1 @@
+{ "schema": "sak.config/1", "project": { "key": "demo", "name": "Demo" }, "autonomy": { "merge": "auto" } }

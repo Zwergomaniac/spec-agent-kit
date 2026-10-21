@@ -59,6 +59,7 @@ export const vocabulary = {
       "run.paused",
       "run.resumed",
       "run.merged",
+      "run.pushed",
       "run.reviewed",
       "run.aborted",
       "run.taken_over"

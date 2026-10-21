@@ -260,6 +260,36 @@
       },
       "maxItems": 10,
       "description": "Plugins nach Name (Spec 010). Standard: leer."
+    },
+    "autonomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "push": {
+          "anyOf": [
+            {
+              "const": "manual"
+            },
+            {
+              "const": "after_merge"
+            }
+          ]
+        },
+        "deploy": {
+          "anyOf": [
+            {
+              "const": "after_approval"
+            },
+            {
+              "const": "never"
+            }
+          ]
+        },
+        "remote": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "description": "Autonomie-Stufen (Spec 012). Defaults: push manual, deploy after_approval, remote origin."
     }
   },
   "required": [

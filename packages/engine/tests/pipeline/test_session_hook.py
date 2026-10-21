@@ -168,3 +168,19 @@ def test_hook_writes_no_events_and_no_state(repo: Repo) -> None:
     before = repo.types(run_id)
     hook(repo)
     assert repo.types(run_id) == before
+
+
+@pytest.mark.parametrize(
+    ("autonomy", "expected"),
+    [({}, "ohne Push (autonomy.push: manual)"), ({"push": "after_merge"}, "run push")],
+)
+def test_approved_next_step_follows_the_autonomy_level(
+    repo: Repo, autonomy: dict[str, str], expected: str
+) -> None:
+    if autonomy:
+        repo.set_config(autonomy=autonomy)
+    run_id = repo.start()
+    repo.sak("run", "state", run_id, "reviewing")
+    repo.sak("run", "state", run_id, "approved")
+    _, out = hook(repo)
+    assert expected in context(out)

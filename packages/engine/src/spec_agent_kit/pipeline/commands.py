@@ -696,7 +696,90 @@ def cmd_merge(ctx: Ctx, token: str) -> dict[str, Any]:
         raise RefusedError(f"git merge ist fehlgeschlagen: {clip(detail, 300)}")
     commit = git.head(root)
     _apply(ctx, run, "merged", merge_commit=commit)
+    run["merge_commit"] = commit
+    runs.write_run(ctx.root, run)
     return _result(ctx, {**_state_payload(run), "merge_commit": commit, "base_branch": base})
+
+
+# ---------------------------------------------------------------------------
+# push (Spec 012)
+# ---------------------------------------------------------------------------
+
+
+def _merge_commit_of(ctx: Ctx, run: dict[str, Any]) -> str | None:
+    """Merge-Commit des Laufs aus der ``run.json`` oder, bei älteren Läufen, aus den Events."""
+    known = run.get("merge_commit")
+    if isinstance(known, str) and known:
+        return known
+    for event in reversed(read_events(ctx.root, run["run_id"])):
+        if event.get("type") == "run.merged":
+            commit = (event.get("data") or {}).get("merge_commit")
+            return str(commit) if commit else None
+    return None
+
+
+def _push_rejected_attention(ctx: Ctx, run: dict[str, Any], reason: str) -> None:
+    """Aufmerksamkeitseintrag „Push abgelehnt“: ``run.escalated`` mit Gate ``release``.
+
+    Der Lauf bleibt in ``merged`` (kein Zustandswechsel). Das Board hält den Eintrag offen, bis ein
+    späteres ``run.pushed`` ihn schließt.
+    """
+    _event(ctx, "run.escalated", run, round=run["round"], gate="release", reason=clip(reason))
+
+
+def cmd_push(ctx: Ctx, token: str) -> dict[str, Any]:
+    """Pusht den Basis-Branch eines gemergten Laufs auf das konfigurierte Remote (Spec 012).
+
+    Nur ``git push <remote> <base>:<base>`` (fast-forward, ohne ``--force``, ohne Tags) und nur bei
+    ``autonomy.push: after_merge``. Ein Marker-Commit nach dem Merge desselben Laufs ist erlaubt.
+    """
+    root = ctx.root
+    autonomy = ctx.cfg.data["autonomy"]
+    if autonomy["push"] != "after_merge":
+        raise RefusedError(
+            "Push ist nicht freigegeben: autonomy.push steht auf 'manual'. "
+            "Zum Freigeben `autonomy: {push: after_merge}` in .spec-agent/config.yml setzen "
+            "(nur der Betreiber ändert die Config)."
+        )
+    run = _resolve(ctx, token, include_finished=True)
+    if run.get("state") != "merged":
+        raise RefusedError(f"push gilt nur für gemergte Läufe ({run.get('state')})")
+    remote = str(autonomy["remote"])
+    if remote.startswith("-") or remote not in git.remotes(root):
+        raise RefusedError(f"Remote '{remote}' ist nicht eingerichtet (autonomy.remote)")
+    base = str(run["base_branch"])
+    if base.startswith("-") or not git.branch_exists(root, base):
+        raise RefusedError(f"Basis-Branch '{base}' existiert nicht")
+    current = git.current_branch(root)
+    if current != base:
+        raise RefusedError(
+            f"push gilt nur für den Basis-Branch '{base}', ausgecheckt ist '{current or 'HEAD'}'"
+        )
+    merge_commit = _merge_commit_of(ctx, run)
+    if merge_commit is None or not git.is_ancestor(root, merge_commit, f"refs/heads/{base}"):
+        raise RefusedError(
+            f"der Merge-Commit des Laufs ist nicht im Basis-Branch '{base}' enthalten"
+        )
+    proc = git.push_branch(root, remote, base)
+    detail = git.redact((proc.stderr or proc.stdout).strip())
+    if proc.returncode != 0:
+        lowered = detail.lower()
+        if "non-fast-forward" in lowered or "fetch first" in lowered or "rejected" in lowered:
+            reason = (
+                f"Push abgelehnt: {remote}/{base} ist weiter als lokal (non-fast-forward). "
+                "Kein Merge, kein Rebase, kein Force. Der Betreiber klärt das."
+            )
+            _push_rejected_attention(ctx, run, reason)
+            raise RefusedError(reason, run_id=run["run_id"], state=run["state"], attention=True)
+        raise RefusedError(f"git push ist fehlgeschlagen: {clip(detail, 300)}")
+    commit = git.head(root)
+    _event(ctx, "run.pushed", run, remote=remote, branch=base, commit=commit)
+    run["pushed"] = {"remote": remote, "branch": base, "commit": commit}
+    runs.write_run(ctx.root, run)
+    return _result(
+        ctx,
+        {**_state_payload(run), "remote": remote, "branch": base, "commit": commit},
+    )
 
 
 # ---------------------------------------------------------------------------
