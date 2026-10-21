@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from spec_agent_kit.install import InstallError
 
@@ -90,6 +91,20 @@ class Kit:
 
     def settings_fragment(self) -> bytes:
         return (self.templates / "claude" / "settings.fragment.json").read_bytes()
+
+    def detectors(self) -> list[dict[str, Any]]:
+        """Regeln zur Erkennung von Testwerkzeugen mit Ausgabeordnern (``detectors.json``)."""
+        path = self.templates / "config" / "detectors.json"
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        rules = loaded.get("artifact_tools") if isinstance(loaded, dict) else None
+        return (
+            [r for r in rules if isinstance(r, dict) and "id" in r]
+            if isinstance(rules, list)
+            else []
+        )
 
     def config_template(self) -> str:
         return (self.templates / "config" / "config.yml").read_text(encoding="utf-8")

@@ -6,15 +6,18 @@ Jede ``cmd_*``-Funktion gibt ein JSON-fähiges Dict zurück oder wirft ``Refused
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
+import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Final
 
-from spec_agent_kit import contracts
+from spec_agent_kit import contracts, worktree
 from spec_agent_kit.config import EffectiveConfig
 from spec_agent_kit.config.check import check as check_config
-from spec_agent_kit.pipeline import RefusedError, UsageError, git, runs
+from spec_agent_kit.pipeline import RefusedError, UsageError, git, links, runs
 from spec_agent_kit.pipeline.events import EventError, clip, emit, last_event_at, read_events
 from spec_agent_kit.pipeline.states import plan_transition
 from spec_agent_kit.pipeline.verdict import parse_verdict, strongest
@@ -191,6 +194,26 @@ def _switch_to_run_branch(ctx: Ctx, spec: str, base_branch: str) -> str:
     return branch
 
 
+def _worktree_note(ctx: Ctx) -> dict[str, Any] | None:
+    """Hinweise zu Worktrees (Spec 011 US3).
+
+    Die Hooks schreiben nach ``CLAUDE_PROJECT_DIR``, also dorthin, wo die Sitzung gestartet wurde.
+    Läuft die Sitzung nicht im Checkout des Laufs, entstehen dort keine Stations-Events.
+    """
+    session = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()
+    if session and not worktree.same_directory(session, ctx.root):
+        ctx.warnings.append(
+            f"CLAUDE_PROJECT_DIR ({session}) ist nicht der Checkout des Laufs ({ctx.root}): die "
+            "Hooks schreiben Stations-Events dorthin, nicht in den Lauf. Die Sitzung im Checkout "
+            "des Laufs starten."
+        )
+    main = worktree.main_checkout(ctx.root)
+    if main is None:
+        return None
+    inherited = ctx.cfg.inherited_from is not None
+    return {"main_checkout": str(main), "dashboard_inherited": inherited}
+
+
 def cmd_preflight(
     ctx: Ctx,
     spec_token: str,
@@ -257,6 +280,7 @@ def cmd_preflight(
         assert takeover is not None
         _apply(ctx, taken, "aborted", reason=takeover, takeover=True)
 
+    worktree_note = _worktree_note(ctx)
     now = runs.utcnow()
     run_id = runs.new_run_id(root, spec, now)
     run: dict[str, Any] = {
@@ -302,6 +326,7 @@ def cmd_preflight(
             "commands": ctx.cfg.data["commands"],
             "taken_over": taken["run_id"] if taken else None,
             "stale_runs": _stale_runs(ctx),
+            "worktree": worktree_note,
         },
     )
 
@@ -385,12 +410,56 @@ def cmd_return(ctx: Ctx, token: str, *, reason: str) -> dict[str, Any]:
 
 
 def cmd_abort(ctx: Ctx, token: str, *, reason: str | None = None) -> dict[str, Any]:
-    """Bricht einen Lauf ab. Der Branch bleibt bestehen."""
+    """Bricht einen Lauf ab. Der Branch bleibt bestehen. Links im Lauf-Ordner werden entfernt."""
     run = _resolve(ctx, token)
     _apply(ctx, run, "aborted", reason=reason)
     run["paused_from"] = None
     runs.write_run(ctx.root, run)
-    return _result(ctx, _state_payload(run))
+    return _result(ctx, {**_state_payload(run), **_cleanup_links(ctx, run)})
+
+
+# ---------------------------------------------------------------------------
+# cleanup (Spec 011 B14)
+# ---------------------------------------------------------------------------
+
+
+def _cleanup_links(ctx: Ctx, run: dict[str, Any]) -> dict[str, Any]:
+    """Entfernt Links und Junctions unter ``runs/<id>/`` (ohne ihnen zu folgen).
+
+    Gibt ``{"cleaned_links": [...]}`` zurück, leer, wenn nichts zu tun war. Fehler werden als
+    Hinweis gemeldet und brechen den aufrufenden Befehl nicht ab.
+    """
+    directory = runs.run_dir(ctx.root, run["run_id"])
+    removed, failed = links.remove_links(directory)
+    for path, reason in failed:
+        ctx.warnings.append(f"Link nicht entfernt: {_relative(directory, path)} ({reason})")
+    if not removed:
+        return {}
+    return {"cleaned_links": [_relative(directory, p) for p in removed]}
+
+
+def _relative(base: Path, path: Path) -> str:
+    try:
+        return path.relative_to(base).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def cmd_cleanup(ctx: Ctx, token: str) -> dict[str, Any]:
+    """Entfernt Links und Junctions unter ``runs/<id>/``. Das Ziel eines Links bleibt unberührt."""
+    run = _resolve(ctx, token, include_finished=True)
+    directory = runs.run_dir(ctx.root, run["run_id"])
+    if links.is_link(directory):
+        raise RefusedError(f"Lauf-Ordner von {run['run_id']} ist selbst ein Link; nichts getan")
+    removed, failed = links.remove_links(directory)
+    payload = {
+        "run_id": run["run_id"],
+        "removed": [_relative(directory, p) for p in removed],
+        "failed": [{"path": _relative(directory, p), "reason": r} for p, r in failed],
+    }
+    if failed:
+        raise RefusedError("nicht alle Links entfernt", **payload)
+    return _result(ctx, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -420,7 +489,8 @@ def cmd_guard(ctx: Ctx, token: str) -> dict[str, Any]:
 
 
 def snapshot_hash(root: Path, clean_ignore: list[str]) -> str:
-    """SHA-256 über HEAD, geänderte Dateien (Pfad, Inhalt) und ``git diff`` (ohne clean_ignore)."""
+    """SHA-256 über HEAD, geänderte Dateien (Pfad, Inhalt), ``git diff`` (ohne clean_ignore) und
+    die Top-Level-Ordner, die Git nicht sieht (leere Ordner, Spec 011 B14)."""
     parts = [git.head(root)]
     for rel in git.dirty_files(root, clean_ignore):
         path = root / rel
@@ -430,11 +500,32 @@ def snapshot_hash(root: Path, clean_ignore: list[str]) -> str:
             digest = "?"
         parts.append(f"{rel}\0{digest}")
     parts.append(git.git(root, "diff", "HEAD", "--", ".", *git.exclude_specs(clean_ignore)))
+    parts.append("dirs\x00" + "\x00".join(git.new_top_level_dirs(root, clean_ignore)))
     return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()
 
 
+_SNAPSHOT_DIRS = "snapshot-dirs.json"
+
+
 def cmd_snapshot(ctx: Ctx) -> dict[str, Any]:
+    # Die Liste der Top-Level-Ordner bleibt liegen, damit reviewer-check neue Ordner benennen kann.
+    with contextlib.suppress(OSError):
+        runs.write_text_atomic(
+            runs.state_dir(ctx.root) / _SNAPSHOT_DIRS,
+            json.dumps(git.new_top_level_dirs(ctx.root, ctx.clean_ignore)),
+        )
     return _result(ctx, {"snapshot": snapshot_hash(ctx.root, ctx.clean_ignore)})
+
+
+def _new_dirs_since_snapshot(ctx: Ctx) -> list[str]:
+    try:
+        before = json.loads((runs.state_dir(ctx.root) / _SNAPSHOT_DIRS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(before, list):
+        return []
+    now = git.new_top_level_dirs(ctx.root, ctx.clean_ignore)
+    return [d for d in now if d not in before]
 
 
 def cmd_reviewer_check(ctx: Ctx, before: str) -> dict[str, Any]:
@@ -443,6 +534,9 @@ def cmd_reviewer_check(ctx: Ctx, before: str) -> dict[str, Any]:
     if after == before:
         return _result(ctx, {"changed": False})
     extra: dict[str, Any] = {}
+    new_dirs = _new_dirs_since_snapshot(ctx)
+    if new_dirs:
+        extra["new_top_level_dirs"] = new_dirs
     run = runs.active_run(ctx.root)
     if run is not None and run["state"] != "escalated":
         _apply(
@@ -452,8 +546,16 @@ def cmd_reviewer_check(ctx: Ctx, before: str) -> dict[str, Any]:
             reason="Prüfer hat das Repo verändert",
             gate="review_integrity",
         )
-        extra = {"run_id": run["run_id"], "state": run["state"], "gate": "review_integrity"}
-    raise RefusedError("Prüfer hat das Repo verändert", **extra)
+        extra = {
+            **extra,
+            "run_id": run["run_id"],
+            "state": run["state"],
+            "gate": "review_integrity",
+        }
+    message = "Prüfer hat das Repo verändert"
+    if new_dirs:
+        message += " (neue Top-Level-Ordner: " + ", ".join(new_dirs) + ")"
+    raise RefusedError(message, **extra)
 
 
 # ---------------------------------------------------------------------------
@@ -559,6 +661,7 @@ def cmd_combine(ctx: Ctx, token: str) -> dict[str, Any]:
             "round": run["round"],
             "must": must,
             "reasons": reasons,
+            **_cleanup_links(ctx, run),
         },
     )
 

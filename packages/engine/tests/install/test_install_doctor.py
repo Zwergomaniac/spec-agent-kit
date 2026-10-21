@@ -18,7 +18,16 @@ from spec_agent_kit.install import doctor as doctor_module
 from spec_agent_kit.install.doctor import run_doctor
 from spec_agent_kit.install.kit import Kit
 
-CHECKS = {"lock", "config", "engine", "hooks_and_deny", "hook_probe", "gitignore", "speckit"}
+CHECKS = {
+    "lock",
+    "config",
+    "engine",
+    "hooks_and_deny",
+    "hook_probe",
+    "gitignore",
+    "speckit",
+    "commands",
+}
 REAL_PROBE = doctor_module._check_hook_probe
 
 
@@ -205,11 +214,23 @@ def test_reachable_dashboard_passes(
     ready: Path, sak: Sak, health_server: ThreadingHTTPServer
 ) -> None:
     _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    write(ready, ".spec-agent/dashboard.key", "sak_" + "A" * 43 + "\n")
     code, result = sak("doctor", str(ready))
     assert code == 0, result
     check = _by_name(result)["dashboard"]
     assert check["ok"] is True
-    assert "healthz" in check["detail"]
+    assert "healthz" in check["detail"] and "Schlüssel vorhanden (file)" in check["detail"]
+
+
+def test_reachable_dashboard_without_a_key_is_not_ok(
+    ready: Path, sak: Sak, health_server: ThreadingHTTPServer
+) -> None:
+    """Spec 011 B15: erreichbar genügt nicht."""
+    _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    code, result = sak("doctor", str(ready))
+    check = _by_name(result)["dashboard"]
+    assert check["ok"] is False and check["required"] is False and code == 0
+    assert "keinen Schlüssel" in check["detail"]
 
 
 def test_unreachable_dashboard_is_reported_but_not_required(ready: Path, sak: Sak) -> None:

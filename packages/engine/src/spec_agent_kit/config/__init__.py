@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 from jsonschema.exceptions import ValidationError
 
-from spec_agent_kit import contracts
+from spec_agent_kit import contracts, worktree
 from spec_agent_kit.config.defaults import (
     CONFIG_RELATIVE_PATH,
     CORE_CLEAN_IGNORE,
@@ -37,6 +37,7 @@ __all__ = [
     "NotInitializedError",
     "build_effective",
     "config_path",
+    "key_source",
     "load_config",
     "read_dashboard_key",
     "read_raw",
@@ -68,6 +69,8 @@ class EffectiveConfig:
 
     root: Path
     data: dict[str, Any]
+    inherited_from: Path | None = None
+    """Haupt-Checkout, aus dem Dashboard-Einstellungen eines Worktrees stammen (Spec 011 US3)."""
 
     def to_dict(self) -> dict[str, Any]:
         """Tiefe Kopie der wirksamen Konfiguration (JSON-fähig)."""
@@ -174,27 +177,85 @@ def build_effective(root: Path, raw: Mapping[str, Any]) -> EffectiveConfig:
     return EffectiveConfig(root=root, data=data)
 
 
+def _inherit_dashboard(root: Path, raw: dict[str, Any]) -> tuple[dict[str, Any], Path | None]:
+    """Ergänzt ``dashboard.url`` und ``dashboard.push`` aus dem Haupt-Checkout (nur in Worktrees).
+
+    Eigene Werte des Worktrees haben Vorrang; es wird nur gefüllt, was dort fehlt oder ``null`` ist.
+    Fehler beim Lesen der Haupt-Config führen nie zu einem Abbruch (dann bleibt es beim Eigenen).
+    """
+    main = worktree.main_checkout(root)
+    if main is None:
+        return raw, None
+    section = raw.get("dashboard")
+    own = section if isinstance(section, dict) else {}
+    if own.get("url"):
+        return raw, None
+    try:
+        main_raw = read_raw(main)
+    except ConfigError:
+        return raw, None
+    main_section = main_raw.get("dashboard")
+    if not isinstance(main_section, dict) or not main_section.get("url"):
+        return raw, None
+    merged = {**own, "url": main_section["url"]}
+    if "push" not in merged and "push" in main_section:
+        merged["push"] = main_section["push"]
+    return {**raw, "dashboard": merged}, main
+
+
 def load_config(root: Path) -> EffectiveConfig:
-    """Lädt und prüft die Config. Wirft ``NotInitializedError`` oder ``ConfigError``."""
+    """Lädt und prüft die Config. Wirft ``NotInitializedError`` oder ``ConfigError``.
+
+    In einem Git-Worktree werden fehlende Dashboard-Einstellungen aus dem Haupt-Checkout geerbt.
+    """
     raw = read_raw(root)
     errors = schema_errors(raw)
     if errors:
         raise ConfigError(errors)
-    return build_effective(root, raw)
+    raw, inherited = _inherit_dashboard(root, raw)
+    effective = build_effective(root, raw)
+    if inherited is None:
+        return effective
+    return EffectiveConfig(root=effective.root, data=effective.data, inherited_from=inherited)
+
+
+def key_source(
+    root: Path, config: EffectiveConfig, env: Mapping[str, str] | None = None
+) -> str | None:
+    """Woher der Schlüssel käme: ``env``, ``file``, ``main_checkout`` (Worktree) oder ``None``."""
+    environment = os.environ if env is None else env
+    if environment.get(config.data["dashboard"]["token_env"], "").strip():
+        return "env"
+    if _read_key_file(root / DASHBOARD_KEY_RELATIVE_PATH):
+        return "file"
+    main = worktree.main_checkout(root)
+    if main is not None and _read_key_file(main / DASHBOARD_KEY_RELATIVE_PATH):
+        return "main_checkout"
+    return None
+
+
+def _read_key_file(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8").strip() or None if path.is_file() else None
+    except (OSError, UnicodeDecodeError):
+        return None
 
 
 def read_dashboard_key(
     root: Path, config: EffectiveConfig, env: Mapping[str, str] | None = None
 ) -> str | None:
-    """Dashboard-Schlüssel aus ``token_env`` oder ``.spec-agent/dashboard.key``, sonst ``None``.
+    """Dashboard-Schlüssel aus ``token_env``, ``.spec-agent/dashboard.key`` oder dem Haupt-Checkout.
 
-    Die Config enthält nur den Namen der Variablen, nie den Schlüssel selbst.
+    Die Config enthält nur den Namen der Variablen, nie den Schlüssel selbst. In einem
+    Git-Worktree fehlt die gitignorierte Schlüsseldatei; dort gilt die des Haupt-Checkouts
+    (Spec 011 US3). Der Schlüssel des Worktrees hat immer Vorrang.
     """
     environment = os.environ if env is None else env
     value = environment.get(config.data["dashboard"]["token_env"], "").strip()
     if value:
         return value
-    key_file = root / DASHBOARD_KEY_RELATIVE_PATH
-    if key_file.is_file():
-        return key_file.read_text(encoding="utf-8").strip() or None
-    return None
+    own = _read_key_file(root / DASHBOARD_KEY_RELATIVE_PATH)
+    if own:
+        return own
+    main = worktree.main_checkout(root)
+    return _read_key_file(main / DASHBOARD_KEY_RELATIVE_PATH) if main is not None else None

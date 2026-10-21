@@ -42,6 +42,7 @@ from spec_agent_kit.pipeline import RefusedError, UsageError
 from spec_agent_kit.pipeline.cli_bridge import add_parsers, run_command
 from spec_agent_kit.pipeline.commands import Ctx
 from spec_agent_kit.pipeline.hooks import cmd_hook
+from spec_agent_kit.pipeline.session import cmd_session_start
 from spec_agent_kit.push.run import push, push_background, trigger_if_auto
 
 EXIT_OK = 0
@@ -85,9 +86,16 @@ def _emit(payload: dict[str, Any]) -> None:
     sys.stdout.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
 
 
-def _reject(errors: list[dict[str, str]]) -> int:
-    _emit({"ok": False, "errors": errors, "warnings": []})
+def _reject(errors: list[dict[str, str]], fmt: str = "json") -> int:
+    if fmt == "text":
+        sys.stdout.write(_NL.join(f"FEHLER {e['path']}: {e['message']}" for e in errors) + _NL)
+    else:
+        _emit({"ok": False, "errors": errors, "warnings": []})
     return EXIT_REJECTED
+
+
+def _emit_text(lines: Sequence[str]) -> None:
+    sys.stdout.write(_NL.join(lines) + _NL)
 
 
 def _not_initialized() -> int:
@@ -327,20 +335,43 @@ def _install(args: argparse.Namespace) -> int:
                 test_fast=args.test_fast,
                 test_full=args.test_full,
                 lint=args.lint,
+                clean_ignore=args.clean_ignore,
                 allow_dirty=args.allow_dirty,
             )
         else:
             plan = build_upgrade_plan(kit, target, allow_dirty=args.allow_dirty)
         if not args.apply:
-            _emit(plan.to_dict())
-            sys.stderr.write(_NL.join(plan.text()) + _NL)
+            # Entweder JSON oder Text auf stdout, nie beides (Spec 011 US6).
+            if args.format == "text":
+                _emit_text(plan.text())
+            else:
+                _emit(plan.to_dict())
             return EXIT_OK
         report = apply_plan(plan, sync=not args.no_sync)
     except InstallError as exc:
-        return _reject(exc.errors)
-    _emit(report)
-    sys.stderr.write(_NL.join(report["text"]) + _NL)
+        return _reject(exc.errors, args.format)
+    if args.format == "text":
+        _emit_text(_report_text(report))
+    else:
+        _emit(report)
     return EXIT_OK if report["ok"] else EXIT_REJECTED
+
+
+def _report_text(report: dict[str, Any]) -> list[str]:
+    """Lesbare Fassung des Berichts nach ``--apply``."""
+    lines = list(report["text"])
+    applied = report["applied"]
+    lines.append(f"Geschrieben: {applied['written']}, gelöscht: {applied['deleted']}.")
+    lines.extend(f"Konflikt, Kit-Fassung daneben: {path}" for path in applied["conflicts"])
+    lines.append(f"uv sync: {report['uv_sync']['detail']}")
+    if "config_check" in report:
+        check = report["config_check"]
+        lines.append(f"config check: {'ok' if check['ok'] else 'FEHLER'}")
+        lines.extend(f"  {e['path']}: {e['message']}" for e in check.get("errors", []))
+    lines.append(f"Ergebnis: {'ok' if report['ok'] else 'mit Fehlern'}")
+    lines.extend(f"Nächster Schritt: {step}" for step in report["next_steps"])
+    lines.append(f"Vorschlag: {report['suggested_commit']}")
+    return lines
 
 
 def _doctor(args: argparse.Namespace) -> int:
@@ -349,9 +380,30 @@ def _doctor(args: argparse.Namespace) -> int:
     if root is None:
         return _not_initialized()
     here = Path(__file__).resolve().parents[2]  # .../engine, wenn der Aufruf aus einer Engine kommt
-    result = run_doctor(root, engine_running_from=here)
-    _emit(result)
+    result = run_doctor(root, engine_running_from=here, probe_commands=args.probe_commands)
+    if args.format == "text":
+        _emit_text(_doctor_text(result))
+    else:
+        _emit(result)
     return EXIT_OK if result["ok"] else EXIT_REJECTED
+
+
+def _doctor_text(result: dict[str, Any]) -> list[str]:
+    lines = []
+    for check in result["checks"]:
+        if not check["ok"]:
+            mark = "FEHLER" if check["required"] else "WARNUNG"
+        else:
+            mark = "WARNUNG" if check.get("warning") else "ok"
+        lines.append(f"[{mark}] {check['check']}: {check['detail']}")
+        lines.extend(
+            f"    {'ok' if item['ok'] else 'FEHLER'} {item['kind']}: {item['command']} "
+            f"({item['detail']})"
+            for item in check.get("items", [])
+            if not item["ok"] or (check["check"] == "commands" and len(check["items"]) <= 8)
+        )
+    lines.append("Ergebnis: " + ("ok" if result["ok"] else "Pflichtprüfung fehlgeschlagen"))
+    return lines
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -420,6 +472,12 @@ def _add_install_parsers(sub: Any) -> None:
     init.add_argument("--test-fast", action="append", default=[], help="Befehl, wiederholbar")
     init.add_argument("--test-full", action="append", default=[], help="Befehl, wiederholbar")
     init.add_argument("--lint", action="append", default=[], help="Befehl, wiederholbar")
+    init.add_argument(
+        "--clean-ignore",
+        action="append",
+        default=[],
+        help="guard.clean_ignore-Eintrag (zum Beispiel test-results/), wiederholbar",
+    )
     upgrade = sub.add_parser("upgrade", help="Kit-Dateien im Zielprojekt nachrüsten")
     upgrade.add_argument("target", help="Zielprojekt")
     for command in (init, upgrade):
@@ -430,6 +488,18 @@ def _add_install_parsers(sub: Any) -> None:
         )
     doctor = sub.add_parser("doctor", help="Gesundheitscheck des Projekts")
     doctor.add_argument("target", nargs="?", default=None, help="Zielprojekt (Default: aktuelles)")
+    doctor.add_argument(
+        "--probe-commands",
+        action="store_true",
+        help="Testbefehle probeweise ausführen (pytest --collect-only -q, sonst --version)",
+    )
+    for command in (init, upgrade, doctor):
+        command.add_argument(
+            "--format",
+            choices=["json", "text"],
+            default="json",
+            help="Ausgabe auf stdout: json (Standard) oder text, nie beides",
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -444,8 +514,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_OK  # Hooks enden immer mit 0.
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
     if args.command == "hook":
-        phase = "start" if args.hook_command == "subagent-start" else "stop"
         root = find_root()
+        if args.hook_command == "session-start":
+            cmd_session_start(sys.stdin, root, sys.stdout)  # nur JSON, nur bei Kompaktierung
+            return EXIT_OK
+        phase = "start" if args.hook_command == "subagent-start" else "stop"
         cmd_hook(phase, sys.stdin, root)
         trigger_if_auto(root)  # FR-011: Hintergrund-Push, Fehler werden ignoriert
         return EXIT_OK

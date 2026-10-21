@@ -84,6 +84,34 @@ def test_ui_reviewer_works_in_the_run_folder_only() -> None:
         assert key in text
 
 
+def test_ui_reviewer_redirects_outputs_and_forbids_links() -> None:
+    text = (AGENTS / "sak-ui-reviewer.md").read_text(encoding="utf-8")
+    assert "--output .spec-agent/state/runs/<run_id>/ui/test-results" in text
+    assert "PLAYWRIGHT_HTML_REPORT=.spec-agent/state/runs/<run_id>/ui/report" in text
+    assert "Junction" in text and "Symlink" in text and "mklink" in text
+    assert "Anführungszeichen" in text
+
+
+@pytest.mark.parametrize("name", ["sak-builder", "sak-code-reviewer", "sak-ui-reviewer"])
+def test_agents_that_run_tests_know_commands_prepare(name: str) -> None:
+    assert "commands.prepare" in (AGENTS / f"{name}.md").read_text(encoding="utf-8")
+
+
+def test_code_reviewer_checks_indirect_effects_on_escalation_topics() -> None:
+    text = (AGENTS / "sak-code-reviewer.md").read_text(encoding="utf-8")
+    assert "Indirekte Auswirkungen" in text
+    assert "Datenfluss" in text and "escalation.topics" in text
+    # Der Prompt bleibt projektneutral: keine Beispielwerte aus dem Trial.
+    for word in ("Score", "Ranking", "Versand", "messaging"):
+        assert word not in text, word
+
+
+def test_no_template_recommends_compacting() -> None:
+    """Betreiber 2026-10-21: Agenten arbeiten autonom, es gibt keine Empfehlung für /compact."""
+    for path in [*AGENTS.glob("*.md"), SKILL, FRAGMENT]:
+        assert "/compact" not in path.read_text(encoding="utf-8"), path.name
+
+
 def test_builder_reads_commands_from_the_config() -> None:
     text = (AGENTS / "sak-builder.md").read_text(encoding="utf-8")
     for key in ("commands.test_fast", "commands.test_full", "commands.environment_failures"):
@@ -161,6 +189,7 @@ def test_skill_names_only_existing_commands() -> None:
         "release",
         "return",
         "abort",
+        "cleanup",
     ):
         assert command in used, command
     assert set(re.findall(r"SAK config ([a-z]+)", text)) <= {"check", "show"}
@@ -209,6 +238,14 @@ def test_fragment_hooks() -> None:
         assert hook["command"] == (
             f'sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook subagent-{phase} || true'
         )
+
+
+def test_fragment_session_start_hook_runs_through_the_starter_on_compact() -> None:
+    (entry,) = fragment()["hooks"]["SessionStart"]
+    assert entry["matcher"] == "compact"
+    (hook,) = entry["hooks"]
+    assert hook["type"] == "command" and hook["timeout"] <= 5
+    assert hook["command"] == 'sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook session-start || true'
 
 
 def test_fragment_permissions() -> None:

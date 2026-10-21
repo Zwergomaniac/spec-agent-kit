@@ -21,9 +21,11 @@ class Lock:
     upgraded_at: str | None
     files: dict[str, str] = field(default_factory=dict)
     settings_fragment_hash: str = ""
+    settings_allow: list[str] | None = None
+    """Vom Kit eingetragene allow-Regeln (Spec 011 B13); ``None`` bei einem Lock vor 0.2.0."""
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "schema": SCHEMA_ID,
             "kit_version": self.kit_version,
             "installed_at": self.installed_at,
@@ -31,6 +33,9 @@ class Lock:
             "files": dict(sorted(self.files.items())),
             "settings_fragment_hash": self.settings_fragment_hash,
         }
+        if self.settings_allow is not None:
+            data["settings_allow"] = list(self.settings_allow)
+        return data
 
     def dumps(self) -> bytes:
         text = json.dumps(self.to_dict(), ensure_ascii=False, indent=2) + "\n"
@@ -59,4 +64,5 @@ def read_lock(root: Path) -> Lock | None:
         upgraded_at=data["upgraded_at"],
         files=dict(data["files"]),
         settings_fragment_hash=data["settings_fragment_hash"],
+        settings_allow=list(data["settings_allow"]) if "settings_allow" in data else None,
     )

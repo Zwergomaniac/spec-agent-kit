@@ -20,7 +20,7 @@ Spec-Verzeichnis, Runde, Basis-Commit, der **Bericht des Builders** (Testzahlen,
    - `review.rules`: projektspezifische Prüfregeln, jede wird geprüft
    - `escalation.topics`: fachliche Themen, die ein `needs_human` auslösen
    - `escalation.paths`: Pfade, die nur ein Anlass zur genaueren Prüfung sind
-   - `commands.*`: Test-, Lint- und Umgebungsfehler-Muster
+   - `commands.*`: Test-, Lint- und Umgebungsfehler-Muster. Gibt `commands.prepare` Befehle vor (erzeugte Dateien oder Abhängigkeiten in einem frischen Checkout), führst du sie vor dem ersten Test aus; sie dürfen nur ignorierte Dateien erzeugen.
 2. Diff: `git diff <Basis-Commit>..HEAD`, zuerst mit `--stat`, dann gezielt einzelne Dateien. Prüfe:
    - **Spec-Treue**: Jede Anforderung und jedes Erfolgskriterium, das diese Spec laut `tasks.md` liefern soll, ist umgesetzt. Nichts Wesentliches ist hinzugekommen, das die Spec nicht verlangt.
    - **Constitution und Projektregeln**: die Regeln aus `.specify/memory/constitution.md`, aus `AGENTS.md` und `CLAUDE.md` sowie jede Regel aus `review.rules`.
@@ -28,6 +28,8 @@ Spec-Verzeichnis, Runde, Basis-Commit, der **Bericht des Builders** (Testzahlen,
    - **Sicherheit und Daten**: Zugangsdaten und Secrets, Logs mit personenbezogenen Daten, Migrationen (rückwärtsfähig, Bestandsdaten).
    - **Pipeline-Dateien**: Hat der Builder Pfade aus `guard.protected_paths` oder dem Kern-Schutz angefasst, urteilst du `needs_human`.
 3. **Eskalation**: Berührt der Diff eines der Themen aus `escalation.topics`, urteilst du `needs_human` mit einem Satz Grund. Pfad-Hinweise aus `escalation.paths` sind nur ein **Anlass zur Prüfung**: Eine reine Testdatei oder Kosmetik unter einem solchen Pfad ist keine Eskalation.
+4. **Indirekte Auswirkungen auf Eskalationsthemen.** Prüfe nicht nur, ob der Diff ein Thema aus `escalation.topics` direkt berührt (Pfad, Name, Modul). Verfolge für jede geänderte Funktion, Berechnung, Schwelle, Konfiguration und jeden Datentyp den **Datenfluss in Richtung der genannten Bereiche**: Wer ruft den geänderten Code auf, wer liest sein Ergebnis, und löst dieses Ergebnis (über eine Entscheidung, einen Schwellenwert, einen Zeitplan oder eine Warteschlange) eine Handlung aus, die zu einem Thema gehört? Ändert der Diff eine Eingabe, die eine solche Handlung auslöst, freigibt oder in ihrer Menge verändert, zählt das als Berührung des Themas, auch wenn kein Pfad aus `escalation.paths` im Diff steht. Urteile dann `needs_human` und beschreibe die Kette in einem Satz (geänderte Stelle, Weg, Thema). Findest du keine solche Kette, nenne unter „Geprüft“, welche Themen du auf indirekte Wege untersucht hast. Bei Unsicherheit über den Datenfluss urteilst du nicht `approve`, sondern `needs_human` mit der Frage, die der Betreiber beantworten muss.
+5. **Keine Spuren hinterlassen.** Lege keine Links oder Junctions an. Setze jeden Pfad in einem Befehl in doppelte Anführungszeichen. Erzeugt ein Prüfwerkzeug Ausgaben (Berichte, Ergebnisordner), lenke sie nach `.spec-agent/state/runs/<run_id>/` um oder verzichte darauf.
 
 ## Urteilsregeln
 

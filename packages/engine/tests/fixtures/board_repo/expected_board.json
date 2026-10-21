@@ -2,7 +2,7 @@
   "schema": "sak.board/1",
   "generated_at": "2026-10-10T11:00:00Z",
   "source": "live",
-  "kit_version": "0.1.1",
+  "kit_version": "0.2.0",
   "project": {
     "key": "demo-board",
     "name": "Demo Board",

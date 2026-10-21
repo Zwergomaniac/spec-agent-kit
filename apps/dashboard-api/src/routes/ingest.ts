@@ -70,7 +70,7 @@ export function ingestRoutes(deps: AppDeps): Hono<{ Variables: { project: Projec
         const first = parsed.error.issues[0]
         return c.json({ error: 'invalid_request', detail: first ? `${first.path.join('.') || '(root)'}: ${first.message}` : undefined }, 400)
       }
-      if (parsed.data.project !== project.key) return c.json({ error: 'project mismatch' }, 403)
+      if (parsed.data.project !== project.key) return c.json({ error: 'project mismatch', expected: project.key }, 403)
       const result = ingest(deps.db, project, { events: parsed.data.events, board: parsed.data.board }, deps.now())
       return c.json(result)
     }

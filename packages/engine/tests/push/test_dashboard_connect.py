@@ -551,13 +551,29 @@ def test_status_reports_the_last_push_error_and_an_env_key(
 ) -> None:
     dashboard_server.auth_status = 401
     run("dashboard", "connect", "--url", dashboard_server.url, "--key-stdin", "--yes", stdin=key)
-    _, out, *_ = run("dashboard", "status")
+    code, out, *_ = run("dashboard", "status")
     assert out["cursor"]["last_error"]
+    # Ein gesetzter letzter Fehler macht den Status nicht ok (Spec 011 US6).
+    assert code == 1 and out["ok"] is False
+    assert out["problems"] == [f"letzter Push-Fehler: {out['cursor']['last_error']}"]
     monkeypatch.setenv("SAK_DASHBOARD_TOKEN", "irgendwas")
     (proj / KEY_PATH).unlink()
     _, out, stdout, _ = run("dashboard", "status")
     assert out["key"]["present"] is True and out["key"]["source"] == "env"
     assert "irgendwas" not in stdout
+
+
+def test_status_with_a_url_but_without_a_key_is_not_ok(
+    proj: Path, run: Run, key: str, dashboard_server: FakeDashboard
+) -> None:
+    """Spec 011 B15: erreichbar genügt nicht, ein Schlüssel gehört dazu."""
+    run("dashboard", "connect", "--url", dashboard_server.url, "--key-stdin", "--yes", stdin=key)
+    (proj / KEY_PATH).unlink()
+    outbox_cursor = proj / ".spec-agent" / "state" / "push-cursor.json"
+    outbox_cursor.unlink(missing_ok=True)
+    code, out, *_ = run("dashboard", "status")
+    assert code == 1 and out["ok"] is False
+    assert any("kein Schlüssel" in p for p in out["problems"])
 
 
 def test_status_requires_an_initialized_project(

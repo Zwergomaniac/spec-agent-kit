@@ -192,7 +192,7 @@ def test_unknown_schema_name_is_rejected() -> None:
 
 def test_cli_version_prints_json_in_utf8(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["version"]) == 0
-    assert json.loads(capsys.readouterr().out) == {"version": "0.1.1"}
+    assert json.loads(capsys.readouterr().out) == {"version": "0.2.0"}
 
 
 def test_cli_usage_error_returns_2(capsys: pytest.CaptureFixture[str]) -> None:

@@ -112,6 +112,29 @@ def test_401_keeps_the_cursor_and_says_why(project: Path, dashboard: FakeDashboa
     assert KEY not in json.dumps(result)
 
 
+def test_403_project_mismatch_names_the_projects_but_not_the_key(
+    project: Path, dashboard: FakeDashboard
+) -> None:
+    write_events(project, 1)
+    dashboard.raw_status = (403, {"error": "project mismatch", "expected": "anderes-projekt"})
+    code, result = do_push(project)
+    assert code == 1 and result["status"] == "unauthorized"
+    assert "project mismatch" in result["error"]
+    assert "'anderes-projekt'" in result["error"] and "gesendet als" in result["error"]
+    assert KEY not in json.dumps(result)
+    assert outbox.read_cursor(project).offset == 0
+
+
+def test_403_project_mismatch_from_an_older_dashboard_still_names_the_sent_project(
+    project: Path, dashboard: FakeDashboard
+) -> None:
+    write_events(project, 1)
+    dashboard.raw_status = (403, {"error": "project mismatch"})
+    code, result = do_push(project)
+    assert code == 1 and "gesendet als" in result["error"]
+    assert "anderen Projekt" in result["error"]
+
+
 def test_wrong_key_is_unauthorized(project: Path) -> None:
     write_events(project, 1)
     code, result = push(project, env={"SAK_DASHBOARD_TOKEN": "falsch"})

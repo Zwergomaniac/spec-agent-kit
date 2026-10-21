@@ -21,7 +21,7 @@ import yaml
 from spec_agent_kit import contracts
 from spec_agent_kit.config import ConfigError, read_raw, schema_errors
 from spec_agent_kit.config.defaults import defaults
-from spec_agent_kit.install import InstallError
+from spec_agent_kit.install import InstallError, detect
 from spec_agent_kit.install.kit import (
     CONFIG_TARGET,
     LOCK_TARGET,
@@ -32,10 +32,13 @@ from spec_agent_kit.install.kit import (
 )
 from spec_agent_kit.install.lock import Lock, read_lock
 from spec_agent_kit.install.settings import (
+    MergeResult,
     allow_entries,
     dumps_settings,
-    merge_settings,
+    merge_settings_detailed,
     parse_settings,
+    unsafe_mode_in,
+    unsafe_mode_warning,
 )
 from spec_agent_kit.install.speckit import detect_version
 
@@ -83,6 +86,10 @@ class Plan:
     config_keys: list[dict[str, Any]] = field(default_factory=list)
     speckit_version: str | None = None
     lock: Lock | None = None
+    suggestions: list[dict[str, Any]] = field(default_factory=list)
+    permissions: dict[str, Any] | None = None
+    """Allow- und Deny-Regeln des Kits mit Herkunft (Spec 011 US6 Befund 9, B13)."""
+    settings_allow: list[str] = field(default_factory=list)
 
     def changes(self) -> list[Action]:
         """Alle Aktionen außer ``skip``."""
@@ -127,11 +134,31 @@ class Plan:
             lines.append(f"  {marks[kind]} {kind:<8} {engine_prefix} ({count} Dateien)")
         for key in self.config_keys:
             lines.append(f"  ? Config-Schlüssel {key['path']} fehlt (Default: {key['default']!r})")
+        lines.extend(self.permission_lines())
         lines.extend(f"WARNUNG: {w}" for w in self.warnings)
+        lines.extend(f"VORSCHLAG: {item['text']}" for item in self.suggestions)
         if self.is_empty:
             lines.append("Nichts zu tun.")
         else:
             lines.append("Zum Anwenden: dieselbe Zeile mit --apply wiederholen.")
+        return lines
+
+    def permission_lines(self) -> list[str]:
+        """Die einzelnen Regeln samt Geltungsbereich (Befund 9)."""
+        info = self.permissions
+        if info is None:
+            return []
+        lines = [
+            "Permissions in .claude/settings.json (gelten für das ganze Projekt, nicht nur für "
+            "Pipeline-Läufe):"
+        ]
+        for kind in ("allow", "deny"):
+            for rule in info[kind]["add"]:
+                lines.append(f"  + {kind:<5} {rule}")
+            for rule in info[kind]["present"]:
+                lines.append(f"  = {kind:<5} {rule}  (bereits vorhanden)")
+        for rule in info["allow"]["remove"]:
+            lines.append(f"  - allow {rule}  (Kit-Eintrag, nicht mehr gewünscht)")
         return lines
 
     def to_dict(self) -> dict[str, Any]:
@@ -148,6 +175,8 @@ class Plan:
             "conflicts": [a.path for a in self.conflicts],
             "config_keys": self.config_keys,
             "warnings": self.warnings,
+            "suggestions": self.suggestions,
+            "permissions": self.permissions,
             "text": self.text(),
         }
 
@@ -308,6 +337,7 @@ def render_config(
     test_fast: Sequence[str] = (),
     test_full: Sequence[str] = (),
     lint: Sequence[str] = (),
+    clean_ignore: Sequence[str] = (),
 ) -> str:
     """Ersetzt die Platzhalter der Vorlage und trägt die Optionen ein. Kommentare bleiben."""
     text = template.replace("__PROJECT_KEY__", key)
@@ -317,6 +347,7 @@ def render_config(
         ("test_fast", test_fast),
         ("test_full", test_full),
         ("lint", lint),
+        ("clean_ignore", clean_ignore),
     ):
         if not commands:
             continue
@@ -382,7 +413,14 @@ def _diff_hint(path: str) -> str:
     return f"Vergleichen: git diff --no-index -- {path} {path}{SAK_NEW_SUFFIX}"
 
 
-def _settings_action(kit: Kit, target: Path, extra_allow: list[str], warnings: list[str]) -> Action:
+def _settings_action(
+    kit: Kit,
+    target: Path,
+    extra_allow: list[str],
+    plan: Plan,
+    owned_allow: list[str] | None,
+) -> Action:
+    """Merge des Fragments in ``.claude/settings.json``; trägt Regeln und Warnungen in den Plan."""
     fragment = json.loads(kit.settings_fragment().decode("utf-8"))
     raw = _read(target / SETTINGS_TARGET)
     existing: dict[str, Any] | None = None
@@ -391,20 +429,55 @@ def _settings_action(kit: Kit, target: Path, extra_allow: list[str], warnings: l
             existing = parse_settings(raw.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
             raise InstallError.single(SETTINGS_TARGET, f"ungültig, keine Änderung: {exc}") from exc
-    merged, merge_warnings = merge_settings(existing, fragment, extra_allow)
-    warnings.extend(merge_warnings)
-    content = dumps_settings(merged).encode("utf-8")
+    result = merge_settings_detailed(existing, fragment, extra_allow, owned_allow)
+    plan.warnings.extend(result.warnings)
+    plan.warnings.extend(_local_settings_warnings(target))
+    plan.permissions = _permission_info(result)
+    plan.settings_allow = result.allow_owned
+    if result.legacy_lock and result.allow_removed:
+        plan.warnings.append(
+            "Das Lockfile kennt noch keine settings_allow (Altbestand vor Kit 0.2.0): ersetzt "
+            "werden nur bekannte Kit-Muster ("
+            + ", ".join(result.allow_removed)
+            + "). Andere allow-Einträge bleiben, auch frühere Testbefehle des Kits."
+        )
+    content = dumps_settings(result.merged).encode("utf-8")
     if existing is None:
         return Action(CREATE, SETTINGS_TARGET, "aus dem Fragment angelegt", content=content)
-    if merged == existing:
+    if result.merged == existing:
         return Action(SKIP, SETTINGS_TARGET, "Fragment bereits enthalten")
     return Action(
         MERGE,
         SETTINGS_TARGET,
-        "additiv ergänzt (Hooks und Permissions); bestehende Einträge bleiben",
+        "ergänzt (Hooks und Permissions); fremde Einträge bleiben"
+        + ("; veraltete Kit-Einträge ersetzt" if result.allow_removed else ""),
         content=content,
         expect=_hash(raw),
     )
+
+
+def _permission_info(result: MergeResult) -> dict[str, Any]:
+    return {
+        "scope": "gesamtes Projekt (.claude/settings.json), nicht nur Pipeline-Läufe",
+        "allow": {
+            "add": result.allow_added,
+            "present": result.allow_present,
+            "remove": result.allow_removed,
+        },
+        "deny": {"add": result.deny_added, "present": result.deny_present, "remove": []},
+    }
+
+
+def _local_settings_warnings(target: Path) -> list[str]:
+    """Der gefährliche Modus in ``settings.local.json`` gilt ebenfalls (Befund 7)."""
+    raw = _read(target / ".claude" / "settings.local.json")
+    if raw is None:
+        return []
+    try:
+        local = parse_settings(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return []
+    return [unsafe_mode_warning(".claude/settings.local.json")] if unsafe_mode_in(local) else []
 
 
 def _finish(
@@ -416,8 +489,9 @@ def _finish(
 ) -> None:
     """Berechnet das neue Lockfile und hängt die Lock-Aktion an (zuletzt)."""
     fragment_hash = sha256_of(kit.settings_fragment())
+    allow = list(plan.settings_allow)
     if old is None:
-        new = Lock(kit.version, now, None, files, fragment_hash)
+        new = Lock(kit.version, now, None, files, fragment_hash, allow)
         plan.lock = new
         plan.actions.append(Action(CREATE, LOCK_TARGET, "Lockfile sak.lock/1", content=new.dumps()))
         return
@@ -425,11 +499,12 @@ def _finish(
         old.kit_version != kit.version
         or old.files != files
         or old.settings_fragment_hash != fragment_hash
+        or old.settings_allow != allow
     )
     if not changed:
         plan.lock = old
         return
-    new = Lock(kit.version, old.installed_at, now, files, fragment_hash)
+    new = Lock(kit.version, old.installed_at, now, files, fragment_hash, allow)
     plan.lock = new
     plan.actions.append(
         Action(
@@ -447,6 +522,51 @@ def _finish(
 # ---------------------------------------------------------------------------
 
 
+def _init_suggestions(
+    target: Path,
+    commands: Sequence[str],
+    clean_ignore: Sequence[str],
+    rules: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Vorschläge aus der Projekt-Erkennung (Spec 011 US2, US4). Es wird nichts geschrieben."""
+    found: list[dict[str, Any]] = []
+    for tool in detect.detect_artifact_tools(target, rules):
+        missing = [e for e in tool["entries"] if e not in clean_ignore]
+        if not missing:
+            continue
+        where = f"{tool['directory'] or '.'}: {tool['evidence']}"
+        option = " ".join(f"--clean-ignore {e}" for e in missing)
+        found.append(
+            {
+                "kind": "clean_ignore",
+                "tool": tool["id"],
+                "entries": missing,
+                "reason": f"{tool['label']} erkannt ({where})",
+                "text": (
+                    f"{tool['label']} erkannt ({where}); dessen Ausgabeordner ließen sonst jeden "
+                    f"Prüflauf mit review_integrity eskalieren. guard.clean_ignore ergänzen: "
+                    f"{option}"
+                ),
+            }
+        )
+    for command in dict.fromkeys(commands):
+        suggestion = detect.suggest_command(command, target)
+        if suggestion is not None:
+            found.append(
+                {
+                    "kind": "command",
+                    "command": suggestion["command"],
+                    "suggested": suggestion["suggested"],
+                    "reason": suggestion["reason"],
+                    "text": (
+                        f"Befehl '{suggestion['command']}' wahrscheinlich nicht lauffähig: "
+                        f"{suggestion['reason']}. Vorschlag: {suggestion['suggested']}"
+                    ),
+                }
+            )
+    return found
+
+
 def build_init_plan(
     kit: Kit,
     target: Path,
@@ -459,6 +579,7 @@ def build_init_plan(
     test_fast: Sequence[str] = (),
     test_full: Sequence[str] = (),
     lint: Sequence[str] = (),
+    clean_ignore: Sequence[str] = (),
     allow_dirty: bool = False,
     now: str | None = None,
 ) -> Plan:
@@ -523,6 +644,7 @@ def build_init_plan(
         test_fast=test_fast,
         test_full=test_full,
         lint=lint,
+        clean_ignore=clean_ignore,
     )
     problems = check_rendered(config_text)
     if problems:
@@ -541,8 +663,12 @@ def build_init_plan(
             "oder mit --no-ui initialisieren."
         )
 
+    plan.suggestions.extend(
+        _init_suggestions(target, [*test_fast, *test_full, *lint], clean_ignore, kit.detectors())
+    )
+
     extra = allow_entries([*test_fast, *test_full, *lint])
-    plan.actions.append(_settings_action(kit, target, extra, plan.warnings))
+    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=[]))
     _finish(plan, kit, None, files, stamp)
 
     errors = []
@@ -684,7 +810,7 @@ def build_upgrade_plan(
     else:
         plan.warnings.append(f"{CONFIG_TARGET} fehlt (wird von upgrade nicht angelegt)")
     extra = allow_entries(_config_commands(target))
-    plan.actions.append(_settings_action(kit, target, extra, plan.warnings))
+    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=old.settings_allow))
     _finish(plan, kit, old, files, stamp)
 
     errors: list[dict[str, str]] = []

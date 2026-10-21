@@ -135,7 +135,7 @@ def post_ingest(
         with _opener(url).open(request, timeout=timeout) as response:
             raw = response.read(_MAX_RESPONSE + 1)
     except urllib.error.HTTPError as exc:
-        _raise_for_status(exc)
+        _raise_for_status(exc, sent_project=payload.get("project"))
         raise  # pragma: no cover - _raise_for_status wirft immer
     except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
         reason = getattr(exc, "reason", exc)
@@ -154,12 +154,37 @@ def post_ingest(
     return result
 
 
-def _raise_for_status(exc: urllib.error.HTTPError) -> None:
+def _expected_project(body: bytes) -> str | None:
+    """Das Projekt, das die Antwort als erwartet nennt (Feld ``expected``, nie ein Schlüssel)."""
     try:
-        text = _error_text(exc.read(_MAX_ERROR_BODY))
+        loaded = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return None
+    value = loaded.get("expected") if isinstance(loaded, dict) else None
+    return value if isinstance(value, str) and 0 < len(value) <= 80 else None
+
+
+def _raise_for_status(exc: urllib.error.HTTPError, sent_project: Any = None) -> None:
+    try:
+        body = exc.read(_MAX_ERROR_BODY)
     except OSError:
-        text = ""
+        body = b""
+    text = _error_text(body)
     code = exc.code
+    if code == 403 and "project mismatch" in text:
+        expected = _expected_project(body)
+        sent = (
+            f"'{sent_project}'" if isinstance(sent_project, str) else "dem konfigurierten Projekt"
+        )
+        wanted = (
+            f"das Dashboard erwartet das Projekt '{expected}'"
+            if expected
+            else "der Schlüssel gehört zu einem anderen Projekt"
+        )
+        raise AuthError(
+            f"HTTP 403: project mismatch (gesendet als {sent}, {wanted}); project.key in der "
+            "Config bzw. den Schlüssel prüfen"
+        ) from exc
     if code in {401, 403}:
         raise AuthError(f"HTTP {code}: {text or 'Schlüssel abgelehnt'}") from exc
     if any(marker in text.lower() for marker in VERSION_MARKERS):

@@ -34,6 +34,16 @@
     },
     "settings_fragment_hash": {
       "$ref": "#/$defs/sha256"
+    },
+    "settings_allow": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      },
+      "maxItems": 200,
+      "description": "Seit Kit 0.2.0 (optional, rückwärtskompatibel): die permissions.allow-Einträge, die das Kit in .claude/settings.json eingetragen hat. Beim Upgrade ersetzt das Kit genau diese Einträge; fremde Einträge bleiben. Fehlt das Feld (Lock vor 0.2.0), gelten nur bekannte Kit-Muster als Kit-eigen."
     }
   },
   "required": [
