@@ -406,6 +406,48 @@
           "$ref": "common.schema.json#/$defs/ulid"
         },
         "type": {
+          "const": "run.pushed"
+        },
+        "ts": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "project": {
+          "$ref": "common.schema.json#/$defs/projectKey"
+        },
+        "run_id": {
+          "$ref": "common.schema.json#/$defs/runId"
+        },
+        "spec": {
+          "$ref": "common.schema.json#/$defs/specDir"
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/origin"
+        },
+        "data": {
+          "$ref": "#/$defs/data_run_pushed"
+        }
+      },
+      "required": [
+        "schema",
+        "event_id",
+        "type",
+        "ts",
+        "project",
+        "run_id",
+        "data"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "sak.event/1"
+        },
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/ulid"
+        },
+        "type": {
           "const": "run.taken_over"
         },
         "ts": {
@@ -675,6 +717,31 @@
           "$ref": "common.schema.json#/$defs/sha40"
         }
       }
+    },
+    "data_run_pushed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "remote": {
+          "$ref": "#/$defs/refName"
+        },
+        "branch": {
+          "$ref": "#/$defs/refName"
+        },
+        "commit": {
+          "$ref": "common.schema.json#/$defs/sha40"
+        }
+      },
+      "required": [
+        "remote",
+        "branch",
+        "commit"
+      ]
+    },
+    "refName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
     },
     "data_run_taken_over": {
       "type": "object",

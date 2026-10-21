@@ -142,3 +142,22 @@ describe('Beispiele gegen ajv', () => {
     for (const stage of lvl('stage')) expect(stages.has(stage), stage).toBe(true)
   })
 })
+
+describe('Autonomie-Stufen (Spec 012)', () => {
+  const validateConfig = ajv.getSchema(`${SCHEMA_ID_BASE}config.schema.json`)
+  const base = { schema: 'sak.config/1', project: { key: 'demo', name: 'Demo' } }
+
+  it('run.pushed hat das Label "Gepusht"', () => {
+    const labels = labelsDe as Record<string, Record<string, string>>
+    expect(labels.event_type?.['run.pushed']).toBe('Gepusht')
+  })
+
+  it('akzeptiert gültige und lehnt ungültige autonomy-Blöcke ab', () => {
+    for (const autonomy of [{}, { push: 'after_merge', deploy: 'never', remote: 'upstream' }]) {
+      expect(validateConfig?.({ ...base, autonomy }), JSON.stringify(autonomy)).toBe(true)
+    }
+    for (const autonomy of [{ push: 'always' }, { deploy: 'auto' }, { remote: '' }, { force: true }]) {
+      expect(validateConfig?.({ ...base, autonomy }), JSON.stringify(autonomy)).toBe(false)
+    }
+  })
+})

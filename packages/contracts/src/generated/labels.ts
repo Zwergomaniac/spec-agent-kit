@@ -57,6 +57,7 @@ export const labelsDe = {
     "run.paused": "Lauf pausiert",
     "run.resumed": "Lauf fortgesetzt",
     "run.merged": "Lauf gemergt",
+    "run.pushed": "Gepusht",
     "run.reviewed": "Lauf geprüft",
     "run.aborted": "Lauf abgebrochen",
     "run.taken_over": "Lauf übernommen"

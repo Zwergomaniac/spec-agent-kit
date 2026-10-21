@@ -198,3 +198,21 @@ def test_cli_version_prints_json_in_utf8(capsys: pytest.CaptureFixture[str]) -> 
 def test_cli_usage_error_returns_2(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["gibt-es-nicht"]) == 2
     capsys.readouterr()
+
+
+def test_run_pushed_event_and_autonomy_config() -> None:
+    """Spec 012 FR-001/FR-002: ``run.pushed`` samt Label und der Block ``autonomy``."""
+    assert contracts.label("event_type", "run.pushed") == "Gepusht"
+    event = _load(EXAMPLES / "valid" / "event-run-pushed.json")
+    assert contracts.validate_event(event) == []
+    event["data"]["commit"] = "abc"
+    assert contracts.validate_event(event) != []
+    base = {"schema": "sak.config/1", "project": {"key": "demo", "name": "Demo"}}
+    for autonomy in (
+        {},
+        {"push": "after_merge", "deploy": "never", "remote": "upstream"},
+        {"push": "manual", "deploy": "after_approval"},
+    ):
+        assert contracts.validate_config({**base, "autonomy": autonomy}) == []
+    for autonomy in ({"push": "always"}, {"deploy": "auto"}, {"remote": ""}, {"force": True}):
+        assert contracts.validate_config({**base, "autonomy": autonomy}) != []
