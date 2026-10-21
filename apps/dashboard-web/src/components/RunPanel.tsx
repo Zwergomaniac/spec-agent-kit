@@ -6,6 +6,7 @@ import { fmtDuration, fmtRelative } from '@/format'
 import { labelOf, runStateTone, verdictTone } from '@/labels'
 import { links, safeLink } from '@/router'
 import type { BoardRun, BoardSpec } from '@/types'
+import { PushedBadge } from './PushedBadge'
 import { EmptyState } from './states'
 
 /** Agenten-Panel: Stationen der aktuellen Runde des aktiven Laufs. */
@@ -46,6 +47,7 @@ export function RunPanel({ projectKey, run, spec }: { projectKey: string; run: B
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Badge variant={runStateTone(run.state)}>{labelOf('run_state', run.state)}</Badge>
+          <PushedBadge run={run} />
           <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{spec?.title ?? run.spec}</span>
           <span className="text-xs text-muted-foreground">
             Runde {run.round} von {run.max_rounds}

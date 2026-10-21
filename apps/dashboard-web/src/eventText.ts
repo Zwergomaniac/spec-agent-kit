@@ -24,6 +24,10 @@ export function describeEvent(event: SakEvent): string {
   if (typeof d.base_branch === 'string') parts.push(`Basis ${d.base_branch}`)
   if (typeof d.previous_state === 'string') parts.push(`vorher: ${labelOf('run_state', d.previous_state)}`)
   if (typeof d.merge_commit === 'string') parts.push(`Commit ${d.merge_commit.slice(0, 8)}`)
+  if (event.type === 'run.pushed') {
+    if (typeof d.remote === 'string' && typeof d.branch === 'string') parts.push(`${d.remote}/${d.branch}`)
+    if (typeof d.commit === 'string') parts.push(`Commit ${d.commit.slice(0, 8)}`)
+  }
   if (typeof d.phase === 'string') parts.push(labelOf('hook_phase', d.phase))
   if (Array.isArray(d.keys)) parts.push(`${d.keys.length} Schlüssel`)
   if (typeof d.reason === 'string') parts.push(d.reason)

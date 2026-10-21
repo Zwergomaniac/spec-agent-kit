@@ -2,6 +2,7 @@ import { ChevronRight, FileQuestion, Info } from 'lucide-react'
 import { api, ApiError } from '@/api'
 import { EmptyState, ErrorState, LastUpdated, LoadingView, PageHeader } from '@/components/states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { PushedBadge } from '@/components/PushedBadge'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -106,6 +107,7 @@ function RunSummary({ run }: { run: BoardRun }) {
   return (
     <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <Badge variant={runStateTone(run.state)}>{labelOf('run_state', run.state)}</Badge>
+      <PushedBadge run={run} />
       <span>{labelOf('run_kind', run.kind)}</span>
       <span>
         Runde {run.round} von {run.max_rounds}
