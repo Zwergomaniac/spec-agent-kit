@@ -31,6 +31,7 @@ from spec_agent_kit.install.apply import apply_plan
 from spec_agent_kit.install.doctor import run_doctor
 from spec_agent_kit.install.kit import locate_kit
 from spec_agent_kit.install.plan import build_init_plan, build_upgrade_plan
+from spec_agent_kit.migrate import MigrateError, legacy_pipeline
 from spec_agent_kit.pipeline import RefusedError, UsageError
 from spec_agent_kit.pipeline.cli_bridge import add_parsers, run_command
 from spec_agent_kit.pipeline.commands import Ctx
@@ -207,6 +208,29 @@ def _board_serve(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _migrate(args: argparse.Namespace) -> int:
+    """``sak migrate legacy-pipeline [--source DIR] [--apply]`` (Spec 010 FR-005)."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    try:
+        effective = load_config(root)
+    except NotInitializedError:
+        return _not_initialized()
+    except ConfigError as exc:
+        return _reject(exc.errors)
+    try:
+        plan = legacy_pipeline.build_plan(root, effective, Path(args.source))
+        if args.apply:
+            legacy_pipeline.apply_plan(root, plan)
+    except MigrateError as exc:
+        return _reject([{"path": "--source", "message": str(exc)}])
+    except OSError as exc:
+        return _reject([{"path": "<root>", "message": f"Import fehlgeschlagen: {exc}"}])
+    _emit(plan.to_dict(applied=args.apply))
+    return EXIT_OK
+
+
 def _push(args: argparse.Namespace) -> int:
     """``sak push [--quiet] [--background]`` (Spec 006 FR-009, FR-010)."""
     root = find_root()
@@ -343,6 +367,18 @@ def _build_parser() -> argparse.ArgumentParser:
         f"{FALLBACK_LAST_PORT}",
     )
     serve.add_argument("--open", action="store_true", help="Browser mit der URL öffnen")
+    migrate = sub.add_parser("migrate", help="Alte Daten übernehmen (Spec 010)")
+    migrate_sub = migrate.add_subparsers(dest="migrate_command", required=True)
+    legacy = migrate_sub.add_parser(
+        "legacy-pipeline",
+        help="Lauf-Historie der alten Pipeline importieren (ohne --apply nur der Plan)",
+    )
+    legacy.add_argument(
+        "--source",
+        default=legacy_pipeline.DEFAULT_SOURCE,
+        help=f"Quellverzeichnis (Default {legacy_pipeline.DEFAULT_SOURCE})",
+    )
+    legacy.add_argument("--apply", action="store_true", help="Import schreiben")
     pushp = sub.add_parser("push", help="Events und Board ans Dashboard senden (Spec 006)")
     pushp.add_argument("--quiet", action="store_true", help="Keine Ausgabe")
     pushp.add_argument(
@@ -412,6 +448,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _dashboard(args)
     if args.command == "push":
         return _push(args)
+    if args.command == "migrate":
+        return _migrate(args)
     if args.command in {"run", "event"}:
         code = _pipeline(args)
         if getattr(args, "run_command", None) not in {"list", "show", "snapshot"}:
