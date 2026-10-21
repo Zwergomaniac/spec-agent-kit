@@ -55,6 +55,20 @@ Ein Plugin liest `blockers.yml` und `deferred-decisions.md` im Format von ImmoAg
 **Acceptance Scenarios**:
 1. **Given** ImmoAgent mit aktivem Plugin, **When** das Board entsteht, **Then** stimmt „Blockiert“ mit dem alten Board überein, sofern die Definitionen gleich sind. Abweichungen werden im Board als Hinweis erklärt.
 
+### User Story 6 – Board-Ableitung angleichen (Priority: P1)
+
+Herkunft: sak-Trial ImmoAgent, Befund 5 (Bericht vom 2026-10-21). Gefunden wurden diese Abweichungen gegenüber dem alten `dev_board.py`, bei 94 identischen Specs:
+
+1. `[~]` (teilweise erledigt) wird nicht gezählt. Betroffen sind 018 und 048.
+2. `descoped` wird nur aus `**Status**: Descoped` in spec.md gelesen. ImmoAgent führt es in `.specify/feature-status.yml`. Die Quelle soll konfigurierbar sein bzw. über ein Plugin kommen. Betroffen sind 026, 030, 052, 054 und 076.
+3. `**[Betreiber]**` in einem Code-Span wird fälschlich als Betreiber-Aufgabe erkannt (092 T038/T039). Außerdem gehen Code-Spans im angezeigten Grund verloren.
+4. Eine Folgezeile einer Aufzählung, die mit ```` ``` ```` beginnt, wird als Codeblock gelesen und verschluckt die übrigen Tasks (091: 0/2 statt 0/10).
+5. Task-Zeilen werden anders erkannt als im alten Board: Aufzählungsvarianten, Großschreibung, Unteraufgaben. Betroffen sind 038 und 063. Zielregel festlegen und dokumentieren.
+6. Die Station `deployed` mit offenen Tasks zählt als „fertig“ (066: 50/52). Klären, ob „fertig“ an der Station oder an den Tasks hängt.
+7. Die Textausgabe (`sak board --text`) zeigt Zeiten in UTC ohne Kennzeichnung. Sie soll lokale Zeit mit Zone zeigen.
+
+**Acceptance**: Für ImmoAgent stimmen die Kennzahlen mit dem alten Board überein, bis auf bewusst andere Definitionen. Jede verbleibende Abweichung ist in der UI erklärt (US3). Für jeden der 7 Punkte gibt es einen Regressionstest mit minimalem Fixture.
+
 ## Requirements *(mandatory)*
 
 Noch nicht ausgearbeitet. Wird bei `/speckit-clarify` und `/speckit-plan` ergänzt. Offene Punkte für die Klärung:
