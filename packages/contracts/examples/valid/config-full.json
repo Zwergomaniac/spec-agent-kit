@@ -21,6 +21,7 @@
     "test_fast": ["uv run pytest -q {paths}"],
     "test_full": ["uv run pytest -q"],
     "lint": ["uv run ruff check ."],
+    "prepare": ["uv sync"],
     "environment_failures": ["connection refused"]
   },
   "ui": {
@@ -42,5 +43,5 @@
     "push": "auto",
     "share_commit_subjects": false
   },
-  "plugins": []
+  "plugins": [{ "name": "legacy-status", "options": { "root": ".specify" } }]
 }

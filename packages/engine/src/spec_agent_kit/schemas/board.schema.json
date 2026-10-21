@@ -177,6 +177,9 @@
                 },
                 "open": {
                   "$ref": "common.schema.json#/$defs/count"
+                },
+                "partial": {
+                  "$ref": "common.schema.json#/$defs/count"
                 }
               },
               "required": [
@@ -261,6 +264,9 @@
                   "$ref": "common.schema.json#/$defs/count"
                 },
                 "open": {
+                  "$ref": "common.schema.json#/$defs/count"
+                },
+                "partial": {
                   "$ref": "common.schema.json#/$defs/count"
                 }
               },
@@ -508,6 +514,10 @@
         },
         "text": {
           "$ref": "common.schema.json#/$defs/title"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
         }
       },
       "required": [

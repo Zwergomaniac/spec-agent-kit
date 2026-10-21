@@ -1,0 +1,12 @@
+{
+  "schema": "sak.config/1",
+  "project": {
+    "key": "demo",
+    "name": "Demo"
+  },
+  "plugins": [
+    {
+      "name": "graphify"
+    }
+  ]
+}
