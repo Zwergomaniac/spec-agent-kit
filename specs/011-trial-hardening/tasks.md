@@ -10,5 +10,5 @@
 - [ ] T005 [US6] Format-Option, bypass-Erkennung (Bugfix), `status`/403, Plan-Details, Lock-Erklärung. Tests.
 - [ ] T006 [B12] Suche nach `sh` in der doctor-Probe an Git-Orten. [B13] `settings_allow` im Lock und Ersetzen beim Upgrade. [B15] `dashboard` erst bei vorhandenem Schlüssel ok. Tests.
 - [ ] T007 [US7] `commands.prepare` in den Prompts von Builder und Prüfern und in `doctor --probe-commands`.
-- [ ] T008 [US8] `sak hook session-start` und `SessionStart`-Eintrag (Matcher `compact`) im Fragment und im Settings-Merge; Hinweis „/compact“ im Abschlussbericht des Skills. Tests (Ausgabe nur bei aktivem Lauf und `source=compact`; gültiges JSON).
+- [ ] T008 [US8] `sak hook session-start` und `SessionStart`-Eintrag (Matcher `compact`) im Fragment und im Settings-Merge. Tests (Ausgabe nur bei aktivem Lauf und `source=compact`; gültiges JSON).
 - [ ] T009 Kit-Version 0.2.0, alles grün, README und Follow-ups (erledigte Punkte streichen).

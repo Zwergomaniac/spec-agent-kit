@@ -61,11 +61,10 @@ Befund 11: In frischen Worktrees fehlen gitignorierte, erzeugte Dateien (z. B. `
 
 ### User Story 8 – Lauf-Kontext übersteht das Kompaktieren (Priority: P2)
 
-Frage des Betreibers 2026-10-21: Kann das Framework `/compact` auslösen? Nein. Hooks und Skills können keine eingebauten Befehle ausführen. Das Kit kann aber dafür sorgen, dass der Orchestrator nach einer Kompaktierung (automatisch oder manuell) den laufenden Lauf nicht verliert. Außerdem kann es gute Zeitpunkte vorschlagen.
+Frage des Betreibers 2026-10-21: Kann das Framework `/compact` auslösen? Nein. Hooks und Skills können keine eingebauten Befehle ausführen. Das Kit sorgt aber dafür, dass der Orchestrator nach einer Kompaktierung (automatisch durch Claude Code oder manuell) den laufenden Lauf nicht verliert und ohne Rückfrage weiterarbeitet. Eine Empfehlung an den Betreiber, `/compact` auszuführen, gibt es ausdrücklich NICHT (Betreiber 2026-10-21: Agenten sollen autonom arbeiten). Ein programmatisches Auslösen (wie die Compact-API bei OpenCode) ist als Recherche-Punkt in `docs/follow-ups.md` vermerkt.
 
 **Acceptance**:
 1. **Given** ein aktiver Lauf, **When** die Sitzung kompaktiert wird, **Then** speist ein `SessionStart`-Hook (Matcher `compact`) eine Kurzfassung ein: Lauf-ID, Spec, Zustand, Runde, aktive Rollen, Muss-Befunde der letzten Runde, nächster Schritt laut Skill. Ohne aktiven Lauf: keine Ausgabe.
-2. **Given** ein Lauf endet (`merged`, `escalated`, `aborted`, `reviewed`), **When** der Skill seinen Abschlussbericht schreibt, **Then** schlägt er dem Betreiber vor, jetzt `/compact` auszuführen.
 
 ## Clarifications
 

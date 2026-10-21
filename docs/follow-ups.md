@@ -79,3 +79,4 @@ Stand 2026-10-20, nach Umsetzung der Specs 001 bis 007 und 009. Jeder Punkt nenn
 17. **Lokale Pfade in Specs und Doku sind öffentlich.**
     Herkunft: Das Repo ist öffentlich; Specs und Doku enthalten Pfade wie `D:\Dev Department\…`.
     Vorschlag: Optional durch Platzhalter ersetzen.
+- **Programmatisches Kompaktieren** (Herkunft: Betreiber 2026-10-21, Spec 011 US8). Claude Code bietet innerhalb einer Sitzung keinen Weg, `/compact` aus Hooks oder Skills auszulösen. Vorschlag: prüfen, ob sich eine Sitzung von außen kompaktieren lässt (Claude Agent SDK bzw. `claude --resume` mit `/compact` als Nachricht) und ob ein Orchestrator-Wrapper das zwischen Läufen automatisch tun kann. Bis dahin: Kontext-Wiederherstellung nach Auto-Compact (US8).
