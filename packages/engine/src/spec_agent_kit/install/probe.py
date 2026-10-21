@@ -9,9 +9,11 @@ geprüft.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
+import signal
 import subprocess
 from pathlib import Path
 from typing import Any, Final
@@ -73,19 +75,43 @@ def _environment() -> dict[str, str]:
     }
 
 
+def _kill_tree(process: subprocess.Popen[str]) -> None:
+    """Beendet den Prozess samt Kindern (ein Starter-Prozess hält sonst die Pipes offen)."""
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        with contextlib.suppress(OSError):
+            os.killpg(process.pid, signal.SIGKILL)
+    with contextlib.suppress(OSError):
+        process.kill()
+
+
 def _run(argv: list[str], root: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    """Führt ``argv`` mit Zeitlimit aus; bei Überschreitung wird der ganze Prozessbaum beendet."""
+    with subprocess.Popen(
         argv,
         cwd=root,
         env=_environment(),
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
         errors="replace",
         stdin=subprocess.DEVNULL,
-        timeout=PROBE_TIMEOUT_SECONDS,
-        check=False,
-    )
+        start_new_session=os.name != "nt",
+    ) as process:
+        try:
+            stdout, stderr = process.communicate(timeout=PROBE_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            _kill_tree(process)
+            process.communicate()
+            raise
+        return subprocess.CompletedProcess(argv, process.returncode, stdout, stderr)
 
 
 def _tail(proc: subprocess.CompletedProcess[str]) -> str:

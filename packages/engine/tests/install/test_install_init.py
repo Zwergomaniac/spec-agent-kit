@@ -334,7 +334,11 @@ def test_existing_files_stay_identical_except_for_the_additive_settings_merge(
     # Der eigene Agent und der eigene Hook sind unverändert da.
     assert (target / ".claude/agents/code-executor.md").read_text(encoding="utf-8") == OWN_AGENT
     settings = read_json(target / ".claude/settings.json")
-    assert settings["hooks"]["SessionStart"] == OWN_SETTINGS["hooks"]["SessionStart"]
+    own_session = OWN_SETTINGS["hooks"]["SessionStart"]
+    assert settings["hooks"]["SessionStart"][: len(own_session)] == own_session
+    assert [e.get("matcher") for e in settings["hooks"]["SessionStart"][len(own_session) :]] == [
+        "compact"
+    ]  # der Kit-Hook (Spec 011 US8) kommt dazu
     assert settings["env"] == OWN_SETTINGS["env"]
     assert settings["permissions"]["defaultMode"] == "acceptEdits"
     assert settings["permissions"]["allow"][:2] == OWN_SETTINGS["permissions"]["allow"]

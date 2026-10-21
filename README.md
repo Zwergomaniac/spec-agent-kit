@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0). Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -25,10 +25,10 @@ Werte: **implementiert** (Code und Tests vorhanden), **teilweise**, **Konzept** 
 | Baustein | Status | Anmerkung | Ort |
 | --- | --- | --- | --- |
 | Contracts (Schemas, Vokabular, Labels, Deep Links) | implementiert | JSON Schema, generierte Zod-Typen, Python-Validierung; Specs 001, 002 | `packages/contracts`, `packages/engine/src/spec_agent_kit/contracts.py` |
-| Pipeline-Engine (`sak run`, `sak hook`, `sak event`) | implementiert | Zustandsmaschine mit `paused`, Wächter, Urteile, `combine`, `merge` ohne Push, Übernahme verwaister Läufe, Nur-Prüfung, Hooks; Spec 003 | `packages/engine/src/spec_agent_kit/pipeline` |
+| Pipeline-Engine (`sak run`, `sak hook`, `sak event`) | implementiert | Zustandsmaschine mit `paused`, Wächter, Urteile, `combine`, `merge` ohne Push, Übernahme verwaister Läufe, Nur-Prüfung, Hooks; Spec 003. Dazu Spec 011: `run cleanup` (Links), Worktree-Erkennung, Lauf-Kontext nach dem Kompaktieren (`hook session-start`) | `packages/engine/src/spec_agent_kit/pipeline` |
 | Rollen, Agents, Orchestrator-Skill | implementiert | Vorlagen für Builder, Code-, UI-, Sicherheits-Prüfer und Doku, Skill `sak-pipeline`, `settings.fragment.json` | `packages/agent-blueprint/templates/claude` |
 | Projektkonfiguration | implementiert | `.spec-agent/config.yml` (`sak.config/1`), `sak config check` und `show`; Spec 004. Die AI-Forge-Beispielwerte sind ungeprüft | `packages/engine/src/spec_agent_kit/config`, `packages/agent-blueprint/templates/config` |
-| Init, Upgrade, Doctor | implementiert | Plan vor `--apply`, `.sak-new` statt Überschreiben, Lockfile, additiver Settings-Merge, vendorte Engine; Spec 005. Noch nie gegen ein echtes Zielprojekt gelaufen | `packages/engine/src/spec_agent_kit/install` |
+| Init, Upgrade, Doctor | implementiert | Plan vor `--apply` (mit allen Allow- und Deny-Regeln), `--format json\|text`, `.sak-new` statt Überschreiben, Lockfile mit `settings_allow`, additiver Settings-Merge mit Ersetzen veralteter Kit-Regeln, vendorte Engine, Vorschläge aus der Projekt-Erkennung, `doctor --probe-commands`; Spec 005, 011. Noch nie gegen ein echtes Zielprojekt gelaufen | `packages/engine/src/spec_agent_kit/install` |
 | Skill `/sak-init` | implementiert | geführte Einrichtung, nur im Kit-Repo; die Logik steckt im CLI | `.claude/skills/sak-init` |
 | Collector, lokales Board, Push | implementiert | `sak board`, `sak board serve`, ausfallsicherer `sak push`; Spec 006 | `packages/engine/src/spec_agent_kit/board`, `.../push` |
 | Dashboard-API | implementiert | Hono + SQLite, Admin-Login, Ingest mit Contracts-Validierung, Lese-API, Retention, Projekt-CLI; Spec 007 | `apps/dashboard-api` |

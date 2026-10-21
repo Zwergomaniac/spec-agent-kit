@@ -1,6 +1,6 @@
 # Offene Punkte nach v1
 
-Stand 2026-10-20, nach Umsetzung der Specs 001 bis 007 und 009. Jeder Punkt nennt die Herkunft und einen Vorschlag. Verbindliche Entscheidungen treffen der Betreiber und die jeweilige Spec.
+Stand 2026-10-21, nach Umsetzung der Specs 001 bis 007, 009 und 011. Die Befunde des ImmoAgent-Trials (Spec 011) sind umgesetzt und hier gestrichen. Jeder Punkt nennt die Herkunft und einen Vorschlag. Verbindliche Entscheidungen treffen der Betreiber und die jeweilige Spec.
 
 ## Qualität und Betrieb
 
@@ -79,4 +79,7 @@ Stand 2026-10-20, nach Umsetzung der Specs 001 bis 007 und 009. Jeder Punkt nenn
 17. **Lokale Pfade in Specs und Doku sind öffentlich.**
     Herkunft: Das Repo ist öffentlich; Specs und Doku enthalten Pfade wie `D:\Dev Department\…`.
     Vorschlag: Optional durch Platzhalter ersetzen.
-- **Programmatisches Kompaktieren** (Herkunft: Betreiber 2026-10-21, Spec 011 US8). Claude Code bietet innerhalb einer Sitzung keinen Weg, `/compact` aus Hooks oder Skills auszulösen. Vorschlag: prüfen, ob sich eine Sitzung von außen kompaktieren lässt (Claude Agent SDK bzw. `claude --resume` mit `/compact` als Nachricht) und ob ein Orchestrator-Wrapper das zwischen Läufen automatisch tun kann. Bis dahin: Kontext-Wiederherstellung nach Auto-Compact (US8).
+- **Programmatisches Kompaktieren** (Herkunft: Betreiber 2026-10-21, Spec 011 US8). Claude Code bietet innerhalb einer Sitzung keinen Weg, `/compact` aus Hooks oder Skills auszulösen. Vorschlag: prüfen, ob sich eine Sitzung von außen kompaktieren lässt (Claude Agent SDK bzw. `claude --resume` mit `/compact` als Nachricht) und ob ein Orchestrator-Wrapper das zwischen Läufen automatisch tun kann. Die Kontext-Wiederherstellung nach einem Kompaktieren (Spec 011 US8, `sak hook session-start`) ist umgesetzt; offen bleibt nur das programmatische Auslösen. Das Kit empfiehlt dem Betreiber nie, `/compact` auszuführen.
+
+- **Auth-Probe im doctor** (Herkunft: Spec 011 B15, optional). `doctor` und `dashboard status` melden das Dashboard erst mit vorhandenem Schlüssel als ok, prüfen aber nicht, ob das Dashboard den Schlüssel akzeptiert. Vorschlag: eine Probe ohne Datenänderung, sobald die API einen passenden Endpunkt bietet.
+- **Worktree-Verwaltung durch sak** (Herkunft: Spec 011 US3, Nachtrag). In 011 gilt nur die Erkennung samt Erben von URL und Schlüssel sowie die Preflight-Warnung. Eigene Worktrees unter `<repo>.sak-runs/<lauf-id>`, Board-Anzeige und `doctor`-Meldung übrig gebliebener Worktrees gehören zur Spec „Parallelbetrieb“ (Punkt 8).
