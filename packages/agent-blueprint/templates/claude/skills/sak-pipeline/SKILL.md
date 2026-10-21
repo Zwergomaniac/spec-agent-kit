@@ -68,24 +68,34 @@ Nur nach ausdrücklicher Entscheidung des Betreibers für den genannten Lauf. `<
 
 **Unterbrechung.** Bei API-Limit, Sitzungsende oder einer anderen Unterbrechung ruf `SAK run pause <run> --reason "<Grund>"` auf. Das gibt die Sperre frei; ein anderer Lauf kann starten. Fortsetzen: `SAK run resume <run>`, nur bei freier Sperre und sauberem Arbeitsstand.
 
-**Abschluss (nur bei `approved`).**
+**Abschluss (nur bei `approved`).** Lies die Stufe aus `SAK config show` (`autonomy.push`, `autonomy.deploy`). Wenn die Stufe einen Schritt erlaubt, führst du ihn **ohne Rückfrage** aus.
 1. Sichten: `git log --oneline <base_commit>..HEAD` und `git diff --stat <base_commit>..HEAD`. Wiederhole die Tests nicht, wenn Builder und Code-Prüfer übereinstimmend grün gemeldet haben.
 2. Aufräumen: `SAK run cleanup <run>` (entfernt nur Links; Ziele bleiben).
-3. Mergen: `SAK run merge <run>` (Merge-Commit mit `--no-ff` in den Basis-Branch, **kein Push**). Bei einem Konflikt bricht der Befehl den Merge ab und eskaliert den Lauf; dann gehe zu **Eskalation**.
-4. Kurzbericht an den Betreiber (Deutsch): was gebaut wurde, Testzahlen, `[may]`-Hinweise der Prüfer und der Hinweis „noch nicht deployt“. Deploy und Live-Prüfung folgen nur auf seine Freigabe.
+3. Mergen: `SAK run merge <run>` (Merge-Commit mit `--no-ff` in den Basis-Branch; `merge` selbst macht kein Push). Das geschieht automatisch, ohne Rückfrage. Bei einem Konflikt bricht der Befehl den Merge ab und eskaliert den Lauf; dann gehe zu **Eskalation**.
+4. Pushen, je nach `autonomy.push`:
+   - `after_merge`: `SAK run push <run>` direkt nach dem Merge, ohne Rückfrage. Der Befehl pusht nur den Basis-Branch, nur fast-forward, ohne Force und ohne Tags. Wird er abgelehnt (zum Beispiel non-fast-forward), versuchst du **nichts** zu reparieren: kein Pull, kein Rebase, kein Merge, kein Force. Der Lauf bekommt einen Aufmerksamkeitseintrag; melde den Grund im Kurzbericht, die Klärung bleibt beim Betreiber.
+   - `manual` (Default): Nicht pushen. `SAK run push` lehnt in dieser Stufe ab. Weise im Bericht darauf hin, dass der Betreiber selbst pusht.
+5. Kurzbericht an den Betreiber (Deutsch): was gebaut wurde, Testzahlen, `[may]`-Hinweise der Prüfer, Merge-Commit und Push-Ergebnis (gepusht mit Commit, abgelehnt mit Grund, oder „nicht gepusht, `autonomy.push: manual`“). Zum Deploy:
+   - `autonomy.deploy: after_approval` (Default): „noch nicht deployt“ und die Frage, ob du deployen sollst.
+   - `autonomy.deploy: never`: „noch nicht deployt, Deploy nur manuell“ und keine Frage.
 
 **Bericht (Nur-Prüfung).** Fasse die Urteile und Befunde zusammen. Der Lauf endet mit `reviewed`; es gibt keinen Merge.
 
 ## Deploy
 
-Nur auf **ausdrückliche Anweisung** des Betreibers für diese Spec. Lies `deploy.command` aus `SAK config show`; ist es `null`, gibt es keinen Deploy. Führe den Befehl selbst aus (er steht in `orchestrator_only`, kein Subagent führt ihn aus). Committe nach erfolgreichem Deploy einen Marker mit dem Betreff `deploy(NNN): <kurz>`, wobei `NNN` die Spec-Nummer ist. Eine Live-Prüfung markierst du auf Anweisung mit `verified(NNN): <kurz>`. Das Dashboard liest diese Marker; sie müssen nach dem letzten Task-Commit der Spec liegen.
+Nur auf **ausdrückliche Anweisung** des Betreibers für diese Spec, und nur bei `autonomy.deploy: after_approval`. Bei `autonomy.deploy: never` deployst du nie, auch nicht auf Anweisung: Verweise auf den Betreiber, der selbst deployt. Ein Merge oder Push gilt nie als Deploy-Freigabe.
+
+Lies `deploy.command` aus `SAK config show`; ist es `null`, gibt es keinen Deploy. Führe den Befehl selbst aus (er steht in `orchestrator_only`, kein Subagent führt ihn aus). Committe nach erfolgreichem Deploy einen Marker mit dem Betreff `deploy(NNN): <kurz>`, wobei `NNN` die Spec-Nummer ist. Eine Live-Prüfung markierst du auf Anweisung mit `verified(NNN): <kurz>`. Das Dashboard liest diese Marker; sie müssen nach dem letzten Task-Commit der Spec liegen.
+
+Bei `autonomy.push: after_merge` pushst du den Marker danach ohne Rückfrage mit `SAK run push <run>` (der Basis-Branch muss den Merge-Commit des Laufs enthalten). Bei `manual` bleibt der Marker lokal; sage es im Bericht.
 
 ## Regeln
 
 - Subagenten liefern Kurzberichte und Urteile, keine Roh-Logs. Du gibst dem Betreiber nur Zusammenfassungen weiter.
 - Ein Lauf zur Zeit. Prüfer laufen parallel, der Builder nie parallel zu Prüfern.
 - Änderungen an den Dateien dieser Pipeline (Kern-Schutz und `guard.protected_paths`) macht nie die Pipeline selbst. Sie gehen immer an den Betreiber.
-- Kein `git push`, kein `--no-verify`. Aktionen aus `orchestrator_only` führst nur du aus, und nur nach Freigabe.
+- Kein direktes `git push` (die Deny-Regel sperrt es), kein `--no-verify`. Gepusht wird ausschließlich mit `SAK run push`, nur bei `autonomy.push: after_merge`, nie mit Force. Subagenten pushen nie. Aktionen aus `orchestrator_only` führst nur du aus, und nur nach Freigabe.
+- Fachliche Themen, das Rundenlimit, ein abgelehnter Push und jede andere Eskalation bleiben beim Betreiber; `autonomy` lockert nur Merge, Push und Deploy nach `approved`.
 - **Nach einem Kompaktieren** (der Kontext wurde automatisch oder manuell gekürzt) liefert der Hook `SessionStart` eine Kurzfassung des aktiven Laufs (Lauf-ID, Spec, Zustand, Runde, Rollen, Muss-Befunde, nächster Schritt). Arbeite danach ohne Rückfrage an dieser Stelle weiter. Gibt es keine Kurzfassung, hole dir den Stand mit `SAK run list` und `SAK run show <run>`. Du empfiehlst dem Betreiber nie, den Kontext zu kompaktieren.
 - Ereignisse und Berichte tragen nur Metadaten, nie Code, Diffs, Prompts oder Secrets.
 - Bei Unklarheit nie raten: eskalieren.

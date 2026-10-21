@@ -95,5 +95,10 @@ dashboard:
   url: null                       # sobald das Dashboard läuft, hier die URL eintragen
   share_commit_subjects: true     # Commit-Betreffe im Ticker auch online (Spec 010)
 
+autonomy:
+  push: after_merge               # Merge und Push nach approved ohne Rückfrage (Spec 012)
+  deploy: after_approval          # Deploy nur nach ausdrücklichem OK
+  remote: origin
+
 plugins:
   - name: legacy-status           # blockers.yml, deferred-decisions.md, feature-status.yml (Spec 010)
