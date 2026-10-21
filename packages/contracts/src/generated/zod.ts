@@ -95,7 +95,7 @@ export const boardStationSchema = z.object({ "round": roundSchema, "role": roleS
 
 export const boardEscalationSchema = z.object({ "ts": timestampSchema, "round": roundSchema, "gate": gateSchema.optional(), "reason": reasonSchema, "open": z.boolean() }).strict()
 
-export const boardRunSchema = z.object({ "run_id": runIdSchema, "spec": specDirSchema, "kind": runKindSchema, "state": runStateSchema, "round": roundSchema, "max_rounds": roundSchema, "active": z.boolean(), "started_at": timestampSchema, "updated_at": timestampSchema, "last_event_at": timestampSchema, "idle": z.boolean(), "stale": z.boolean(), "origin": originSchema.optional(), "stations": z.array(boardStationSchema), "escalations": z.array(boardEscalationSchema) }).strict()
+export const boardRunSchema = z.object({ "run_id": runIdSchema, "spec": specDirSchema, "kind": runKindSchema, "state": runStateSchema, "round": roundSchema, "max_rounds": roundSchema, "active": z.boolean(), "started_at": timestampSchema, "updated_at": timestampSchema, "last_event_at": timestampSchema, "idle": z.boolean(), "stale": z.boolean(), "pushed": z.boolean().describe("Gesetzt (true), wenn ein run.pushed-Event zum Lauf vorliegt (Spec 012).").optional(), "origin": originSchema.optional(), "stations": z.array(boardStationSchema), "escalations": z.array(boardEscalationSchema) }).strict()
 
 export const boardMarkerSchema = z.object({ "kind": markerKindSchema, "specs": z.array(specNumberSchema), "ts": timestampSchema, "commit": sha40Schema }).strict()
 

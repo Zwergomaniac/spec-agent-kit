@@ -439,6 +439,10 @@
         "stale": {
           "type": "boolean"
         },
+        "pushed": {
+          "type": "boolean",
+          "description": "Gesetzt (true), wenn ein run.pushed-Event zum Lauf vorliegt (Spec 012)."
+        },
         "origin": {
           "$ref": "common.schema.json#/$defs/origin"
         },
