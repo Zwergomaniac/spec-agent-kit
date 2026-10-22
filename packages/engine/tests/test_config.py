@@ -52,6 +52,16 @@ def _agent(root: Path, name: str, model: str = "sonnet", effort: str | None = "m
     (agents / f"{name}.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def _copilot_agent(root: Path, name: str, model: str = "gpt-5", effort: str | None = "medium") -> None:
+    agents = root / ".github" / "copilot" / "agents"
+    agents.mkdir(parents=True, exist_ok=True)
+    lines = ["---", f"name: {name}", f"model: {model}"]
+    if effort is not None:
+        lines.append(f"effort: {effort}")
+    lines += ["---", "Prompt"]
+    (agents / f"{name}.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def _write_config(root: Path, config: dict[str, Any]) -> None:
     (root / ".spec-agent").mkdir(exist_ok=True)
     (root / ".spec-agent" / "config.yml").write_text(
@@ -88,6 +98,7 @@ def test_defaults_follow_spec(tmp_path: Path) -> None:
     data = build_effective(tmp_path, MINIMAL).data
     assert data["project"]["base_branch"] == "main"
     assert data["locale"] == "de"
+    assert data["agent_environment"] == "claude"
     pipeline = data["pipeline"]
     assert (pipeline["max_rounds"], pipeline["idle_minutes"], pipeline["stale_hours"]) == (2, 60, 6)
     assert pipeline["branch_pattern"] == "{spec}"
@@ -217,6 +228,15 @@ def test_config_has_no_field_for_the_secret_itself() -> None:
 
 def test_check_accepts_valid_setup(repo: Path) -> None:
     _write_config(repo, _no_ui({}))
+    result = check(repo)
+    assert result == {"ok": True, "errors": [], "warnings": []}
+
+
+def test_check_accepts_valid_copilot_setup(repo: Path) -> None:
+    _copilot_agent(repo, "sak-builder", model="sonnet")
+    _copilot_agent(repo, "sak-code-reviewer", model="opus")
+    config = _no_ui({"agent_environment": "copilot"})
+    _write_config(repo, config)
     result = check(repo)
     assert result == {"ok": True, "errors": [], "warnings": []}
 

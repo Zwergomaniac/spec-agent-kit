@@ -33,7 +33,7 @@ def test_kit_at_rejects_a_non_kit_directory(tmp_path: Path) -> None:
 
 
 def test_managed_files_cover_agents_skills_engine_and_gitignore() -> None:
-    managed = Kit.at(REAL_KIT_ROOT).managed_files()
+    managed = Kit.at(REAL_KIT_ROOT).managed_files("claude")
     assert ".claude/agents/sak-builder.md" in managed
     assert ".claude/agents/sak-code-reviewer.md" in managed
     assert ".claude/skills/sak-pipeline/SKILL.md" in managed
@@ -46,7 +46,7 @@ def test_managed_files_cover_agents_skills_engine_and_gitignore() -> None:
 
 
 def test_managed_files_exclude_tests_venv_caches_config_and_lock() -> None:
-    managed = Kit.at(REAL_KIT_ROOT).managed_files()
+    managed = Kit.at(REAL_KIT_ROOT).managed_files("claude")
     for path in managed:
         parts = path.split("/")
         assert "tests" not in parts, path
@@ -59,6 +59,15 @@ def test_managed_files_exclude_tests_venv_caches_config_and_lock() -> None:
     assert ".spec-agent/lock.json" not in managed
     assert ".claude/settings.json" not in managed
     assert list(managed) == sorted(managed)
+
+
+def test_copilot_managed_files_cover_agents_skills_instructions_settings_and_tasks() -> None:
+    managed = Kit.at(REAL_KIT_ROOT).managed_files("copilot")
+    assert ".github/copilot/agents/sak-builder.md" in managed
+    assert ".github/copilot/skills/sak-pipeline.md" in managed
+    assert ".github/copilot/instructions.md" in managed
+    assert ".vscode/settings.json" in managed
+    assert ".vscode/tasks.json" in managed
 
 
 def test_managed_files_ignore_a_local_venv_and_caches(tmp_path: Path) -> None:

@@ -34,7 +34,18 @@ from spec_agent_kit.install.tools import find_uv
 
 SYNC_TIMEOUT_SECONDS: Final[int] = 600
 _KEEP_DIRS: Final[frozenset[str]] = frozenset(
-    {"", ".claude", ".claude/agents", ".claude/skills", ".spec-agent"}
+    {
+        "",
+        ".claude",
+        ".claude/agents",
+        ".claude/skills",
+        ".github",
+        ".github/copilot",
+        ".github/copilot/agents",
+        ".github/copilot/skills",
+        ".vscode",
+        ".spec-agent",
+    }
 )
 
 
@@ -136,7 +147,7 @@ def uv_sync(target: Path) -> dict[str, Any]:
 
 
 def suggested_commit(plan: Plan) -> str:
-    paths = ".spec-agent .claude/agents .claude/skills .claude/settings.json"
+    paths = ".spec-agent .claude .github/copilot .vscode"
     verb = "installieren" if plan.command == "init" else "auf"
     suffix = "" if plan.command == "init" else " aktualisieren"
     return (

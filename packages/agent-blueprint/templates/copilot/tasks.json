@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "sak: hook subagent-start",
+      "type": "shell",
+      "command": ".spec-agent/sak hook subagent-start",
+      "problemMatcher": []
+    },
+    {
+      "label": "sak: hook subagent-stop",
+      "type": "shell",
+      "command": ".spec-agent/sak hook subagent-stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "sak: hook session-start",
+      "type": "shell",
+      "command": ".spec-agent/sak hook session-start",
+      "problemMatcher": []
+    }
+  ]
+}

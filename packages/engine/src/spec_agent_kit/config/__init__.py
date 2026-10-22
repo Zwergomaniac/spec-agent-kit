@@ -199,6 +199,8 @@ def deploy_errors(raw: Any) -> list[dict[str, str]]:
 
 def schema_errors(raw: Any) -> list[dict[str, str]]:
     """Alle Schemaverstöße als ``{path, message[, suggestion]}``."""
+    if isinstance(raw, dict) and "agent_environment" not in raw:
+        raw = {**raw, "agent_environment": "claude"}
     result: list[dict[str, str]] = []
     for error in contracts.config_schema_errors(raw):
         result.extend(_describe(error))

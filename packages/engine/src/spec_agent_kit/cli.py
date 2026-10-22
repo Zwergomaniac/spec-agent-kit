@@ -365,6 +365,7 @@ def _install(args: argparse.Namespace) -> int:
                 lint=args.lint,
                 clean_ignore=args.clean_ignore,
                 allow_dirty=args.allow_dirty,
+                agent_environment=args.agent_environment,
             )
         else:
             plan = build_upgrade_plan(kit, target, allow_dirty=args.allow_dirty)
@@ -513,6 +514,12 @@ def _add_install_parsers(sub: Any) -> None:
     init.add_argument("--name", required=True, help="Anzeigename (1 bis 80 Zeichen)")
     init.add_argument("--base-branch", default="main", help="Basis-Branch (Default main)")
     init.add_argument("--dashboard-url", default=None, help="https://… (http nur für localhost)")
+    init.add_argument(
+        "--agent-environment",
+        choices=["claude", "copilot"],
+        default="claude",
+        help="vom Kit aktiv verwaltete Agent-Umgebung",
+    )
     init.add_argument("--no-ui", action="store_true", help="ui_review nicht aktivieren")
     init.add_argument("--test-fast", action="append", default=[], help="Befehl, wiederholbar")
     init.add_argument("--test-full", action="append", default=[], help="Befehl, wiederholbar")

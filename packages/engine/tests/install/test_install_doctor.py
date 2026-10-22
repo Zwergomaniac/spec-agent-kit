@@ -190,6 +190,37 @@ def test_missing_settings_file_fails(ready: Path, sak: Sak) -> None:
     assert _by_name(result)["hooks_and_deny"]["ok"] is False
 
 
+def test_copilot_doctor_checks_tasks_based_hook_replacement(
+    kit: Kit, target: Path, sak: Sak, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args = [
+        "init",
+        str(target),
+        "--key",
+        "ai-forge",
+        "--name",
+        "AI-Forge",
+        "--base-branch",
+        "main",
+        "--no-ui",
+        "--agent-environment",
+        "copilot",
+        "--apply",
+        "--no-sync",
+    ]
+    monkeypatch.setattr(
+        doctor_module,
+        "_check_hook_probe",
+        lambda root: {"check": "hook_probe", "ok": True, "detail": "ersetzt", "required": True},
+    )
+    code, out = sak(*args)
+    assert code == 0, out
+    write(target, ".spec-agent/engine/.venv/pyvenv.cfg", "home = x\n")
+    code, result = sak("doctor", str(target))
+    assert code == 0, result
+    assert "VS-Code-Tasks" in _by_name(result)["hooks_and_deny"]["detail"]
+
+
 def test_state_not_gitignored_fails(ready: Path, sak: Sak) -> None:
     (ready / ".spec-agent/.gitignore").write_text("dashboard.key\n", encoding="utf-8")
     code, result = sak("doctor", str(ready))

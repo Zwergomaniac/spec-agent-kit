@@ -1,0 +1,7 @@
+{
+  "agentFiles": ".github/copilot/agents",
+  "instructionsFile": ".github/copilot/instructions.md",
+  "skillFiles": [
+    ".github/copilot/skills/sak-pipeline.md"
+  ]
+}

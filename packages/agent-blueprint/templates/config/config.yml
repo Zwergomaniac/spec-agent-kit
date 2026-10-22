@@ -13,6 +13,8 @@ project:
 
 locale: de                    # Sprache der Berichte und Labels
 
+agent_environment: claude     # aktive Agent-Umgebung des Kits: claude | copilot
+
 pipeline:
   max_rounds: 2               # 1 bis 5 Builder-Prüfer-Runden, danach Eskalation
   idle_minutes: 60            # Lauf ohne Aktivität gilt danach als eingeschlafen

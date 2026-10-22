@@ -5,6 +5,8 @@
 #  - ui.backend (mock | local) hat in sak.config/1 kein Feld; der Mock-Betrieb steckt in ui.command.
 schema: sak.config/1
 
+agent_environment: claude
+
 project:
   key: immoagent
   name: ImmoAgent

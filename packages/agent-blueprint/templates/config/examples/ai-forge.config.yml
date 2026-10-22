@@ -2,6 +2,8 @@
 # ACHTUNG: Die Werte sind nach bestem Wissen gewählt und im Pilot (Spec 008) zu überprüfen.
 schema: sak.config/1
 
+agent_environment: claude
+
 project:
   key: ai-forge
   name: AI-Forge

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final
 
+from spec_agent_kit.agent_env import get_agent_environment
 from spec_agent_kit.install import InstallError
 
 TEMPLATES_RELATIVE: Final[str] = "packages/agent-blueprint/templates"
@@ -89,8 +90,11 @@ class Kit:
     def engine(self) -> Path:
         return self.root / ENGINE_RELATIVE
 
-    def settings_fragment(self) -> bytes:
-        return (self.templates / "claude" / "settings.fragment.json").read_bytes()
+    def settings_fragment(self, environment: str = "claude") -> bytes:
+        spec = get_agent_environment(environment)
+        if spec.name == "claude":
+            return (self.templates / "claude" / "settings.fragment.json").read_bytes()
+        return (self.templates / "copilot" / "settings.json").read_bytes()
 
     def detectors(self) -> list[dict[str, Any]]:
         """Regeln zur Erkennung von Testwerkzeugen mit Ausgabeordnern (``detectors.json``)."""
@@ -109,18 +113,31 @@ class Kit:
     def config_template(self) -> str:
         return (self.templates / "config" / "config.yml").read_text(encoding="utf-8")
 
-    def managed_files(self) -> dict[str, Path]:
+    def managed_files(self, environment: str = "claude") -> dict[str, Path]:
         """Zielpfad (POSIX, relativ zum Zielprojekt) -> Quelldatei, sortiert nach Zielpfad.
 
         ``config.yml`` und ``settings.json`` gehören nicht dazu (Seed bzw. Merge).
         """
         files: dict[str, Path] = {}
-        claude = self.templates / "claude"
+        spec = get_agent_environment(environment)
+        template_root = self.templates / spec.name
         for sub in ("agents", "skills"):
-            base = claude / sub
+            base = template_root / sub
             if base.is_dir():
                 for path in sorted(p for p in base.rglob("*") if p.is_file()):
-                    files[f".claude/{sub}/{path.relative_to(base).as_posix()}"] = path
+                    target_base = spec.agent_dir if sub == "agents" else spec.skills_dir
+                    files[f"{target_base}/{path.relative_to(base).as_posix()}"] = path
+        if spec.instructions_path is not None:
+            instructions = template_root / "instructions.md"
+            if instructions.is_file():
+                files[spec.instructions_path] = instructions
+        if spec.name == "copilot":
+            settings = template_root / "settings.json"
+            tasks = template_root / "tasks.json"
+            if settings.is_file():
+                files[spec.settings_path] = settings
+            if tasks.is_file():
+                files[spec.hook_target_path] = tasks
         for path in sorted(p for p in self.engine.rglob("*") if p.is_file()):
             relative = path.relative_to(self.engine)
             if relative.parts[0] == "tests" or _skipped(relative):

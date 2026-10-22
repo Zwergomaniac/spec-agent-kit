@@ -13,6 +13,7 @@ from typing import Any
 
 import yaml
 
+from spec_agent_kit.agent_env import get_agent_environment
 from spec_agent_kit.config import (
     ConfigError,
     EffectiveConfig,
@@ -69,12 +70,13 @@ def _check_roles(
     for role in config.active_roles():
         settings = config.role(role)
         where = f"pipeline.roles.{role}"
-        agent_file = root / ".claude" / "agents" / f"{settings['agent']}.md"
+        env = get_agent_environment(str(config.data.get("agent_environment", "claude")))
+        agent_file = root / env.agent_dir / f"{settings['agent']}.md"
         if not agent_file.is_file():
             errors.append(
                 {
                     "path": f"{where}.agent",
-                    "message": f"Agent-Datei fehlt: .claude/agents/{settings['agent']}.md",
+                    "message": f"Agent-Datei fehlt: {env.agent_dir}/{settings['agent']}.md",
                 }
             )
             continue

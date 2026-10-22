@@ -18,6 +18,7 @@ from urllib.parse import urlsplit
 
 import yaml
 
+from spec_agent_kit.agent_env import get_agent_environment
 from spec_agent_kit import contracts
 from spec_agent_kit.config import ConfigError, read_raw, schema_errors
 from spec_agent_kit.config.defaults import defaults
@@ -332,6 +333,7 @@ def render_config(
     key: str,
     name: str,
     base_branch: str,
+    agent_environment: str,
     dashboard_url: str | None,
     ui: bool,
     test_fast: Sequence[str] = (),
@@ -343,6 +345,20 @@ def render_config(
     text = template.replace("__PROJECT_KEY__", key)
     text = text.replace("__PROJECT_NAME__", _quote(name))
     text = text.replace("__BASE_BRANCH__", _quote(base_branch))
+    text = re.sub(
+        r"^(agent_environment:)\s+\S+",
+        lambda m: f"{m.group(1)} {agent_environment}",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if agent_environment == "copilot":
+        replacements = (
+            ("model: sonnet", "model: gpt-5"),
+            ("model: opus", "model: gpt-5"),
+        )
+        for old, new in replacements:
+            text = text.replace(old, new)
     for field_name, commands in (
         ("test_fast", test_fast),
         ("test_full", test_full),
@@ -419,10 +435,18 @@ def _settings_action(
     extra_allow: list[str],
     plan: Plan,
     owned_allow: list[str] | None,
+    environment: str,
 ) -> Action:
     """Merge des Fragments in ``.claude/settings.json``; trägt Regeln und Warnungen in den Plan."""
-    fragment = json.loads(kit.settings_fragment().decode("utf-8"))
-    raw = _read(target / SETTINGS_TARGET)
+    spec = get_agent_environment(environment)
+    fragment = json.loads(kit.settings_fragment(environment).decode("utf-8"))
+    raw = _read(target / spec.settings_path)
+    if not spec.settings_merge:
+        if raw is None:
+            return Action(CREATE, spec.settings_path, "aus der Vorlage angelegt", content=dumps_settings(fragment).encode("utf-8"))
+        if parse_settings(raw.decode("utf-8")) == fragment:
+            return Action(SKIP, spec.settings_path, "bereits identisch")
+        return Action(REPLACE, spec.settings_path, "aus der Vorlage aktualisiert", content=dumps_settings(fragment).encode("utf-8"), expect=_hash(raw))
     existing: dict[str, Any] | None = None
     if raw is not None:
         try:
@@ -443,12 +467,12 @@ def _settings_action(
         )
     content = dumps_settings(result.merged).encode("utf-8")
     if existing is None:
-        return Action(CREATE, SETTINGS_TARGET, "aus dem Fragment angelegt", content=content)
+        return Action(CREATE, spec.settings_path, "aus dem Fragment angelegt", content=content)
     if result.merged == existing:
-        return Action(SKIP, SETTINGS_TARGET, "Fragment bereits enthalten")
+        return Action(SKIP, spec.settings_path, "Fragment bereits enthalten")
     return Action(
         MERGE,
-        SETTINGS_TARGET,
+        spec.settings_path,
         "ergänzt (Hooks und Permissions); fremde Einträge bleiben"
         + ("; veraltete Kit-Einträge ersetzt" if result.allow_removed else ""),
         content=content,
@@ -582,6 +606,7 @@ def build_init_plan(
     clean_ignore: Sequence[str] = (),
     allow_dirty: bool = False,
     now: str | None = None,
+    agent_environment: str = "claude",
 ) -> Plan:
     """Plan für ``sak init``. Wirft ``InstallError`` bei Verstößen gegen FR-002; schreibt nie."""
     errors: list[dict[str, str]] = []
@@ -609,10 +634,11 @@ def build_init_plan(
         raise InstallError.single("--base-branch", f"der Branch '{base_branch}' existiert nicht")
     plan = Plan("init", target, kit.version)
     plan.speckit_version = detect_version(target)
+    spec = get_agent_environment(agent_environment)
 
     stamp = now or contracts.now_rfc3339()
     files: dict[str, str] = {}
-    for path, source in kit.managed_files().items():
+    for path, source in kit.managed_files(spec.name).items():
         data = source.read_bytes()
         digest = sha256_of(data)
         local = _read(target / path)
@@ -639,6 +665,7 @@ def build_init_plan(
         key=key,
         name=name,
         base_branch=base_branch,
+        agent_environment=spec.name,
         dashboard_url=dashboard_url,
         ui=ui,
         test_fast=test_fast,
@@ -668,7 +695,7 @@ def build_init_plan(
     )
 
     extra = allow_entries([*test_fast, *test_full, *lint])
-    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=[]))
+    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=[], environment=spec.name))
     _finish(plan, kit, None, files, stamp)
 
     errors = []
@@ -744,7 +771,9 @@ def build_upgrade_plan(
         )
     plan = Plan("upgrade", target, kit.version)
     stamp = now or contracts.now_rfc3339()
-    managed = kit.managed_files()
+    raw_config = read_raw(target)
+    spec = get_agent_environment(str(raw_config.get("agent_environment", "claude")))
+    managed = kit.managed_files(spec.name)
     files = dict(old.files)
 
     for path, source in managed.items():
@@ -810,7 +839,7 @@ def build_upgrade_plan(
     else:
         plan.warnings.append(f"{CONFIG_TARGET} fehlt (wird von upgrade nicht angelegt)")
     extra = allow_entries(_config_commands(target))
-    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=old.settings_allow))
+    plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=old.settings_allow, environment=spec.name))
     _finish(plan, kit, old, files, stamp)
 
     errors: list[dict[str, str]] = []

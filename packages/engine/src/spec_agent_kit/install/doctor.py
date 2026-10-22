@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Final
 from urllib.parse import urlsplit
 
+from spec_agent_kit.agent_env import get_agent_environment
 from spec_agent_kit import __version__
 from spec_agent_kit.config import AuthModeError, ConfigError, key_source, load_config, resolve_auth
 from spec_agent_kit.config.check import check as check_config
@@ -125,13 +126,48 @@ def _check_engine(root: Path, engine_running_from: Path | None) -> Check:
 
 
 def _check_settings(root: Path) -> Check:
-    path = root / SETTINGS_TARGET
+    try:
+        config = load_config(root)
+        spec = get_agent_environment(str(config.data.get("agent_environment", "claude")))
+    except ConfigError:
+        spec = get_agent_environment("claude")
+    path = root / spec.settings_path
     if not path.is_file():
-        return _entry("hooks_and_deny", False, f"{SETTINGS_TARGET} fehlt")
+        return _entry("hooks_and_deny", False, f"{spec.settings_path} fehlt")
     try:
         settings = json.loads(path.read_text(encoding="utf-8"))
     except (ValueError, UnicodeDecodeError):
-        return _entry("hooks_and_deny", False, f"{SETTINGS_TARGET} ist kein gültiges JSON")
+        return _entry("hooks_and_deny", False, f"{spec.settings_path} ist kein gültiges JSON")
+    if spec.name == "copilot":
+        tasks_path = root / spec.hook_target_path
+        if not tasks_path.is_file():
+            return _entry("hooks_and_deny", False, f"{spec.hook_target_path} fehlt")
+        try:
+            tasks = json.loads(tasks_path.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return _entry("hooks_and_deny", False, f"{spec.hook_target_path} ist kein gültiges JSON")
+        labels = {
+            str(task.get("label", ""))
+            for task in tasks.get("tasks", [])
+            if isinstance(task, dict)
+        }
+        required = {
+            "sak: hook subagent-start",
+            "sak: hook subagent-stop",
+            "sak: hook session-start",
+        }
+        missing = sorted(required - labels)
+        if missing:
+            return _entry(
+                "hooks_and_deny",
+                False,
+                "Copilot-Hook-Ersatz unvollständig: fehlende VS-Code-Tasks: " + ", ".join(missing),
+            )
+        return _entry(
+            "hooks_and_deny",
+            True,
+            "Copilot-Settings und Hook-Ersatz über VS-Code-Tasks vorhanden (approximate, native integriert)",
+        )
     problems: list[str] = []
     warnings: list[str] = []
     hooks = settings.get("hooks", {}) if isinstance(settings, dict) else {}
@@ -210,6 +246,16 @@ def _probe_env(sh: str) -> dict[str, str]:
 
 def _check_hook_probe(root: Path) -> Check:
     """Führt den Starter wie ein Hook aus (minimaler PATH, Beispiel-Payload auf stdin)."""
+    try:
+        config = load_config(root)
+    except ConfigError:
+        config = None
+    if config is not None and str(config.data.get("agent_environment", "claude")) == "copilot":
+        return _entry(
+            "hook_probe",
+            True,
+            "Copilot-Hooks werden ueber native VS-Code-Tasks integriert; Shell-Hook-Probe nicht erforderlich",
+        )
     starter = root / LAUNCHER_SH_TARGET
     if not starter.is_file():
         return _entry("hook_probe", False, f"{LAUNCHER_SH_TARGET} fehlt (Starter für die Hooks)")

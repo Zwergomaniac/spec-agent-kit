@@ -20,6 +20,11 @@ CORE_PROTECTED: Final[tuple[str, ...]] = (
     ".claude/skills/sak-*",
     ".claude/settings.json",
     ".claude/settings.local.json",
+    ".github/copilot/agents/sak-*",
+    ".github/copilot/skills/sak-*",
+    ".github/copilot/instructions.md",
+    ".vscode/settings.json",
+    ".vscode/tasks.json",
     ".specify/memory/constitution.md",
 )
 """Kern-Schutz: gilt immer, auch bei ``guard.protected_paths: []``."""
@@ -89,6 +94,7 @@ def defaults() -> dict[str, Any]:
         "schema": SCHEMA_ID,
         "project": {"base_branch": "main"},
         "locale": "de",
+        "agent_environment": "claude",
         "pipeline": {
             "max_rounds": 2,
             "idle_minutes": 60,

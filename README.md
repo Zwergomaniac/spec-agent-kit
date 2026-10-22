@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Betrieb in Claude Cloud (Spec 013, Kit 0.4.0) ist umgesetzt, die manuelle Abnahme (SC-003) durch den Betreiber steht aus. Mehrere benannte Deploy-Wege (GitHub-Workflow und lokal, Spec 014, Kit 0.5.0) sind umgesetzt. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Betrieb in Claude Cloud (Spec 013, Kit 0.4.0) ist umgesetzt, die manuelle Abnahme (SC-003) durch den Betreiber steht aus. Mehrere benannte Deploy-Wege (GitHub-Workflow und lokal, Spec 014, Kit 0.5.0) sind umgesetzt. Spec 015 ist im Repo-Code weitgehend umgesetzt: Init, Upgrade, Config-Check und Doctor unterscheiden nun zwischen `claude` und `copilot`, inklusive Copilot-Artefakten unter `.github/copilot/` sowie VS-Code-Settings/Tasks. Die echte Import-/Installationssimulation in einem separaten Zielprojekt steht bewusst noch aus. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht ebenfalls aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -26,9 +26,9 @@ Werte: **implementiert** (Code und Tests vorhanden), **teilweise**, **Konzept** 
 | --- | --- | --- | --- |
 | Contracts (Schemas, Vokabular, Labels, Deep Links) | implementiert | JSON Schema, generierte Zod-Typen, Python-Validierung; Specs 001, 002 | `packages/contracts`, `packages/engine/src/spec_agent_kit/contracts.py` |
 | Pipeline-Engine (`sak run`, `sak hook`, `sak event`) | implementiert | Zustandsmaschine mit `paused`, Wächter, Urteile, `combine`, `merge` ohne Push, `push` nach Autonomie-Stufe, Übernahme verwaister Läufe, Nur-Prüfung, Hooks; Spec 003. Dazu Spec 011: `run cleanup` (Links), Worktree-Erkennung, Lauf-Kontext nach dem Kompaktieren (`hook session-start`) | `packages/engine/src/spec_agent_kit/pipeline` |
-| Rollen, Agents, Orchestrator-Skill | implementiert | Vorlagen für Builder, Code-, UI-, Sicherheits-Prüfer und Doku, Skill `sak-pipeline`, `settings.fragment.json` | `packages/agent-blueprint/templates/claude` |
-| Projektkonfiguration | implementiert | `.spec-agent/config.yml` (`sak.config/1`), `sak config check` und `show`; Spec 004. Die AI-Forge-Beispielwerte sind ungeprüft | `packages/engine/src/spec_agent_kit/config`, `packages/agent-blueprint/templates/config` |
-| Init, Upgrade, Doctor | implementiert | Plan vor `--apply` (mit allen Allow- und Deny-Regeln), `--format json\|text`, `.sak-new` statt Überschreiben, Lockfile mit `settings_allow`, additiver Settings-Merge mit Ersetzen veralteter Kit-Regeln, vendorte Engine, Vorschläge aus der Projekt-Erkennung, `doctor --probe-commands`; Spec 005, 011. Noch nie gegen ein echtes Zielprojekt gelaufen | `packages/engine/src/spec_agent_kit/install` |
+| Rollen, Agents, Orchestrator-Skill | implementiert | Claude- und Copilot-Vorlagen für Builder, Code-, UI-, Sicherheits-Prüfer und Doku. Claude nutzt `.claude/*` plus `settings.fragment.json`; Copilot nutzt `.github/copilot/*` | `packages/agent-blueprint/templates/claude`, `packages/agent-blueprint/templates/copilot` |
+| Projektkonfiguration | implementiert | `.spec-agent/config.yml` (`sak.config/1`), `sak config check` und `show`; Spec 004. Mit `agent_environment: claude|copilot` und env-spezifischer Agent-Prüfung. Die AI-Forge-Beispielwerte sind ungeprüft | `packages/engine/src/spec_agent_kit/config`, `packages/agent-blueprint/templates/config` |
+| Init, Upgrade, Doctor | implementiert | Plan vor `--apply` (mit allen Allow- und Deny-Regeln), `--format json\|text`, `.sak-new` statt Überschreiben, Lockfile mit `settings_allow`, additiver Claude-Settings-Merge, env-spezifische Artefaktsätze für `claude` und `copilot`, Copilot-Hook-Ersatz über `.vscode/tasks.json`, vendorte Engine, Vorschläge aus der Projekt-Erkennung, `doctor --probe-commands`; Spec 005, 011, 015. Noch nie gegen ein echtes separates Zielprojekt importiert/getestet | `packages/engine/src/spec_agent_kit/install` |
 | Skill `/sak-init` | implementiert | geführte Einrichtung, nur im Kit-Repo; die Logik steckt im CLI | `.claude/skills/sak-init` |
 | Collector, lokales Board, Push | implementiert | `sak board`, `sak board serve`, ausfallsicherer `sak push`; Spec 006 | `packages/engine/src/spec_agent_kit/board`, `.../push` |
 | Dashboard-API | implementiert | Hono + SQLite, Admin-Login, Ingest mit Contracts-Validierung, Lese-API, Retention, Projekt-CLI; Spec 007 | `apps/dashboard-api` |
@@ -92,6 +92,7 @@ uv run --project packages/engine sak doctor <zielpfad>
 
 Nützliche Optionen von `init`:
 
+- `--agent-environment claude|copilot`: aktiv verwaltete Agent-Umgebung wählen (Default `claude`).
 - `--no-ui`: `ui_review` bleibt aus (kein Web-UI im Projekt).
 - `--base-branch`, `--dashboard-url`, `--test-fast`, `--test-full`, `--lint` (Befehle wiederholbar).
 - `--allow-dirty`, `--no-sync` (überspringt `uv sync` im Engine-Ordner).
@@ -99,6 +100,8 @@ Nützliche Optionen von `init`:
 Das Kit überschreibt nie still: geänderte Dateien landen als `<datei>.sak-new` daneben. `.spec-agent/config.yml` wird einmal angelegt und danach nie angefasst.
 
 Später aktualisieren: `sak upgrade <zielpfad>` zeigt den Plan, `--apply` setzt ihn um (Ersetzen, Löschen, Konflikte anhand `.spec-agent/lock.json`; neue Config-Schlüssel werden gemeldet, nicht eingetragen).
+
+Für `claude` installiert das Kit Agent-Artefakte unter `.claude/` und merged in `.claude/settings.json`. Für `copilot` installiert es Agent-Artefakte unter `.github/copilot/` sowie `.vscode/settings.json` und `.vscode/tasks.json`; die Hook-Funktion wird dort über native VS-Code-Tasks angenähert.
 
 Geführt geht es im Kit-Repo mit dem Skill `/sak-init`: er stellt die Fragen, zeigt den Plan und wendet ihn erst nach Bestätigung an.
 

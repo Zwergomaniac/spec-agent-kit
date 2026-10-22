@@ -67,6 +67,21 @@ def test_without_apply_only_a_plan_is_printed(
     assert plan["text"][0].startswith("sak init (Plan)")
 
 
+def test_copilot_init_creates_only_copilot_agent_artifacts(
+    kit: Kit, target: Path, sak: Sak, init_args: list[str]
+) -> None:
+    args = [*init_args, "--agent-environment", "copilot"]
+    _, plan = sak(*args)
+    created = {a["path"] for a in plan["actions"] if a["action"] == "create"}
+    assert ".github/copilot/agents/sak-builder.md" in created
+    assert ".github/copilot/skills/sak-pipeline.md" in created
+    assert ".github/copilot/instructions.md" in created
+    assert ".vscode/settings.json" in created
+    assert ".vscode/tasks.json" in created
+    assert ".claude/agents/sak-builder.md" not in created
+    assert ".claude/settings.json" not in created
+
+
 def test_plan_lists_the_lock_last(kit: Kit, target: Path, sak: Sak, init_args: list[str]) -> None:
     _, plan = sak(*init_args)
     assert plan["actions"][-1]["path"] == ".spec-agent/lock.json"

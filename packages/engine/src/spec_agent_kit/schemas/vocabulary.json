@@ -33,6 +33,7 @@
     "marker_kind": ["deploy", "verified"],
     "ticker_kind": ["commit", "deploy", "verified"],
     "board_source": ["live", "snapshot"],
-    "hook_phase": ["start", "stop"]
+    "hook_phase": ["start", "stop"],
+    "agent_environment": ["claude", "copilot"]
   }
 }

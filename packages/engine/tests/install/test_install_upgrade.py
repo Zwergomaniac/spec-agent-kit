@@ -505,3 +505,18 @@ def test_upgrade_replaces_old_direct_uv_hooks_and_keeps_foreign_ones(
     assert commands[0] == "echo fremd"
     assert commands[1:] == ['sh "$CLAUDE_PROJECT_DIR/.spec-agent/sak" hook subagent-start || true']
     assert len(entries) == 2
+
+
+def test_switch_from_claude_to_copilot_is_planned_as_replace_and_delete(
+    kit: Kit, target: Path, sak: Sak, init_args: list[str]
+) -> None:
+    _installed(sak, init_args, target)
+    config = (target / ".spec-agent/config.yml").read_text(encoding="utf-8")
+    write(target, ".spec-agent/config.yml", config.replace("agent_environment: claude", "agent_environment: copilot"))
+    git(target, "commit", "-q", "-am", "switch to copilot")
+    plan = _upgrade(sak, target)
+    actions = _actions(plan)
+    assert actions[".github/copilot/agents/sak-builder.md"] == "create"
+    assert actions[".vscode/tasks.json"] == "create"
+    assert actions[".claude/agents/sak-builder.md"] == "delete"
+    assert actions[".claude/skills/sak-pipeline/SKILL.md"] == "delete"

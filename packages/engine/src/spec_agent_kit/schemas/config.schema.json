@@ -31,6 +31,16 @@
     "locale": {
       "const": "de"
     },
+    "agent_environment": {
+      "anyOf": [
+        {
+          "const": "claude"
+        },
+        {
+          "const": "copilot"
+        }
+      ]
+    },
     "pipeline": {
       "type": "object",
       "additionalProperties": false,
@@ -337,7 +347,8 @@
   },
   "required": [
     "schema",
-    "project"
+    "project",
+    "agent_environment"
   ],
   "$defs": {
     "nonEmptyString": {
