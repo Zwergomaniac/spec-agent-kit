@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Planned
+**Status**: Implemented (Kit 0.5.0)
 
 **Input**: Betreiber 2026-10-22. Er will ohne PC deployen können (GitHub Actions mit Freigabe, siehe `docs/howto/github-actions-deploy.md`). Gleichzeitig soll das lokale Deploy per SSH weiter möglich sein („wer weiß, wie lange GitHub Actions gratis sind“). Lücken im Skill `sak-pipeline` (0.4.0):
 - Er setzt immer selbst den Marker `deploy(NNN)`. Beim Workflow wäre der Marker doppelt.
