@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +14,18 @@ from install_support import Sak, make_kit, make_target
 from spec_agent_kit.cli import main
 from spec_agent_kit.install import kit as kit_module
 from spec_agent_kit.install.kit import Kit
+
+
+@pytest.fixture(autouse=True)
+def _sak_uv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gibt den Ort von uv vor, wie ein Nutzer es mit ``SAK_UV`` tut.
+
+    Die Hook-Probe von ``doctor`` läuft mit minimalem PATH und sucht uv nur an bekannten Orten;
+    in der CI liegt uv im Tool-Cache von setup-uv und wäre sonst nicht auffindbar.
+    """
+    found = shutil.which("uv")
+    if found and not os.environ.get("SAK_UV"):
+        monkeypatch.setenv("SAK_UV", found)
 
 
 @pytest.fixture
