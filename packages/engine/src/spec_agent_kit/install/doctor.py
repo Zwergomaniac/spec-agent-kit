@@ -400,9 +400,14 @@ def _check_dashboard(root: Path, url: str) -> Check:
     except ConfigError:
         mode, source = "key", None
     try:
-        with urllib.request.urlopen(
-            target, timeout=DASHBOARD_TIMEOUT_SECONDS, context=cloud.ssl_context()
-        ) as response:
+        # Eigener Opener: urlopen() merkt sich den Opener samt Proxy-Umgebung prozessweit, sodass
+        # ein früherer Aufruf spätere Änderungen von HTTPS_PROXY verdeckt.
+        handlers: list[urllib.request.BaseHandler] = []
+        context = cloud.ssl_context()
+        if context is not None:
+            handlers.append(urllib.request.HTTPSHandler(context=context))
+        opener = urllib.request.build_opener(*handlers)
+        with opener.open(target, timeout=DASHBOARD_TIMEOUT_SECONDS) as response:
             status = response.status
     except urllib.error.HTTPError as exc:
         status = exc.code
