@@ -67,8 +67,19 @@ orchestrator_only:            # Aktionen, die nie ein Subagent ausführt
   - deploy
   - ssh
 
-deploy:
-  command: null               # wird nur vom Orchestrator nach Freigabe des Betreibers ausgeführt
+deploy:                       # wird nur vom Orchestrator nach Freigabe des Betreibers ausgeführt
+  command: null               # Einfache Form: ein Befehl (entspricht einem Weg "default" mit marker: agent)
+  # Alternative mit mehreren benannten Wegen (nicht zusammen mit command; {spec} = Spec-Nummer, bei
+  # mehreren "084,085"). Prüfen ohne Ausführen: sak deploy plan [--method NAME] <spec>
+  # methods:
+  #   github:                   # Beispiel: GitHub-Workflow mit Freigabe auf GitHub
+  #     command: gh api -X POST repos/<OWNER>/<REPO>/actions/workflows/deploy.yml/dispatches -f ref=main -f "inputs[spec]={spec}"
+  #     marker: workflow        # workflow: der Workflow setzt den Marker deploy(NNN) | agent (Default): der Orchestrator
+  #   local:                    # Beispiel: Skript auf dem Rechner des Betreibers
+  #     command: bash deploy/deploy.sh {spec}
+  #     marker: agent
+  #     local_only: true        # nur lokal erlaubt, in Claude Cloud abgelehnt (Default false)
+  # default: github             # Weg für ein einfaches „deployen“; bei mehreren Wegen Pflicht
 
 dashboard:
   url: null                   # https://... des Dashboards, oder null

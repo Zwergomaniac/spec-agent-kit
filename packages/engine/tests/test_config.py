@@ -433,7 +433,11 @@ def test_immoagent_example_covers_inventory(tmp_path: Path) -> None:
     assert any("owner_id" in rule for rule in config["review"]["rules"])
     assert any("migrations" in path for path in config["escalation"]["paths"])
     assert any("Drosselung" in topic for topic in config["escalation"]["topics"])
-    assert config["deploy"]["command"]
+    deploy = config["deploy"]
+    assert deploy["default"] == "github"
+    assert deploy["methods"]["github"]["marker"] == "workflow"
+    assert deploy["methods"]["local"]["local_only"] is True
+    assert deploy["methods"]["local"]["marker"] == "agent"
     assert not any(".venv" in cmd for cmd in config["commands"]["test_fast"])
 
 

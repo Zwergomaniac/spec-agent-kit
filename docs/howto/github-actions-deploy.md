@@ -121,15 +121,27 @@ In `.spec-agent/config.yml` des Repos:
 
 ```yaml
 deploy:
-  command: gh api -X POST repos/<OWNER>/<REPO>/actions/workflows/deploy.yml/dispatches -f ref=main -f "inputs[spec]={spec}"
+  methods:
+    github:
+      command: gh api -X POST repos/<OWNER>/<REPO>/actions/workflows/deploy.yml/dispatches -f ref=main -f "inputs[spec]={spec}"
+      marker: workflow
+    local:                      # optional: das bisherige Deploy per SSH bleibt möglich
+      command: bash deploy/deploy.sh
+      marker: agent
+      local_only: true
+  default: github
 autonomy:
   push: after_merge
   deploy: after_approval
 ```
 
+- „deployen“ nimmt den Default (`github`), „deployen lokal“ den Weg `local`. `deploy.command` allein (alte Form) gilt weiter als ein Weg `default` mit `marker: agent`.
+- `{spec}` wird durch die Spec-Nummer ersetzt (bei mehreren `084,085`). Was passieren würde, zeigt `sak deploy plan [--method <name>] <spec>`; der Befehl führt nichts aus.
+- `local_only: true` lehnt der Agent in einer Cloud-Sitzung ab (SSH vom Rechner des Betreibers fehlt dort). Die Erkennung nutzt die Proxy-Variablen; `SAK_ENVIRONMENT=cloud|local` übersteuert sie.
+
 - Lokal braucht der Agent dafür das angemeldete `gh`. In Claude Cloud erledigt das der GitHub-Proxy der Sitzung. Benutze dort `gh api` (REST), weil GraphQL gesperrt ist.
 - Der Agent startet den Workflow nur nach deinem „deployen“. Danach wartet der Lauf auf GitHub zusätzlich auf deine Freigabe.
-- Den Marker `deploy(NNN)` setzt der Workflow, nicht der Agent.
+- Den Marker `deploy(NNN)` setzt der Workflow, nicht der Agent (`marker: workflow`). Der Agent berichtet nur „angestoßen, wartet auf Freigabe auf GitHub“.
 
 ## 7. Erster Testlauf
 

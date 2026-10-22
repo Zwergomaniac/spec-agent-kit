@@ -85,9 +85,17 @@ Nur nach ausdrücklicher Entscheidung des Betreibers für den genannten Lauf. `<
 
 Nur auf **ausdrückliche Anweisung** des Betreibers für diese Spec, und nur bei `autonomy.deploy: after_approval`. Bei `autonomy.deploy: never` deployst du nie, auch nicht auf Anweisung: Verweise auf den Betreiber, der selbst deployt. Ein Merge oder Push gilt nie als Deploy-Freigabe.
 
-Lies `deploy.command` aus `SAK config show`; ist es `null`, gibt es keinen Deploy. Führe den Befehl selbst aus (er steht in `orchestrator_only`, kein Subagent führt ihn aus). Committe nach erfolgreichem Deploy einen Marker mit dem Betreff `deploy(NNN): <kurz>`, wobei `NNN` die Spec-Nummer ist. Eine Live-Prüfung markierst du auf Anweisung mit `verified(NNN): <kurz>`. Das Dashboard liest diese Marker; sie müssen nach dem letzten Task-Commit der Spec liegen.
+Welchen Weg es gibt, sagt die Config (`deploy.methods`, Altform `deploy.command` = ein Weg `default`). Du ersetzt `{spec}` nie selbst, sondern nimmst den Befehl aus `sak deploy plan`.
 
-Bei `autonomy.push: after_merge` pushst du den Marker danach ohne Rückfrage mit `SAK run push <run>` (der Basis-Branch muss den Merge-Commit des Laufs enthalten). Bei `manual` bleibt der Marker lokal; sage es im Bericht.
+1. **Weg wählen.** „deployen“ ohne Zusatz heißt der Default-Weg. Nennt der Betreiber einen Namen („deployen lokal“, „deployen github“), nimm diesen Weg. Passt der Name zu keinem Weg, frage nach und rate nicht.
+2. **Plan holen**, ohne etwas auszuführen: `SAK deploy plan [--method <name>] <spec>` (mehrere Specs: `084,085`). Die Antwort nennt `method`, `command` (mit ersetztem `{spec}`), `marker`, `allowed` und `reason`. Ohne konfigurierten Weg gibt es keinen Deploy.
+3. **Ablehnung beachten.** Bei `allowed: false` führst du nichts aus. Nenne dem Betreiber den `reason` (zum Beispiel „lokales Deploy braucht SSH vom Rechner des Betreibers“, also ein `local_only`-Weg in einer Cloud-Sitzung) und schlage einen Weg aus `alternatives` vor, meist den Default oder den Workflow.
+4. **Befehl ausführen.** Führe `command` selbst aus (er steht in `orchestrator_only`, kein Subagent führt ihn aus).
+5. **Marker je nach `marker`:**
+   - `workflow`: Setze **keinen** Marker, der Workflow setzt ihn. Berichte: „Deploy angestoßen, wartet auf deine Freigabe auf GitHub“. Der Deploy gilt erst als abgeschlossen, wenn der Marker `deploy(NNN)` im Basis-Branch liegt.
+   - `agent`: Committe nach erfolgreichem Deploy einen Marker mit dem Betreff `deploy(NNN): <kurz>` (`NNN` = Spec-Nummer). Bei `autonomy.push: after_merge` pushst du ihn danach ohne Rückfrage mit `SAK run push <run>` (der Basis-Branch muss den Merge-Commit des Laufs enthalten). Bei `manual` bleibt der Marker lokal; sage es im Bericht.
+
+Eine Live-Prüfung markierst du auf Anweisung mit `verified(NNN): <kurz>`. Das Dashboard liest diese Marker; sie müssen nach dem letzten Task-Commit der Spec liegen.
 
 ## Regeln
 
