@@ -88,8 +88,16 @@ orchestrator_only:
   - ssh zum VPS
   - echter Versand (dry_run=False)
 
-deploy:
-  command: bash deploy/deploy-vps.sh
+deploy:                           # Deploy-Wege (Spec 014): „deployen“ = Default, „deployen lokal“ = benannter Weg
+  methods:
+    github:                       # GitHub Actions mit Freigabe auf GitHub; der Workflow setzt den Marker
+      command: gh api -X POST repos/Zwergomaniac/ImmoAgent/actions/workflows/deploy.yml/dispatches -f ref=main -f "inputs[spec]={spec}"
+      marker: workflow
+    local:                        # SSH vom Rechner des Betreibers; der Orchestrator setzt den Marker
+      command: bash deploy/deploy-vps.sh
+      marker: agent
+      local_only: true
+  default: github
 
 dashboard:
   url: null                       # sobald das Dashboard läuft, hier die URL eintragen

@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import difflib
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,12 +33,14 @@ __all__ = [
     "CONFIG_RELATIVE_PATH",
     "CORE_CLEAN_IGNORE",
     "CORE_PROTECTED",
+    "LEGACY_METHOD",
     "AuthModeError",
     "ConfigError",
     "EffectiveConfig",
     "NotInitializedError",
     "build_effective",
     "config_path",
+    "deploy_errors",
     "key_source",
     "load_config",
     "read_dashboard_key",
@@ -145,12 +148,87 @@ def _describe(error: ValidationError) -> list[dict[str, str]]:
     return [{"path": base, "message": message}]
 
 
+_METHOD_NAME = re.compile(r"^[a-z][a-z0-9_-]{0,39}$")
+LEGACY_METHOD = "default"
+"""Name des Wegs, zu dem das alte ``deploy.command`` wird (Spec 014 FR-001)."""
+
+
+def deploy_errors(raw: Any) -> list[dict[str, str]]:
+    """Regeln zu ``deploy``, die das Schema nicht ausdrückt (Spec 014 FR-001, SC-002)."""
+    deploy = raw.get("deploy") if isinstance(raw, dict) else None
+    if not isinstance(deploy, dict) or "methods" not in deploy:
+        if isinstance(deploy, dict) and deploy.get("default") is not None:
+            return [{"path": "deploy.default", "message": "deploy.default braucht deploy.methods"}]
+        return []
+    errors: list[dict[str, str]] = []
+    methods = deploy["methods"]
+    if deploy.get("command") is not None:
+        errors.append(
+            {
+                "path": "deploy.command",
+                "message": "deploy.command und deploy.methods gleichzeitig sind ungültig "
+                "(entweder die alte Form oder benannte Wege)",
+            }
+        )
+    for name in methods:
+        if not _METHOD_NAME.match(str(name)):
+            errors.append(
+                {
+                    "path": f"deploy.methods.{name}",
+                    "message": "ungültiger Name (erlaubt: a-z, 0-9, _ und -, Buchstabe zuerst)",
+                }
+            )
+    default = deploy.get("default")
+    if default is not None and default not in methods:
+        known = ", ".join(sorted(str(n) for n in methods)) or "keine"
+        errors.append(
+            {
+                "path": "deploy.default",
+                "message": f"unbekannter Weg '{default}' (bekannt: {known})",
+            }
+        )
+    elif default is None and len(methods) > 1:
+        errors.append(
+            {
+                "path": "deploy.default",
+                "message": "bei mehreren Wegen muss deploy.default einen davon nennen",
+            }
+        )
+    return errors
+
+
 def schema_errors(raw: Any) -> list[dict[str, str]]:
     """Alle Schemaverstöße als ``{path, message[, suggestion]}``."""
     result: list[dict[str, str]] = []
     for error in contracts.config_schema_errors(raw):
         result.extend(_describe(error))
+    if not result:
+        result.extend(deploy_errors(raw))
     return result
+
+
+def _normalize_deploy(deploy: dict[str, Any]) -> dict[str, Any]:
+    """Bringt ``deploy`` auf die eine wirksame Form: ``command`` (alt), ``methods``, ``default``.
+
+    Die Altform ``deploy.command`` wird zum Weg ``default`` mit ``marker: agent``.
+    """
+    methods_raw = deploy.get("methods")
+    if methods_raw:
+        methods = {
+            str(name): {
+                "command": spec["command"],
+                "marker": spec.get("marker", "agent"),
+                "local_only": bool(spec.get("local_only", False)),
+            }
+            for name, spec in methods_raw.items()
+        }
+        default = deploy.get("default") or next(iter(methods))
+        return {"command": None, "methods": methods, "default": default}
+    command = deploy.get("command")
+    if command:
+        legacy = {"command": command, "marker": "agent", "local_only": False}
+        return {"command": command, "methods": {LEGACY_METHOD: legacy}, "default": LEGACY_METHOD}
+    return {"command": None, "methods": {}, "default": None}
 
 
 def _deep_merge(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
@@ -176,6 +254,7 @@ def build_effective(root: Path, raw: Mapping[str, Any]) -> EffectiveConfig:
     guard = data["guard"]
     guard["protected_paths"] = _prepend_unique(CORE_PROTECTED, list(guard["protected_paths"]))
     guard["clean_ignore"] = _prepend_unique(CORE_CLEAN_IGNORE, list(guard["clean_ignore"]))
+    data["deploy"] = _normalize_deploy(data["deploy"])
     dashboard = data["dashboard"]
     if "push" not in dashboard:
         dashboard["push"] = "auto" if dashboard["url"] else "manual"

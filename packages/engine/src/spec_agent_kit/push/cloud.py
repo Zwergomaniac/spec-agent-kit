@@ -98,3 +98,22 @@ def proxy_mode_hint(env: Mapping[str, str] | None = None) -> str:
         "; in einer Cloud-Umgebung hinter Proxy: Network Secret anlegen und "
         f"{AUTH_ENV}=proxy setzen (docs/cloud.md)"
     )
+
+
+ENVIRONMENT_ENV: Final[str] = "SAK_ENVIRONMENT"
+ENVIRONMENTS: Final[tuple[str, ...]] = ("cloud", "local")
+
+
+def detect_environment(env: Mapping[str, str] | None = None) -> tuple[str, str]:
+    """``(cloud|local, Quelle)``. ``SAK_ENVIRONMENT`` übersteuert die Proxy-Heuristik (Spec 014).
+
+    Quelle ist ``env`` (ausdrückliche Übersteuerung) oder ``heuristic``. Ein ungültiger Wert
+    wirft ``ValueError``, ohne den Wert zu nennen.
+    """
+    environment = os.environ if env is None else env
+    value = environment.get(ENVIRONMENT_ENV, "").strip()
+    if value:
+        if value not in ENVIRONMENTS:
+            raise ValueError(f"{ENVIRONMENT_ENV} ist ungültig: erlaubt sind cloud und local")
+        return value, "env"
+    return ("cloud" if proxy_vars_set(environment) else "local"), "heuristic"

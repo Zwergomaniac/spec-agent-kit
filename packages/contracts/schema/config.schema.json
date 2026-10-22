@@ -197,6 +197,39 @@
               "type": "null"
             }
           ]
+        },
+        "methods": {
+          "type": "object",
+          "maxProperties": 10,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "$ref": "#/$defs/nonEmptyString"
+              },
+              "marker": {
+                "anyOf": [
+                  {
+                    "const": "agent"
+                  },
+                  {
+                    "const": "workflow"
+                  }
+                ]
+              },
+              "local_only": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "description": "Benannte Deploy-Wege (Spec 014). Nicht zusammen mit deploy.command. marker: agent (Default) = der Orchestrator setzt den Marker, workflow = der Workflow setzt ihn. local_only (Default false): nur auf dem Rechner des Betreibers."
+        },
+        "default": {
+          "$ref": "#/$defs/nonEmptyString"
         }
       }
     },

@@ -103,7 +103,7 @@ def test_defaults_follow_spec(tmp_path: Path) -> None:
     assert pipeline["roles"]["code_review"]["agent"] == "sak-code-reviewer"
     assert default_agent_name("ui_review") == "sak-ui-reviewer"
     assert data["stages"] == {"deployed": True, "verified": True}
-    assert data["deploy"] == {"command": None}
+    assert data["deploy"] == {"command": None, "methods": {}, "default": None}
     assert data["plugins"] == []
     dashboard = data["dashboard"]
     assert dashboard["token_env"] == "SAK_DASHBOARD_TOKEN"
@@ -433,7 +433,11 @@ def test_immoagent_example_covers_inventory(tmp_path: Path) -> None:
     assert any("owner_id" in rule for rule in config["review"]["rules"])
     assert any("migrations" in path for path in config["escalation"]["paths"])
     assert any("Drosselung" in topic for topic in config["escalation"]["topics"])
-    assert config["deploy"]["command"]
+    deploy = config["deploy"]
+    assert deploy["default"] == "github"
+    assert deploy["methods"]["github"]["marker"] == "workflow"
+    assert deploy["methods"]["local"]["local_only"] is True
+    assert deploy["methods"]["local"]["marker"] == "agent"
     assert not any(".venv" in cmd for cmd in config["commands"]["test_fast"])
 
 
