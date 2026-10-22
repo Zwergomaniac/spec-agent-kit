@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from spec_agent_kit import __version__
+from spec_agent_kit import deploy as deploy_module
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
 from spec_agent_kit.board.serve import (
@@ -148,6 +149,29 @@ def _pipeline(args: argparse.Namespace) -> int:
         return EXIT_USAGE
     _emit(result)
     return EXIT_OK
+
+
+def _deploy(args: argparse.Namespace) -> int:
+    """``sak deploy plan [--method NAME] <run|spec>...``: führt nichts aus (Spec 014)."""
+    root = find_root()
+    if root is None:
+        return _not_initialized()
+    try:
+        effective = load_config(root)
+    except NotInitializedError:
+        return _not_initialized()
+    except ConfigError as exc:
+        return _reject(exc.errors)
+    try:
+        result = deploy_module.plan(effective, args.target, args.method)
+    except RefusedError as exc:
+        _emit({"ok": False, "error": exc.message, **exc.extra})
+        return EXIT_REJECTED
+    except UsageError as exc:
+        _emit({"ok": False, "error": str(exc)})
+        return EXIT_USAGE
+    _emit(result)
+    return EXIT_OK if result["allowed"] else EXIT_REJECTED
 
 
 def _board(args: argparse.Namespace) -> int:
@@ -418,6 +442,17 @@ def _build_parser() -> argparse.ArgumentParser:
     config_sub = config.add_subparsers(dest="config_command", required=True)
     config_sub.add_parser("check", help="Prüft die Konfiguration (Schema, Agents, Frontmatter)")
     config_sub.add_parser("show", help="Gibt die wirksame Konfiguration als JSON aus")
+    deploy = sub.add_parser("deploy", help="Deploy-Wege (Spec 014)")
+    deploy_sub = deploy.add_subparsers(dest="deploy_command", required=True)
+    deploy_plan = deploy_sub.add_parser(
+        "plan", help="Löst Weg und Befehl auf, ohne etwas auszuführen (JSON)"
+    )
+    deploy_plan.add_argument(
+        "--method", default=None, help="Name des Wegs (Default: deploy.default)"
+    )
+    deploy_plan.add_argument(
+        "target", nargs="+", help="Lauf-ID, Spec-Verzeichnis oder Nummer (mehrere: 084,085)"
+    )
     board = sub.add_parser("board", help="Board-Dokument sak.board/1 (Spec 006)")
     shape = board.add_mutually_exclusive_group()
     shape.add_argument("--json", action="store_true", help="Board als JSON (Standard)")
@@ -538,6 +573,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _doctor(args)
     if args.command == "dashboard":
         return _dashboard(args)
+    if args.command == "deploy":
+        return _deploy(args)
     if args.command == "push":
         return _push(args)
     if args.command == "migrate":

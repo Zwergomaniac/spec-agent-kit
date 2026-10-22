@@ -103,7 +103,7 @@ def test_defaults_follow_spec(tmp_path: Path) -> None:
     assert pipeline["roles"]["code_review"]["agent"] == "sak-code-reviewer"
     assert default_agent_name("ui_review") == "sak-ui-reviewer"
     assert data["stages"] == {"deployed": True, "verified": True}
-    assert data["deploy"] == {"command": None}
+    assert data["deploy"] == {"command": None, "methods": {}, "default": None}
     assert data["plugins"] == []
     dashboard = data["dashboard"]
     assert dashboard["token_env"] == "SAK_DASHBOARD_TOKEN"
