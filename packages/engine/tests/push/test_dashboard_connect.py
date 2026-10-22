@@ -657,7 +657,7 @@ def test_connect_auth_key_replaces_an_existing_auth_line(
     code, *_ = run(*argv, "--no-test-push", stdin=key)
     text = (proj / CONFIG_PATH).read_text(encoding="utf-8")
     assert code == 0 and "auth: key" in text and "auth: proxy" not in text
-    assert text.count("auth:") == 1
+    assert len(re.findall(r"^[ ]+auth:", text, re.MULTILINE)) == 1
 
 
 def test_status_shows_the_auth_mode(proj: Path, run: Run, monkeypatch: pytest.MonkeyPatch) -> None:
