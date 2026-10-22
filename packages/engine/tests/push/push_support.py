@@ -28,6 +28,8 @@ class FakeDashboard:
         self.reject: Callable[[dict[str, Any]], str | None] = lambda event: None
         self.board_error: str | None = None
         self.redirect_to: str | None = None
+        self.auth_headers: list[str | None] = []  # Authorization je Anfrage (None = fehlt)
+        self.proxy_injects = False  # wie ein Proxy mit Network Secret: setzt den Bearer selbst
         self.lock = threading.Lock()
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
@@ -39,6 +41,18 @@ class FakeDashboard:
     def start(self) -> FakeDashboard:
         self.thread.start()
         return self
+
+    def enable_tls(self, certfile: Path, keyfile: Path) -> None:
+        """Vor ``start`` aufrufen: der Server spricht dann HTTPS (nur Loopback)."""
+        import ssl
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(str(certfile), str(keyfile))
+        self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
+
+    @property
+    def tls_url(self) -> str:
+        return f"https://127.0.0.1:{self.httpd.server_address[1]}"
 
     def stop(self) -> None:
         self.httpd.shutdown()
@@ -63,13 +77,18 @@ class FakeDashboard:
             def do_POST(self) -> None:
                 length = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(length)
+                received = self.headers.get("Authorization")
+                outer.auth_headers.append(received)
+                effective = (
+                    f"Bearer {KEY}" if outer.proxy_injects and received is None else received
+                )
                 if outer.redirect_to:
                     self.send_response(302)
                     self.send_header("Location", outer.redirect_to)
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
-                if outer.auth_status or self.headers.get("Authorization") != f"Bearer {KEY}":
+                if outer.auth_status or effective != f"Bearer {KEY}":
                     self._json(outer.auth_status or 401, {"error": "unauthorized"})
                     return
                 if outer.raw_status:
