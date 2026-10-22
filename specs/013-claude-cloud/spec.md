@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Planned
+**Status**: Implemented (Kit 0.4.0; SC-003 Abnahme durch Betreiber offen)
 
 **Input**: Erster Lauf von ImmoAgent in einer Claude-Code-Cloud-Sitzung am 2026-10-21. Der Builder lief, aber specboard zeigte nichts. Befunde:
 - `doctor` meldete `dashboard: … Tunnel connection failed: 403 Forbidden`. Das ist der ausgehende Proxy der Cloud-Umgebung (Netzzugriff „Trusted“), nicht specboard.
