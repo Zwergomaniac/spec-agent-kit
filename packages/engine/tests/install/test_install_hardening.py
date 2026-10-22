@@ -208,7 +208,7 @@ def test_upgrade_replaces_obsolete_kit_entries_and_keeps_foreign_ones(
 ) -> None:
     _installed(sak, init_args, target)
     _change_test_command(target)
-    bump_version(kit, "0.4.1")
+    bump_version(kit, "0.5.1")
     code, plan = sak("upgrade", str(target), "--no-sync")
     assert code == 0
     assert plan["permissions"]["allow"]["remove"] == [OLD_TEST]
@@ -246,7 +246,7 @@ def test_upgrade_from_a_lock_without_settings_allow(
     ]
     settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     _change_test_command(target)
-    bump_version(kit, "0.4.1")
+    bump_version(kit, "0.5.1")
     code, plan = sak("upgrade", str(target), "--no-sync")
     assert code == 0
     assert any("Altbestand" in w and "Bash(git switch *)" in w for w in plan["warnings"])
@@ -274,7 +274,7 @@ def test_upgrade_adds_the_session_start_hook(
     ]
     path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
     _commit(target, "ohne Kit-SessionStart")
-    bump_version(kit, "0.4.1")
+    bump_version(kit, "0.5.1")
     code, _ = sak("upgrade", str(target), "--no-sync", "--apply")
     assert code == 0
     entries = read_json(path)["hooks"]["SessionStart"]
