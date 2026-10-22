@@ -192,6 +192,12 @@ def test_ca_bundle_from_the_environment_is_used(
     monkeypatch: pytest.MonkeyPatch,
     variable: str,
 ) -> None:
+    # Deterministisch auf langsamen Runnern: großzügiges Timeout, keine Proxy-Variablen der
+    # Runner-Umgebung; der Server bindet fest an 127.0.0.1 (kein localhost/IPv6-Umweg).
+    monkeypatch.setattr(client, "TIMEOUT_S", 30.0)
+    for name in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
     server = FakeDashboard()
     server.enable_tls(*selfsigned)
     server.start()

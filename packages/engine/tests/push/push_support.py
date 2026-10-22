@@ -48,7 +48,11 @@ class FakeDashboard:
 
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(str(certfile), str(keyfile))
-        self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
+        # Handshake erst im Handler-Thread (pro Verbindung), nicht im accept() der Serve-Schleife:
+        # ein langsamer oder abgebrochener Handshake blockiert so nie den Server.
+        self.httpd.socket = context.wrap_socket(
+            self.httpd.socket, server_side=True, do_handshake_on_connect=False
+        )
 
     @property
     def tls_url(self) -> str:
