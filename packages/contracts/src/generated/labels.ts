@@ -105,6 +105,10 @@ export const labelsDe = {
   "hook_phase": {
     "start": "Start",
     "stop": "Stopp"
+  },
+  "agent_environment": {
+    "claude": "Claude",
+    "copilot": "Copilot"
   }
 } as const
 

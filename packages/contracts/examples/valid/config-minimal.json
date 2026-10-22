@@ -1,4 +1,5 @@
 {
   "schema": "sak.config/1",
+  "agent_environment": "claude",
   "project": { "key": "ai-forge", "name": "AI-Forge" }
 }

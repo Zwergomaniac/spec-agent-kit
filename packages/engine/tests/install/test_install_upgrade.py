@@ -520,6 +520,15 @@ def test_switch_from_claude_to_copilot_is_planned_as_replace_and_delete(
     assert actions[".vscode/tasks.json"] == "create"
     assert actions[".claude/agents/sak-builder.md"] == "delete"
     assert actions[".claude/skills/sak-pipeline/SKILL.md"] == "delete"
+    migration = plan["migration"]
+    assert migration["kind"] == "agent_environment_switch"
+    assert migration["from_environment"] == "claude"
+    assert migration["to_environment"] == "copilot"
+    assert ".github/copilot/agents/sak-builder.md" in migration["artifacts_to_add"]
+    assert ".vscode/tasks.json" in migration["artifacts_to_add"]
+    assert ".claude/agents/sak-builder.md" in migration["artifacts_to_delete"]
+    assert migration["operator_actions"]
+    assert any("VS-Code-Tasks" in item for item in migration["operator_actions"])
 
 
 def test_switch_from_copilot_to_claude_is_planned_as_replace_and_delete(
@@ -553,3 +562,29 @@ def test_switch_from_copilot_to_claude_is_planned_as_replace_and_delete(
     assert actions[".claude/skills/sak-pipeline/SKILL.md"] == "create"
     assert actions[".github/copilot/agents/sak-builder.md"] == "delete"
     assert actions[".vscode/tasks.json"] == "delete"
+    migration = plan["migration"]
+    assert migration["kind"] == "agent_environment_switch"
+    assert migration["from_environment"] == "copilot"
+    assert migration["to_environment"] == "claude"
+    assert ".claude/agents/sak-builder.md" in migration["artifacts_to_add"]
+    assert ".github/copilot/agents/sak-builder.md" in migration["artifacts_to_delete"]
+    assert migration["operator_actions"]
+    assert any("hook" in item.lower() and "claude" in item.lower() for item in migration["operator_actions"])
+
+
+def test_switch_plan_surfaces_conflicts_and_operator_actions(
+    kit: Kit, target: Path, sak: Sak, init_args: list[str]
+) -> None:
+    _installed(sak, init_args, target)
+    config = (target / ".spec-agent/config.yml").read_text(encoding="utf-8")
+    write(target, ".spec-agent/config.yml", config.replace("agent_environment: claude", "agent_environment: copilot"))
+    write(target, ".github/copilot/agents/sak-builder.md", "lokal anders\n")
+    git(target, "add", "-A")
+    git(target, "commit", "-q", "-m", "switch with conflict")
+    plan = _upgrade(sak, target)
+    migration = plan["migration"]
+    assert ".github/copilot/agents/sak-builder.md" in migration["conflicts"]
+    assert any(".sak-new" not in item for item in migration["operator_actions"])
+    text = "\n".join(plan["text"])
+    assert "Migration: Agent-Umgebung claude -> copilot" in text
+    assert "Betreiberaktion:" in text

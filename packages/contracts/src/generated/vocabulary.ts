@@ -107,6 +107,10 @@ export const vocabulary = {
     "hook_phase": [
       "start",
       "stop"
+    ],
+    "agent_environment": [
+      "claude",
+      "copilot"
     ]
   }
 } as const
@@ -127,5 +131,6 @@ export type MarkerKind = (typeof vocabulary.levels.marker_kind)[number]
 export type TickerKind = (typeof vocabulary.levels.ticker_kind)[number]
 export type BoardSource = (typeof vocabulary.levels.board_source)[number]
 export type HookPhase = (typeof vocabulary.levels.hook_phase)[number]
+export type AgentEnvironment = (typeof vocabulary.levels.agent_environment)[number]
 
 export type VocabularyLevel = keyof typeof vocabulary.levels

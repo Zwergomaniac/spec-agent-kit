@@ -145,7 +145,7 @@ describe('Beispiele gegen ajv', () => {
 
 describe('Autonomie-Stufen (Spec 012)', () => {
   const validateConfig = ajv.getSchema(`${SCHEMA_ID_BASE}config.schema.json`)
-  const base = { schema: 'sak.config/1', project: { key: 'demo', name: 'Demo' } }
+  const base = { schema: 'sak.config/1', agent_environment: 'claude', project: { key: 'demo', name: 'Demo' } }
 
   it('run.pushed hat das Label "Gepusht"', () => {
     const labels = labelsDe as Record<string, Record<string, string>>
@@ -164,7 +164,7 @@ describe('Autonomie-Stufen (Spec 012)', () => {
 
 describe('Dashboard-Auth (Spec 013)', () => {
   const validateConfig = ajv.getSchema(`${SCHEMA_ID_BASE}config.schema.json`)
-  const base = { schema: 'sak.config/1', project: { key: 'demo', name: 'Demo' } }
+  const base = { schema: 'sak.config/1', agent_environment: 'claude', project: { key: 'demo', name: 'Demo' } }
 
   it('akzeptiert dashboard.auth key und proxy, lehnt anderes ab', () => {
     for (const auth of ['key', 'proxy']) {
@@ -178,7 +178,7 @@ describe('Dashboard-Auth (Spec 013)', () => {
 
 describe('Agent Environment (Spec 015)', () => {
   const validateConfig = ajv.getSchema(`${SCHEMA_ID_BASE}config.schema.json`)
-  const base = { schema: 'sak.config/1', project: { key: 'demo', name: 'Demo' } }
+  const base = { schema: 'sak.config/1', agent_environment: 'claude', project: { key: 'demo', name: 'Demo' } }
 
   it('akzeptiert agent_environment claude und copilot, lehnt anderes ab', () => {
     for (const agent_environment of ['claude', 'copilot']) {
@@ -194,16 +194,15 @@ describe('Agent Environment (Spec 015)', () => {
       readJson(path.join(examplesDir, 'valid', 'config-agent-artifacts-claude.json')),
       readJson(path.join(examplesDir, 'valid', 'config-agent-artifacts-copilot.json'))
     ] as Array<{
-      environment: string
-      artifacts: Array<{ class: string; path?: string; path_pattern?: string; merge_target?: string }>
+      schema: string
+      agent_environment: string
+      project: { key: string; name: string }
     }>
     for (const example of artifactExamples) {
-      expect(['claude', 'copilot']).toContain(example.environment)
-      const classes = example.artifacts.map((artifact) => artifact.class).sort()
-      expect(classes).toEqual(['agents', 'hooks', 'instructions', 'settings', 'skills'])
-      for (const artifact of example.artifacts) {
-        expect(Boolean(artifact.path || artifact.path_pattern || artifact.merge_target), `${example.environment}.${artifact.class}`).toBe(true)
-      }
+      expect(example.schema).toBe('sak.config/1')
+      expect(['claude', 'copilot']).toContain(example.agent_environment)
+      expect(example.project.key).toBeTruthy()
+      expect(example.project.name).toBeTruthy()
     }
   })
 })

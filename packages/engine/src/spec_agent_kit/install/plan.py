@@ -91,6 +91,7 @@ class Plan:
     permissions: dict[str, Any] | None = None
     """Allow- und Deny-Regeln des Kits mit Herkunft (Spec 011 US6 Befund 9, B13)."""
     settings_allow: list[str] = field(default_factory=list)
+    migration: dict[str, Any] | None = None
 
     def changes(self) -> list[Action]:
         """Alle Aktionen außer ``skip``."""
@@ -135,6 +136,7 @@ class Plan:
             lines.append(f"  {marks[kind]} {kind:<8} {engine_prefix} ({count} Dateien)")
         for key in self.config_keys:
             lines.append(f"  ? Config-Schlüssel {key['path']} fehlt (Default: {key['default']!r})")
+        lines.extend(self.migration_lines())
         lines.extend(self.permission_lines())
         lines.extend(f"WARNUNG: {w}" for w in self.warnings)
         lines.extend(f"VORSCHLAG: {item['text']}" for item in self.suggestions)
@@ -162,6 +164,26 @@ class Plan:
             lines.append(f"  - allow {rule}  (Kit-Eintrag, nicht mehr gewünscht)")
         return lines
 
+    def migration_lines(self) -> list[str]:
+        info = self.migration
+        if info is None:
+            return []
+        lines = [
+            f"Migration: Agent-Umgebung {info['from_environment']} -> {info['to_environment']}"
+        ]
+        for key, label in (
+            ("artifacts_to_add", "hinzu"),
+            ("artifacts_to_replace", "ersetzen"),
+            ("artifacts_to_delete", "entfernen"),
+            ("conflicts", "Konflikte"),
+        ):
+            items = info.get(key, [])
+            if items:
+                lines.append(f"  {label}: {', '.join(items)}")
+        for action in info.get("operator_actions", []):
+            lines.append(f"  Betreiberaktion: {action}")
+        return lines
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "ok": True,
@@ -178,6 +200,7 @@ class Plan:
             "warnings": self.warnings,
             "suggestions": self.suggestions,
             "permissions": self.permissions,
+            "migration": self.migration,
             "text": self.text(),
         }
 
@@ -773,6 +796,7 @@ def build_upgrade_plan(
     stamp = now or contracts.now_rfc3339()
     raw_config = read_raw(target)
     spec = get_agent_environment(str(raw_config.get("agent_environment", "claude")))
+    switch_from = _detect_environment_switch(old, spec.name)
     managed = kit.managed_files(spec.name)
     files = dict(old.files)
 
@@ -841,6 +865,8 @@ def build_upgrade_plan(
     extra = allow_entries(_config_commands(target))
     plan.actions.append(_settings_action(kit, target, extra, plan, owned_allow=old.settings_allow, environment=spec.name))
     _finish(plan, kit, old, files, stamp)
+    if switch_from is not None:
+        _set_switch_migration(plan, switch_from, spec.name)
 
     errors: list[dict[str, str]] = []
     _check_dirty(target, plan.actions, allow_dirty, errors)
@@ -858,3 +884,46 @@ def _conflict(path: str, data: bytes, local_hash: str | None, reason: str) -> Ac
         expect=local_hash,
         hint=_diff_hint(path),
     )
+
+
+def _detect_environment_switch(old: Lock, new_environment: str) -> str | None:
+    old_paths = set(old.files)
+    has_claude = any(path.startswith(".claude/") for path in old_paths)
+    has_copilot = any(
+        path.startswith(".github/copilot/") or path.startswith(".vscode/") for path in old_paths
+    )
+    if new_environment == "copilot" and has_claude and not has_copilot:
+        return "claude"
+    if new_environment == "claude" and has_copilot and not has_claude:
+        return "copilot"
+    return None
+
+
+def _switch_operator_actions(from_environment: str, to_environment: str) -> list[str]:
+    actions = [
+        f"Migrationsplan prüfen, bevor verwaltete {from_environment}-Artefakte entfernt und {to_environment}-Artefakte angewendet werden",
+        "Lokale Konfliktdateien und .sak-new-Dateien vor dem Apply manuell vergleichen",
+    ]
+    if to_environment == "copilot":
+        actions.append(
+            "Copilot-Approximationen prüfen: Hooks laufen über VS-Code-Tasks und bewusste Claude-Abweichungen bleiben dokumentiert"
+        )
+    else:
+        actions.append(
+            "Claude-Zielpfade und native Hooks prüfen; Copilot-spezifische Approximationen entfallen im Zielprojekt"
+        )
+    return actions
+
+
+def _set_switch_migration(plan: Plan, from_environment: str, to_environment: str) -> None:
+    actions = [action for action in plan.actions if not action.quiet]
+    plan.migration = {
+        "kind": "agent_environment_switch",
+        "from_environment": from_environment,
+        "to_environment": to_environment,
+        "artifacts_to_add": sorted(action.path for action in actions if action.kind == CREATE),
+        "artifacts_to_replace": sorted(action.path for action in actions if action.kind in (REPLACE, MERGE)),
+        "artifacts_to_delete": sorted(action.path for action in actions if action.kind == DELETE),
+        "conflicts": sorted(action.path for action in actions if action.kind == CONFLICT),
+        "operator_actions": _switch_operator_actions(from_environment, to_environment),
+    }

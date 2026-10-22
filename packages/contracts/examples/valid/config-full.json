@@ -1,5 +1,6 @@
 {
   "schema": "sak.config/1",
+  "agent_environment": "claude",
   "project": { "key": "demo-app", "name": "Demo App", "base_branch": "main" },
   "locale": "de",
   "pipeline": {

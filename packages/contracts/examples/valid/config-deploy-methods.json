@@ -1,5 +1,6 @@
 {
   "schema": "sak.config/1",
+  "agent_environment": "claude",
   "project": { "key": "demo", "name": "Demo" },
   "deploy": {
     "methods": {

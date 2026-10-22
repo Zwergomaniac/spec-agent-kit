@@ -1,1 +1,1 @@
-{ "schema": "sak.config/1", "project": { "key": "demo", "name": "Demo" }, "dashboard": { "url": "https://dashboard.example.org", "auth": "key" } }
+{ "schema": "sak.config/1", "agent_environment": "claude", "project": { "key": "demo", "name": "Demo" }, "dashboard": { "url": "https://dashboard.example.org", "auth": "key" } }

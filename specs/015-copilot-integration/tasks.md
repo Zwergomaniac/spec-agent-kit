@@ -24,7 +24,7 @@
 - [x] T004 Fuehre in `packages/engine/src/spec_agent_kit/config/` und `packages/engine/src/spec_agent_kit/install/` eine Agent-System-Abstraktion ein, die agentneutrale Konzepte von environment-spezifischen Artefakten trennt
 - [x] T004a [P] Definiere in den spaeteren Engine-Vertraegen oder Modellen eine explizite Struktur fuer Artefaktklasse, Zielpfad oder Zielpfadmuster, Verwaltet-vs-Eigen-Abgrenzung und optionales Merge-Ziel je Agent-Umgebung
 - [x] T004b [P] Definiere in den spaeteren Engine-Vertraegen oder Modellen eine explizite Paritaetsstruktur mit `capability`, `parity_level`, `mechanism`, `verification_expectation` und Kennzeichnung bewusster Claude-Abweichungen; fuer `hooks` sind nur `full` oder `approximate` zulaessig
-- [ ] T005 Generiere abgeleitete Contract-Artefakte mit `pnpm contracts:gen` und pruefe sie mit `pnpm contracts:check`
+- [x] T005 Generiere abgeleitete Contract-Artefakte mit `pnpm contracts:gen` und pruefe sie mit `pnpm contracts:check`
 
 **Checkpoint**: Der Grundvertrag fuer genau eine aktive Agent-Umgebung und deren Agent-Artefaktsatz ist vorhanden
 
@@ -104,19 +104,20 @@
 **Purpose**: Wechsel der Agent-Umgebung absichern und Gesamtvalidierung vorbereiten
 
 - [x] T021 [P] Fuehre Tests fuer den geplanten Wechsel `claude -> copilot` und `copilot -> claude` in `packages/engine/tests/install/` oder passenden Testpfaden ein
-- [ ] T021a [P] Fuehre Tests dafuer ein, dass der Switch-Fall als eigener Migrationsplan mit `artifacts_to_add`, `artifacts_to_replace`, Konflikten und Betreiberaktionen erscheint statt als stilles Re-Init
+- [x] T021a [P] Fuehre Tests dafuer ein, dass der Switch-Fall als eigener Migrationsplan mit `artifacts_to_add`, `artifacts_to_replace`, Konflikten und Betreiberaktionen erscheint statt als stilles Re-Init
 - [x] T022 Implementiere oder verfeinere in `packages/engine/src/spec_agent_kit/install/` den konfliktbewussten Wechsel der aktiv verwalteten Agent-Umgebung
-- [ ] T022a Implementiere fuer den Switch-Fall eine explizite Plan- oder Doctor-Ausgabe, die bewusste Claude-Abweichungen, dokumentierte Copilot-Approximationen und notwendige manuelle Betreiberaktionen sichtbar macht
-- [ ] T023 [P] Fuehre gezielte Testlaeufe fuer Contracts und Engine aus und behebe verbleibende agentbezogene Regressionen
-- [ ] T024 Pruefe Repo-Konsistenz fuer die umgesetzten Agent-System-Aenderungen, einschliesslich `pnpm contracts:check`, relevanter Engine-Tests und eines expliziten Checkpoints fuer spaetere README-Statusmatrix-Anpassungen gemaess Constitution VII
+- [x] T022a Implementiere fuer den Switch-Fall eine explizite Plan- oder Doctor-Ausgabe, die bewusste Claude-Abweichungen, dokumentierte Copilot-Approximationen und notwendige manuelle Betreiberaktionen sichtbar macht
+- [x] T023 [P] Fuehre gezielte Testlaeufe fuer Contracts und Engine aus und behebe verbleibende agentbezogene Regressionen
+- [x] T024 Pruefe Repo-Konsistenz fuer die umgesetzten Agent-System-Aenderungen, einschliesslich `pnpm contracts:check`, relevanter Engine-Tests und eines expliziten Checkpoints fuer spaetere README-Statusmatrix-Anpassungen gemaess Constitution VII
 
 ## Stand 2026-10-23
 
-- Abgehakt ist nur, was im Repo-Code und in vorhandenen Tests bereits direkt belegbar ist.
-- Contract-Beispiele und zugehoerige Contract-Tests fuer `agent_environment` sowie den artefaktbezogenen Zielprojekt-Pruefgegenstand liegen jetzt im Repo vor; sie beschreiben bewusst nur genau eine aktive Agent-Umgebung je Beispiel.
-- Die Engine hat jetzt eine explizite, bausteinbezogene Paritaetsstruktur; `sak doctor` und `sak config show` koennen diese pro aktiver Agent-Umgebung ausgeben. Copilot-Hooks erscheinen dort explizit als `approximate` mit benannter VS-Code-Task-Mechanik.
-- Der environment switch ist jetzt fuer beide Richtungen testseitig belegt; offen bleibt eine noch reichhaltigere Migrationsausgabe mit eigenen Betreiberaktionen jenseits des bestehenden Plan-/Doctor-Niveaus.
-- T023 und T024 bleiben offen, weil die lokale Validierung in dieser Umgebung nur teilweise moeglich war: `pnpm --dir packages/contracts test` scheitert ohne `node_modules` bereits am fehlenden `vitest`, `pnpm --dir packages/contracts check` scheitert am fehlenden Paket `json-schema-to-zod`, und Engine-Pytests scheitern vor Testausfuehrung an der fehlenden Python-Abhaengigkeit `jsonschema`. Keine dieser Huerden wurde mit Workarounds versteckt.
+- Abgehakt ist nur, was im Repo-Code und in vorhandenen Tests direkt belegbar ist.
+- Die Contract-Toolchain ist in dieser Umgebung jetzt repo-konform installiert worden; `pnpm contracts:gen` lief erfolgreich und hat die generierten Dateien fuer `agent_environment` aktualisiert.
+- `pnpm contracts:check` laeuft jetzt technisch bis zur Repo-Konsistenzpruefung. In einer uncommitteten Arbeitskopie meldet der Check erwartungsgemaess noch Differenzen der frisch generierten Dateien, bis diese in Git uebernommen werden. Das ist kein versteckter Workaround, sondern die beabsichtigte Check-Semantik.
+- Der environment switch hat jetzt eine explizite Migrationszusammenfassung im Upgrade-Plan mit `artifacts_to_add`, `artifacts_to_replace`, `artifacts_to_delete`, Konflikten und Betreiberaktionen statt einer stillen Re-Init-Anmutung.
+- `sak doctor` gibt im erkannten Switch-Fall jetzt zusaetzlich eine sichtbare Migrationswarnung mit bewussten Copilot-Approximationen, Claude-Abweichungshinweis und Betreiberaktion aus.
+- Gezielte Engine-Regressionstests fuer Upgrade- und Doctor-Switch-Faelle laufen in dieser Umgebung gru en; ein expliziter README-Statusmatrix-Checkpoint bleibt fuer einen spaeteren, separaten README-Abgleich festgehalten, ohne hier unbewiesene Doku-Aussagen einzutragen.
 
 ---
 

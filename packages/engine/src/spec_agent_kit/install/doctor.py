@@ -24,7 +24,7 @@ from spec_agent_kit.install.kit import (
     SETTINGS_TARGET,
     sha256_of,
 )
-from spec_agent_kit.install.lock import read_lock
+from spec_agent_kit.install.lock import Lock, read_lock
 from spec_agent_kit.install.probe import probe_commands
 from spec_agent_kit.install.settings import (
     ENGINE_MARKER,
@@ -87,6 +87,50 @@ def _check_agent_parity(root: Path) -> Check:
         )
     check["items"] = entries
     return check
+
+
+def _detect_environment_switch(lock: Lock, environment: str) -> str | None:
+    locked_paths = set(lock.files)
+    has_claude = any(path.startswith(".claude/") for path in locked_paths)
+    has_copilot = any(
+        path.startswith(".github/copilot/") or path.startswith(".vscode/") for path in locked_paths
+    )
+    if environment == "copilot" and has_claude and not has_copilot:
+        return "claude"
+    if environment == "claude" and has_copilot and not has_claude:
+        return "copilot"
+    return None
+
+
+def _check_switch_migration(root: Path) -> Check | None:
+    try:
+        lock = read_lock(root)
+    except InstallError:
+        return None
+    if lock is None:
+        return None
+    try:
+        config = load_config(root)
+        environment = str(config.data.get("agent_environment", "claude"))
+    except ConfigError:
+        return None
+    previous = _detect_environment_switch(lock, environment)
+    if previous is None:
+        return None
+    parity = parity_for(environment)
+    approximate = [item["capability"] for item in parity if item["parity_level"] == "approximate"]
+    detail = [f"Switch erkannt: {previous} -> {environment}"]
+    if approximate:
+        detail.append("bewusste Copilot-Approximationen: " + ", ".join(approximate))
+    if environment == "copilot":
+        detail.append("Betreiberaktion: VS-Code-Tasks fuer Hook-Ersatz und verbleibende Claude-Abweichungen pruefen")
+    else:
+        detail.append("Betreiberaktion: Claude-Hooks und Zielpfade nach der Rueckmigration pruefen")
+    entry = _entry("switch_migration", True, "; ".join(detail), required=False)
+    entry["warning"] = True
+    entry["from_environment"] = previous
+    entry["to_environment"] = environment
+    return entry
 
 
 def _check_lock(root: Path) -> Check:
@@ -532,5 +576,8 @@ def run_doctor(
         url = None
     if url:
         checks.append(_check_dashboard(root, str(url)))
+    switch = _check_switch_migration(root)
+    if switch is not None:
+        checks.append(switch)
     ok = all(c["ok"] for c in checks if c["required"])
     return {"ok": ok, "checks": checks}
