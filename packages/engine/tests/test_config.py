@@ -109,6 +109,7 @@ def test_defaults_follow_spec(tmp_path: Path) -> None:
     assert dashboard["token_env"] == "SAK_DASHBOARD_TOKEN"
     assert dashboard["share_commit_subjects"] is False
     assert dashboard["push"] == "manual"
+    assert dashboard["auth"] == "key"
 
 
 def test_roles_of_defaults_equal_vocabulary(tmp_path: Path) -> None:
@@ -206,7 +207,7 @@ def test_dashboard_key_comes_from_env_or_key_file(tmp_path: Path) -> None:
 
 def test_config_has_no_field_for_the_secret_itself() -> None:
     dashboard = contracts.load_schema("config")["properties"]["dashboard"]["properties"]
-    assert set(dashboard) == {"url", "token_env", "push", "share_commit_subjects"}
+    assert set(dashboard) == {"url", "token_env", "push", "auth", "share_commit_subjects"}
 
 
 # ---------------------------------------------------------------------------
@@ -557,3 +558,31 @@ def test_invalid_autonomy_value_is_reported_with_the_allowed_values(tmp_path: Pa
         {"schema": "sak.config/1", "project": {}, "autonomy": {"push": "always"}}
     )
     assert errors and errors[0]["path"] == "autonomy.push" and "after_merge" in errors[0]["message"]
+
+
+# ---------------------------------------------------------------------------
+# dashboard.auth (Spec 013)
+# ---------------------------------------------------------------------------
+
+
+def test_dashboard_auth_accepts_only_key_or_proxy() -> None:
+    assert schema_errors({**MINIMAL, "dashboard": {"auth": "proxy"}}) == []
+    assert schema_errors({**MINIMAL, "dashboard": {"auth": "key"}}) == []
+    errors = schema_errors({**MINIMAL, "dashboard": {"auth": "token"}})
+    assert [e["path"] for e in errors] == ["dashboard.auth"]
+
+
+def test_resolve_auth_env_overrides_config(tmp_path: Path) -> None:
+    from spec_agent_kit.config import AuthModeError, resolve_auth
+
+    plain = build_effective(tmp_path, MINIMAL)
+    assert resolve_auth(plain, {}) == ("key", "config")
+    proxied = build_effective(tmp_path, {**MINIMAL, "dashboard": {"auth": "proxy"}})
+    assert resolve_auth(proxied, {}) == ("proxy", "config")
+    assert resolve_auth(proxied, {"SAK_DASHBOARD_AUTH": "key"}) == ("key", "env")
+    assert resolve_auth(plain, {"SAK_DASHBOARD_AUTH": " proxy "}) == ("proxy", "env")
+    assert resolve_auth(plain, {"SAK_DASHBOARD_AUTH": ""}) == ("key", "config")
+    with pytest.raises(AuthModeError) as caught:
+        resolve_auth(plain, {"SAK_DASHBOARD_AUTH": "sak_geheim"})
+    assert "geheim" not in str(caught.value)
+    assert "key" in str(caught.value) and "proxy" in str(caught.value)

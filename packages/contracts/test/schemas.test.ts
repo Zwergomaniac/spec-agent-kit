@@ -161,3 +161,17 @@ describe('Autonomie-Stufen (Spec 012)', () => {
     }
   })
 })
+
+describe('Dashboard-Auth (Spec 013)', () => {
+  const validateConfig = ajv.getSchema(`${SCHEMA_ID_BASE}config.schema.json`)
+  const base = { schema: 'sak.config/1', project: { key: 'demo', name: 'Demo' } }
+
+  it('akzeptiert dashboard.auth key und proxy, lehnt anderes ab', () => {
+    for (const auth of ['key', 'proxy']) {
+      expect(validateConfig?.({ ...base, dashboard: { auth } }), auth).toBe(true)
+    }
+    for (const auth of ['token', '', 'Proxy', 1]) {
+      expect(validateConfig?.({ ...base, dashboard: { auth } }), String(auth)).toBe(false)
+    }
+  })
+})
