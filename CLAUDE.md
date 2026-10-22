@@ -37,7 +37,7 @@ pnpm test                  # vitest aller TS-Pakete + pytest der Engine (pytest 
 pnpm lint                  # tsc je Paket + ruff check packages/engine
 pnpm build                 # Contracts, Dashboard-API (esbuild-Bundle), Dashboard-Web
 
-uv run --project packages/engine pytest    # nur Python
+uv run --project packages/engine pytest    # nur Python: die ganze Suite in einem Lauf (nicht in Teilen)
 pnpm --filter @sak/dashboard-web e2e       # Playwright-E2E, vorher `pnpm build`; läuft nicht in der CI
 
 pnpm contracts:gen         # Zod-Typen + Python-Schema-Kopie erzeugen

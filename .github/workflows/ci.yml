@@ -54,6 +54,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # setup-uv legt uv in den Tool-Cache. Die Hook-Probe von doctor läuft mit minimalem PATH
+          # und sucht uv nur an den bekannten Orten (~/.local/bin usw.); SAK_UV gibt den Ort vor.
+          SAK_UV="$(command -v uv)"
+          if command -v cygpath >/dev/null 2>&1; then SAK_UV="$(cygpath -m "$SAK_UV")"; fi
+          export SAK_UV
           WORK="$(mktemp -d)"
           if command -v cygpath >/dev/null 2>&1; then WORK="$(cygpath -m "$WORK")"; fi
           KIT="$WORK/kit"
