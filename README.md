@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Betrieb in Claude Cloud (Spec 013, Kit 0.4.0) ist umgesetzt, die manuelle Abnahme (SC-003) durch den Betreiber steht aus. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Betrieb in Claude Cloud (Spec 013, Kit 0.4.0) ist umgesetzt, die manuelle Abnahme (SC-003) durch den Betreiber steht aus. Mehrere benannte Deploy-Wege (GitHub-Workflow und lokal, Spec 014, Kit 0.5.0) sind umgesetzt. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -156,6 +156,8 @@ In einer Claude-Code-Cloud-Sitzung fehlt die gitignorierte `.spec-agent/dashboar
 5. Hooks und Board laufen im Container (lokale Monitore sehen nichts). Das Ergebnis liegt erst nach einem Push auf GitHub.
 
 `sak doctor` und `sak dashboard status` erklären typische Cloud-Fehler (Proxy lehnt den Host ab, fehlendes Network Secret, TLS hinter dem Proxy).
+
+**Deploy-Wege (Spec 014).** `deploy.methods` in der Config benennt mehrere Wege, `deploy.default` wählt den Standard („deployen“; „deployen lokal“ nimmt den Weg `local`). Je Weg: `command` (mit `{spec}`), `marker: agent|workflow` (wer den Marker `deploy(NNN)` setzt) und `local_only` (in Claude Cloud abgelehnt). `deploy.command` allein bleibt als Weg `default` gültig. `sak deploy plan [--method <name>] <spec>` zeigt Weg, Befehl, Marker-Modus und Erlaubnis als JSON, ohne etwas auszuführen; `SAK_ENVIRONMENT=cloud|local` übersteuert die Umgebungserkennung. Einrichtung des Workflows: [docs/howto/github-actions-deploy.md](docs/howto/github-actions-deploy.md).
 
 ## Dashboard betreiben und entwickeln
 

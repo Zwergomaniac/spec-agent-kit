@@ -209,3 +209,9 @@ Alle Specs 001 bis 007 sind umgesetzt (Spec 008, der Pilot, steht aus). Die Deta
 - `push/cloud.py`: Proxy-Variablen (nur ob gesetzt), Erkennung „Tunnel connection failed … 403“ plus gesetzte Proxy-Variablen, TLS-Hinweis, CA-Bundle aus `SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` (zusätzlich zum System-Store). Die Erkennung ändert nur Meldungen.
 - `doctor`: Im Proxy-Modus genügt ein erreichbares `/healthz`. `dashboard status` zeigt `auth`, `auth_source` und `proxy_env`; der Cloud-Fehler steht über `last_error` in `problems`. `dashboard connect --auth proxy` schreibt URL und Modus, keinen Schlüssel.
 - Betriebsanleitung: [cloud.md](cloud.md).
+
+**Deploy-Wege (Spec 014, Kit 0.5.0)**
+
+- Contract: `deploy.methods.<name>: {command, marker: agent|workflow, local_only}` und `deploy.default`. Namen und Kombinationsregeln, die das Schema nicht ausdrückt (`command` nicht zusammen mit `methods`, `default` muss ein Weg sein, bei mehreren Wegen Pflicht), prüft `config.deploy_errors` als Teil von `schema_errors`; damit melden `config check` und `load_config` sie gleich.
+- `config.build_effective` normalisiert: `deploy.command` allein wird zum Weg `default` (`marker: agent`), `deploy.command` bleibt in der wirksamen Config für Altleser erhalten. `deploy.methods` und `deploy.default` sind immer gesetzt (leer bzw. `null` ohne Deploy).
+- `sak deploy plan` (`deploy.py`) führt nichts aus. Umgebung: `push.cloud.detect_environment` (Proxy-Variablen wie Spec 013, `SAK_ENVIRONMENT=cloud|local` übersteuert). Ablehnung (`allowed: false`, Exit 1): `local_only` in der Cloud oder `autonomy.deploy: never`.
