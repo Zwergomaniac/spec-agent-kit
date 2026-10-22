@@ -350,3 +350,59 @@ def test_old_direct_uv_hook_is_a_warning_pointing_to_upgrade(ready: Path, sak: S
     assert code == 0, result
     assert check["ok"] is True and check["warning"] is True
     assert "sak upgrade" in check["detail"] and "SubagentStart" in check["detail"]
+
+
+def test_proxy_mode_needs_no_key_when_healthz_answers(
+    ready: Path, sak: Sak, health_server: ThreadingHTTPServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Spec 013: im Proxy-Modus genügt ein erreichbares /healthz."""
+    _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    monkeypatch.setenv("SAK_DASHBOARD_AUTH", "proxy")
+    monkeypatch.delenv("SAK_DASHBOARD_TOKEN", raising=False)
+    code, result = sak("doctor", str(ready))
+    check = _by_name(result)["dashboard"]
+    assert code == 0 and check["ok"] is True
+    assert "auth: proxy" in check["detail"] and "keinen Schlüssel" not in check["detail"]
+
+
+def test_proxy_mode_from_config_with_a_local_key_says_it_is_not_sent(
+    ready: Path, sak: Sak, health_server: ThreadingHTTPServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    config = ready / ".spec-agent/config.yml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            "dashboard:\n", "dashboard:\n  auth: proxy\n", 1
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("SAK_DASHBOARD_AUTH", raising=False)
+    write(ready, ".spec-agent/dashboard.key", "sak_" + "B" * 43 + "\n")
+    _, result = sak("doctor", str(ready))
+    check = _by_name(result)["dashboard"]
+    assert check["ok"] is True and "nicht gesendet" in check["detail"]
+    assert "B" * 43 not in json.dumps(result)
+
+
+def test_key_mode_without_a_key_hints_at_proxy_mode_when_a_proxy_is_set(
+    ready: Path, sak: Sak, health_server: ThreadingHTTPServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    monkeypatch.delenv("SAK_DASHBOARD_AUTH", raising=False)
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")  # der Test-Server bleibt direkt erreichbar
+    monkeypatch.setenv("HTTPS_PROXY", "http://nutzer:geheim@proxy.invalid:3128")
+    _, result = sak("doctor", str(ready))
+    check = _by_name(result)["dashboard"]
+    assert check["ok"] is False and "SAK_DASHBOARD_AUTH=proxy" in check["detail"]
+    assert "geheim" not in json.dumps(result) and "proxy.invalid" not in json.dumps(result)
+
+
+def test_invalid_auth_env_fails_the_dashboard_check_without_the_value(
+    ready: Path, sak: Sak, health_server: ThreadingHTTPServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _with_dashboard(ready, f"http://127.0.0.1:{health_server.server_address[1]}")
+    monkeypatch.setenv("SAK_DASHBOARD_AUTH", "sak_wertinfo")
+    _, result = sak("doctor", str(ready))
+    check = _by_name(result)["dashboard"]
+    assert check["ok"] is False and "SAK_DASHBOARD_AUTH" in check["detail"]
+    assert "wertinfo" not in json.dumps(result)

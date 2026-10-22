@@ -20,21 +20,27 @@ import yaml
 
 from spec_agent_kit.config import (
     CONFIG_RELATIVE_PATH,
+    AuthModeError,
     ConfigError,
     NotInitializedError,
     key_source,
     load_config,
+    resolve_auth,
     schema_errors,
 )
 from spec_agent_kit.config.defaults import DASHBOARD_KEY_RELATIVE_PATH
 from spec_agent_kit.install.plan import validate_url
-from spec_agent_kit.push import outbox
+from spec_agent_kit.push import cloud, outbox
 
 KEY_RE: Final = re.compile(r"^sak_[A-Za-z0-9_-]{43}$")
 KEY_FORMAT_HINT: Final[str] = "Format: sak_ gefolgt von 43 Zeichen aus A-Z, a-z, 0-9, - und _"
 _BLOCK_RE: Final = re.compile(r"^dashboard:[ \t]*(#.*)?$")
 _URL_RE: Final = re.compile(
     r"^(?P<head>[ \t]+url:[ \t]*)(?P<value>[^\s#][^#]*?)?(?P<tail>[ \t]*#.*)?$"
+)
+
+_AUTH_RE: Final = re.compile(
+    r"^(?P<head>[ \t]+auth:[ \t]*)(?P<value>[^\s#][^#]*?)?(?P<tail>[ \t]*#.*)?$"
 )
 
 Poster = Callable[..., tuple[int, dict[str, Any]]]
@@ -135,6 +141,33 @@ def set_dashboard_url(text: str, url: str) -> ConfigEdit:
     return _finish(text, new_lines, old, "unchanged" if old == url else "change")
 
 
+def set_dashboard_auth(text: str, mode: str) -> ConfigEdit:
+    """Setzt ``dashboard.auth`` zeilenbasiert (Spec 013). Erwartet einen vorhandenen Block."""
+    nl = _newline_of(text)
+    lines = text.splitlines(keepends=True)
+    block = next((i for i, line in enumerate(lines) if _BLOCK_RE.match(line.rstrip("\r\n"))), None)
+    if block is None:
+        raise ConnectError(CONFIG_RELATIVE_PATH, "der Block dashboard fehlt")
+    indent = "  "
+    for i in range(block + 1, len(lines)):
+        raw = lines[i].rstrip("\r\n")
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        if not raw[0].isspace():
+            break
+        indent = raw[: len(raw) - len(raw.lstrip())]
+        match = _AUTH_RE.match(raw)
+        if match:
+            old = _unquote(match.group("value"))
+            ending = lines[i][len(raw) :]
+            new_lines = [*lines]
+            new_lines[i] = f"{match.group('head')}{mode}{match.group('tail') or ''}{ending}"
+            return _finish(text, new_lines, old, "unchanged" if old == mode else "change")
+    new_lines = [*lines]
+    new_lines.insert(block + 1, f"{indent}auth: {mode}{nl}")
+    return _finish(text, new_lines, None, "insert")
+
+
 def _finish(old_text: str, new_lines: list[str], old_url: str | None, action: str) -> ConfigEdit:
     new_text = "".join(new_lines)
     diff = list(
@@ -209,8 +242,11 @@ def key_file_ignored(root: Path) -> bool | None:
 # ---------------------------------------------------------------------------
 
 
-def _plan_document(root: Path, edit: ConfigEdit, url: str, exists: bool, checked: bool) -> dict:
-    return {
+def _plan_document(
+    root: Path, edit: ConfigEdit, url: str, exists: bool, checked: bool, auth: str | None = None
+) -> dict:
+    proxy = auth == "proxy"
+    plan: dict[str, Any] = {
         "ok": True,
         "mode": "plan",
         "command": "dashboard connect",
@@ -223,11 +259,18 @@ def _plan_document(root: Path, edit: ConfigEdit, url: str, exists: bool, checked
         },
         "key_file": {
             "path": DASHBOARD_KEY_RELATIVE_PATH,
-            "action": "replace" if exists else "create",
+            "action": "none" if proxy else ("replace" if exists else "create"),
             "format_checked": checked,
         },
-        "next": "mit --yes anwenden (Schlüssel per --key-stdin oder verdeckter Eingabe)",
+        "next": (
+            "mit --yes anwenden (Proxy-Modus: es wird kein Schlüssel geschrieben)"
+            if proxy
+            else "mit --yes anwenden (Schlüssel per --key-stdin oder verdeckter Eingabe)"
+        ),
     }
+    if auth is not None:
+        plan["config"]["auth_to"] = auth
+    return plan
 
 
 def connect(
@@ -241,9 +284,11 @@ def connect(
     test_push: bool = True,
     push_fn: Poster | None = None,
     env: Mapping[str, str] | None = None,
+    auth: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     """Plan oder Umsetzung von ``sak dashboard connect``. Gibt ``(Exit-Code, Antwort)`` zurück.
 
+    ``auth="proxy"`` (Spec 013) trägt nur URL und Modus ein und legt keinen Schlüssel an.
     ``read_key`` liefert den Schlüssel (``getpass`` oder stdin). Ohne ``yes`` wird er nur gelesen,
     wenn ``key_from_stdin`` gesetzt ist, und nur auf sein Format geprüft; geschrieben wird nichts.
     """
@@ -258,6 +303,7 @@ def connect(
             test_push=test_push,
             push_fn=push_fn,
             env=env,
+            auth=auth,
         )
     except ConnectError as exc:
         return 1, {"ok": False, "errors": [{"path": exc.path, "message": exc.message}]}
@@ -274,6 +320,7 @@ def _connect(
     test_push: bool,
     push_fn: Poster | None,
     env: Mapping[str, str] | None,
+    auth: str | None,
 ) -> tuple[int, dict[str, Any]]:
     config_path = root / CONFIG_RELATIVE_PATH
     try:
@@ -290,13 +337,16 @@ def _connect(
     if problem:
         raise ConnectError("--url", problem)
 
+    proxy = auth == "proxy"
+    if proxy and key_from_stdin:
+        raise ConnectError("--key-stdin", "bei --auth proxy wird kein Schlüssel gelesen")
     exists = key_file(root).exists()
-    if exists and not force:
+    if exists and not force and not proxy:
         raise ConnectError(
             DASHBOARD_KEY_RELATIVE_PATH,
             "existiert bereits: mit --force ersetzen (der bisherige Schlüssel geht verloren)",
         )
-    ignored = key_file_ignored(root)
+    ignored = None if proxy else key_file_ignored(root)
     if ignored is False:
         raise ConnectError(
             DASHBOARD_KEY_RELATIVE_PATH,
@@ -307,9 +357,13 @@ def _connect(
     original = config_path.read_bytes()
     original_text = original.decode("utf-8")
     edit = set_dashboard_url(original_text, url)
+    if auth is not None:
+        with_auth = set_dashboard_auth(edit.text, auth)
+        lines = with_auth.text.splitlines(keepends=True)
+        edit = _finish(original_text, lines, edit.old_url, edit.action)
 
     key: str | None = None
-    if (yes or key_from_stdin) and read_key is not None:
+    if not proxy and (yes or key_from_stdin) and read_key is not None:
         key = read_key().strip()
         message = validate_key_format(key)
         if message:
@@ -321,14 +375,14 @@ def _connect(
             raise ConnectError(
                 errors[0]["path"], "die Config wäre danach ungültig: " + errors[0]["message"]
             )
-        plan = _plan_document(root, edit, url, exists, key is not None)
-        if ignored is None:
+        plan = _plan_document(root, edit, url, exists, key is not None, auth)
+        if ignored is None and not proxy:
             plan["warnings"] = ["gitignore-Status von dashboard.key nicht prüfbar (git fehlt?)"]
         return 0, plan
 
-    if key is None:
+    if key is None and not proxy:
         raise ConnectError(DASHBOARD_KEY_RELATIVE_PATH, "kein Schlüssel angegeben")
-    return _apply(root, url, edit, original, key, exists, test_push, push_fn, env, ignored)
+    return _apply(root, url, edit, original, key, exists, test_push, push_fn, env, ignored, auth)
 
 
 def _apply(
@@ -336,12 +390,13 @@ def _apply(
     url: str,
     edit: ConfigEdit,
     original: bytes,
-    key: str,
+    key: str | None,
     replaced: bool,
     test_push: bool,
     push_fn: Poster | None,
     env: Mapping[str, str] | None,
     ignored: bool | None,
+    auth: str | None = None,
 ) -> tuple[int, dict[str, Any]]:
     config_path = root / CONFIG_RELATIVE_PATH
     config_path.write_bytes(edit.text.encode("utf-8"))  # Bytes: Zeilenenden bleiben erhalten
@@ -351,12 +406,13 @@ def _apply(
             raise ConnectError(
                 errors[0]["path"], "die Config wäre danach ungültig: " + errors[0]["message"]
             )
-        try:
-            write_key_file(root, key)
-        except OSError as exc:
-            raise ConnectError(
-                DASHBOARD_KEY_RELATIVE_PATH, f"nicht schreibbar: {exc.strerror}"
-            ) from exc
+        if key is not None:
+            try:
+                write_key_file(root, key)
+            except OSError as exc:
+                raise ConnectError(
+                    DASHBOARD_KEY_RELATIVE_PATH, f"nicht schreibbar: {exc.strerror}"
+                ) from exc
     except BaseException:
         config_path.write_bytes(original)  # Rollback: die Config bleibt, wie sie war
         raise
@@ -373,9 +429,11 @@ def _apply(
         },
         "key_file": {
             "path": DASHBOARD_KEY_RELATIVE_PATH,
-            "action": "replaced" if replaced else "created",
+            "action": "none" if key is None else ("replaced" if replaced else "created"),
         },
     }
+    if auth is not None:
+        result["config"]["auth_to"] = auth
     warnings: list[str] = []
     if ignored is None:
         warnings.append("gitignore-Status von dashboard.key nicht prüfbar (git fehlt?)")
@@ -395,7 +453,7 @@ def _apply(
         sender = push_fn or push
         # Leere Umgebung: der Test-Push nutzt sicher den eben geschriebenen Schlüssel.
         code, outcome = sender(root, env={})
-        result["test_push"] = _scrub(outcome, key)
+        result["test_push"] = _scrub(outcome, key) if key is not None else outcome
         ok = ok and code == 0
     else:
         result["test_push"] = {"status": "skipped", "message": "übersprungen (--no-test-push)"}
@@ -437,16 +495,29 @@ def status(root: Path, env: Mapping[str, str] | None = None) -> tuple[int, dict[
     dashboard = cfg.data["dashboard"]
     environment = os.environ if env is None else env
     source = key_source(root, cfg, environment)
+    try:
+        auth, auth_source = resolve_auth(cfg, environment)
+    except AuthModeError as exc:
+        return 1, {"ok": False, "errors": [{"path": "SAK_DASHBOARD_AUTH", "message": str(exc)}]}
     cursor = outbox.read_cursor(root)
     problems: list[str] = []
-    if dashboard["url"] and source is None:
-        problems.append("kein Schlüssel vorhanden (sak dashboard connect)")
+    warnings: list[str] = []
+    if dashboard["url"] and source is None and auth == "key":
+        problems.append(
+            "kein Schlüssel vorhanden (sak dashboard connect)" + cloud.proxy_mode_hint(environment)
+        )
+    if auth == "proxy" and source is not None:
+        warnings.append("auth ist proxy: der lokale Schlüssel wird nicht gesendet")
     if cursor.last_error:
         problems.append(f"letzter Push-Fehler: {cursor.last_error}")
-    return (0 if not problems else 1), {
+    proxy_names = cloud.proxy_vars_set(environment)
+    result: dict[str, Any] = {
         "ok": not problems,
         "problems": problems,
         "url": dashboard["url"],
+        "auth": auth,
+        "auth_source": auth_source,
+        "proxy_env": {name: name in proxy_names for name in cloud.PROXY_VARS},
         "key": {
             "present": source is not None,
             "source": source,
@@ -460,3 +531,6 @@ def status(root: Path, env: Mapping[str, str] | None = None) -> tuple[int, dict[
             "last_error": cursor.last_error,
         },
     }
+    if warnings:
+        result["warnings"] = warnings
+    return (0 if not problems else 1), result

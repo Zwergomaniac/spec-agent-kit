@@ -295,6 +295,7 @@ def _dashboard(args: argparse.Namespace) -> int:
             read_key=read_key,
             key_from_stdin=args.key_stdin,
             test_push=not args.no_test_push,
+            auth=args.auth,
         )
     except UsageError as exc:
         _emit({"ok": False, "error": str(exc)})
@@ -307,7 +308,10 @@ def _dashboard(args: argparse.Namespace) -> int:
 
 def _plan_text(plan: dict[str, Any]) -> str:
     config = plan["config"]
-    key_action = "ersetzt" if plan["key_file"]["action"] == "replace" else "neu angelegt"
+    action = plan["key_file"]["action"]
+    key_action = {"replace": "ersetzt", "none": "wird nicht angelegt (Proxy-Modus)"}.get(
+        action, "neu angelegt"
+    )
     return _NL.join(
         [
             "sak dashboard connect (Plan, nichts geschrieben)",
@@ -455,6 +459,12 @@ def _build_parser() -> argparse.ArgumentParser:
     connect.add_argument("--yes", action="store_true", help="Plan umsetzen")
     connect.add_argument("--force", action="store_true", help="vorhandene dashboard.key ersetzen")
     connect.add_argument("--no-test-push", action="store_true", help="Test-Push überspringen")
+    connect.add_argument(
+        "--auth",
+        choices=["key", "proxy"],
+        default=None,
+        help="proxy: nur URL und Modus eintragen, kein Schlüssel (Network Secret, Spec 013)",
+    )
     dash_sub.add_parser("status", help="URL, Schlüssel vorhanden, Push-Modus, Cursor")
     _add_install_parsers(sub)
     add_parsers(sub)

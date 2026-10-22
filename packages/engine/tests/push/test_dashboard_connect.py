@@ -589,3 +589,108 @@ def test_no_project_values_are_hardcoded_in_the_module() -> None:
     for word in ("immoagent", "ai-forge", "prozessfit", "specboard"):
         assert word not in text
     assert re.search(r"sak_\[A-Za-z0-9_-\]\{43\}", Path(dashboard.__file__).read_text("utf-8"))
+
+
+# --------------------------------------------------------------------------- Proxy-Modus (Spec 013)
+
+
+def test_connect_auth_proxy_writes_url_and_mode_but_no_key(
+    proj: Path, run: Run, dashboard_server: FakeDashboard
+) -> None:
+    dashboard_server.proxy_injects = True
+    original = (proj / CONFIG_PATH).read_text(encoding="utf-8")
+    code, out, _, _ = run(
+        "dashboard", "connect", "--url", dashboard_server.url, "--auth", "proxy", "--yes"
+    )
+    assert code == 0, json.dumps(out)
+    assert out["key_file"] == {"path": KEY_PATH, "action": "none"}
+    assert out["config"]["auth_to"] == "proxy" and out["config_check"]["ok"] is True
+    assert out["test_push"]["status"] == "pushed"
+    assert dashboard_server.auth_headers and set(dashboard_server.auth_headers) == {None}
+    assert not (proj / KEY_PATH).exists()
+    new = (proj / CONFIG_PATH).read_text(encoding="utf-8")
+    assert "auth: proxy" in new and f"url: {dashboard_server.url}" in new
+    removed = [line for line in original.splitlines() if line not in new.splitlines()]
+    assert len(removed) == 1 and removed[0].strip().startswith("url: null")
+
+
+def test_connect_auth_proxy_plan_writes_nothing(
+    proj: Path, run: Run, dashboard_server: FakeDashboard
+) -> None:
+    before = snapshot(proj)
+    code, out, _, err = run(
+        "dashboard", "connect", "--url", dashboard_server.url, "--auth", "proxy"
+    )
+    assert code == 0 and out["mode"] == "plan" and out["key_file"]["action"] == "none"
+    assert out["config"]["auth_to"] == "proxy"
+    assert any("auth: proxy" in line for line in out["config"]["diff"])
+    assert "Proxy-Modus" in err
+    assert snapshot(proj) == before
+
+
+def test_connect_auth_proxy_needs_no_force_next_to_an_existing_key_file(
+    proj: Path, run: Run, key: str, dashboard_server: FakeDashboard
+) -> None:
+    (proj / KEY_PATH).write_text(key + "\n", encoding="utf-8")
+    argv = ["dashboard", "connect", "--url", dashboard_server.url, "--auth", "proxy"]
+    code, out, stdout, _ = run(*argv, "--yes", "--no-test-push")
+    assert code == 0 and out["key_file"]["action"] == "none"
+    assert (proj / KEY_PATH).read_text(encoding="utf-8").strip() == key  # unangetastet
+    assert key not in stdout
+
+
+def test_connect_auth_proxy_refuses_a_key_on_stdin(
+    proj: Path, run: Run, key: str, dashboard_server: FakeDashboard
+) -> None:
+    argv = ["dashboard", "connect", "--url", dashboard_server.url, "--auth", "proxy"]
+    code, out, stdout, _ = run(*argv, "--key-stdin", "--yes", stdin=key)
+    assert code == 1 and out["ok"] is False and key not in stdout
+    assert not (proj / KEY_PATH).exists()
+
+
+def test_connect_auth_key_replaces_an_existing_auth_line(
+    proj: Path, run: Run, key: str, dashboard_server: FakeDashboard
+) -> None:
+    url = dashboard_server.url
+    run("dashboard", "connect", "--url", url, "--auth", "proxy", "--yes", "--no-test-push")
+    argv = ["dashboard", "connect", "--url", url, "--auth", "key", "--key-stdin", "--yes"]
+    code, *_ = run(*argv, "--no-test-push", stdin=key)
+    text = (proj / CONFIG_PATH).read_text(encoding="utf-8")
+    assert code == 0 and "auth: key" in text and "auth: proxy" not in text
+    assert text.count("auth:") == 1
+
+
+def test_status_shows_the_auth_mode(proj: Path, run: Run, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, out, *_ = run("dashboard", "status")
+    assert out["auth"] == "key" and out["auth_source"] == "config"
+    monkeypatch.setenv("SAK_DASHBOARD_AUTH", "proxy")
+    _, out, *_ = run("dashboard", "status")
+    assert out["auth"] == "proxy" and out["auth_source"] == "env"
+    assert set(out["proxy_env"]) == {"HTTPS_PROXY", "https_proxy"}
+
+
+def test_status_in_proxy_mode_without_key_is_ok(
+    proj: Path, run: Run, dashboard_server: FakeDashboard
+) -> None:
+    url = dashboard_server.url
+    run("dashboard", "connect", "--url", url, "--auth", "proxy", "--yes", "--no-test-push")
+    code, out, *_ = run("dashboard", "status")
+    assert code == 0 and out["ok"] is True and out["auth"] == "proxy"
+    assert out["key"]["present"] is False and "warnings" not in out
+
+
+def test_status_in_proxy_mode_warns_about_a_local_key(
+    proj: Path, run: Run, key: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (proj / KEY_PATH).write_text(key + "\n", encoding="utf-8")
+    monkeypatch.setenv("SAK_DASHBOARD_AUTH", "proxy")
+    _, out, stdout, _ = run("dashboard", "status")
+    assert out["warnings"] and "nicht gesendet" in out["warnings"][0] and key not in stdout
+
+
+def test_status_with_an_invalid_auth_env_is_an_error_without_the_value(
+    proj: Path, run: Run, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SAK_DASHBOARD_AUTH", "wertinfo")
+    code, out, stdout, _ = run("dashboard", "status")
+    assert code == 1 and out["ok"] is False and "wertinfo" not in stdout

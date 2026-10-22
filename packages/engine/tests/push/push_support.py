@@ -166,3 +166,42 @@ def write_config(root: Path, url: str | None, push: str | None = "manual") -> No
     }
     (root / ".spec-agent").mkdir(parents=True, exist_ok=True)
     (root / ".spec-agent" / "config.yml").write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+class RefusingProxy:
+    """Minimaler Test-Proxy auf 127.0.0.1: beantwortet jedes CONNECT mit ``403 Forbidden``.
+
+    Er spielt den ausgehenden Proxy einer Cloud-Umgebung nach, der einen Host nicht freigibt.
+    ``connects`` merkt sich die angefragten Ziele (``host:port``).
+    """
+
+    def __init__(self) -> None:
+        self.connects: list[str] = []
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format: str, *args: Any) -> None:
+                return
+
+            def do_CONNECT(self) -> None:
+                outer.connects.append(self.path)
+                self.send_response(403, "Forbidden")
+                self.send_header("Content-Length", "0")
+                self.send_header("Connection", "close")
+                self.end_headers()
+
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.httpd.server_address[1]}"
+
+    def start(self) -> RefusingProxy:
+        self.thread.start()
+        return self
+
+    def stop(self) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.thread.join(timeout=5)
