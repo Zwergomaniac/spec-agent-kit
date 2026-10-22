@@ -34,6 +34,7 @@ from spec_agent_kit.install.settings import (
 )
 from spec_agent_kit.install.speckit import detect_version
 from spec_agent_kit.install.tools import find_sh
+from spec_agent_kit.parity import parity_for
 from spec_agent_kit.push import cloud
 
 DASHBOARD_TIMEOUT_SECONDS: Final[float] = 3.0
@@ -66,6 +67,26 @@ Check = dict[str, Any]
 
 def _entry(name: str, ok: bool, detail: str, required: bool = True) -> Check:
     return {"check": name, "ok": ok, "detail": detail, "required": required}
+
+
+def _check_agent_parity(root: Path) -> Check:
+    try:
+        config = load_config(root)
+        environment = str(config.data.get("agent_environment", "claude"))
+    except ConfigError:
+        environment = "claude"
+    entries = parity_for(environment)
+    approximate = [entry["capability"] for entry in entries if entry["parity_level"] == "approximate"]
+    if not approximate:
+        check = _entry("agent_parity", True, f"{environment}: alle Agent-Bausteine als full klassifiziert")
+    else:
+        check = _entry(
+            "agent_parity",
+            True,
+            f"{environment}: Paritaet dokumentiert; approximate fuer " + ", ".join(approximate),
+        )
+    check["items"] = entries
+    return check
 
 
 def _check_lock(root: Path) -> Check:
@@ -496,6 +517,7 @@ def run_doctor(
         _check_config(root),
         _check_engine(root, engine_running_from),
         _check_settings(root),
+        _check_agent_parity(root),
         _check_hook_probe(root),
         _check_gitignore(root),
         _check_speckit(root),

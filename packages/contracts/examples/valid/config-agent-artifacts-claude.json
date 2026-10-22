@@ -1,0 +1,10 @@
+{
+  "environment": "claude",
+  "artifacts": [
+    { "class": "agents", "path": ".claude/agents/sak-builder.md" },
+    { "class": "skills", "path_pattern": ".claude/skills/sak-*/SKILL.md" },
+    { "class": "hooks", "merge_target": ".claude/settings.json" },
+    { "class": "instructions", "path_pattern": ".claude/agents/sak-*.md" },
+    { "class": "settings", "merge_target": ".claude/settings.json" }
+  ]
+}

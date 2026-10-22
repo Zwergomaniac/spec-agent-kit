@@ -1,0 +1,10 @@
+{
+  "environment": "copilot",
+  "artifacts": [
+    { "class": "agents", "path": ".github/copilot/agents/sak-builder.md" },
+    { "class": "skills", "path": ".github/copilot/skills/sak-pipeline.md" },
+    { "class": "hooks", "path": ".vscode/tasks.json" },
+    { "class": "instructions", "path": ".github/copilot/instructions.md" },
+    { "class": "settings", "path": ".vscode/settings.json" }
+  ]
+}

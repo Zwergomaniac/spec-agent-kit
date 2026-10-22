@@ -23,6 +23,7 @@ CHECKS = {
     "config",
     "engine",
     "hooks_and_deny",
+    "agent_parity",
     "hook_probe",
     "gitignore",
     "speckit",
@@ -219,6 +220,22 @@ def test_copilot_doctor_checks_tasks_based_hook_replacement(
     code, result = sak("doctor", str(target))
     assert code == 0, result
     assert "VS-Code-Tasks" in _by_name(result)["hooks_and_deny"]["detail"]
+    parity = _by_name(result)["agent_parity"]
+    assert parity["ok"] is True
+    assert "approximate" in parity["detail"]
+    hooks = next(item for item in parity["items"] if item["capability"] == "hooks")
+    assert hooks["parity_level"] == "approximate"
+    assert hooks["intentional_deviation"] is True
+
+
+def test_claude_doctor_reports_full_agent_parity(ready: Path, sak: Sak) -> None:
+    code, result = sak("doctor", str(ready))
+    assert code == 0, result
+    parity = _by_name(result)["agent_parity"]
+    assert parity["ok"] is True
+    hooks = next(item for item in parity["items"] if item["capability"] == "hooks")
+    assert hooks["parity_level"] == "full"
+    assert hooks["intentional_deviation"] is False
 
 
 def test_state_not_gitignored_fails(ready: Path, sak: Sak) -> None:

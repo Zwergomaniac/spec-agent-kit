@@ -19,11 +19,11 @@
 **Purpose**: Den agentbezogenen Vertrag und die Grundabstraktion fuer den installierten Zielprojekt-Zustand schaffen, ohne in repo-weiten Multi-Integrationsscope auszuweiten
 
 - [x] T001 Definiere in `packages/contracts/schema/config.schema.json` und bei Bedarf in `packages/contracts/schema/vocabulary.json` genau eine aktiv verwaltete Agent-Umgebung pro Projekt mit mindestens `claude` und `copilot`
-- [ ] T002 [P] Ergaenze Contract-Beispiele fuer `claude` und `copilot` in `packages/contracts/examples/`, die je Environment den installierten Zielprojekt-Zustand fuer `agents`, `skills`, `hooks`, `instructions` und `settings` ueber konkrete Zielpfade, Zielpfadmuster oder Merge-Ziele abbilden, ohne Beispiele fuer parallele aktive Mehrfachverwaltung mehrerer Agent-Umgebungen einzufuehren
-- [ ] T003 [P] Aktualisiere Contract-Tests in `packages/contracts/test/` fuer gueltige und ungueltige Agent-Umgebungswerte sowie dafuer, dass der agentbezogene Artefaktvertrag pro Kategorie einen konkreten Pruefgegenstand im Zielprojekt besitzt
+- [x] T002 [P] Ergaenze Contract-Beispiele fuer `claude` und `copilot` in `packages/contracts/examples/`, die je Environment den installierten Zielprojekt-Zustand fuer `agents`, `skills`, `hooks`, `instructions` und `settings` ueber konkrete Zielpfade, Zielpfadmuster oder Merge-Ziele abbilden, ohne Beispiele fuer parallele aktive Mehrfachverwaltung mehrerer Agent-Umgebungen einzufuehren
+- [x] T003 [P] Aktualisiere Contract-Tests in `packages/contracts/test/` fuer gueltige und ungueltige Agent-Umgebungswerte sowie dafuer, dass der agentbezogene Artefaktvertrag pro Kategorie einen konkreten Pruefgegenstand im Zielprojekt besitzt
 - [x] T004 Fuehre in `packages/engine/src/spec_agent_kit/config/` und `packages/engine/src/spec_agent_kit/install/` eine Agent-System-Abstraktion ein, die agentneutrale Konzepte von environment-spezifischen Artefakten trennt
 - [x] T004a [P] Definiere in den spaeteren Engine-Vertraegen oder Modellen eine explizite Struktur fuer Artefaktklasse, Zielpfad oder Zielpfadmuster, Verwaltet-vs-Eigen-Abgrenzung und optionales Merge-Ziel je Agent-Umgebung
-- [ ] T004b [P] Definiere in den spaeteren Engine-Vertraegen oder Modellen eine explizite Paritaetsstruktur mit `capability`, `parity_level`, `mechanism`, `verification_expectation` und Kennzeichnung bewusster Claude-Abweichungen; fuer `hooks` sind nur `full` oder `approximate` zulaessig
+- [x] T004b [P] Definiere in den spaeteren Engine-Vertraegen oder Modellen eine explizite Paritaetsstruktur mit `capability`, `parity_level`, `mechanism`, `verification_expectation` und Kennzeichnung bewusster Claude-Abweichungen; fuer `hooks` sind nur `full` oder `approximate` zulaessig
 - [ ] T005 Generiere abgeleitete Contract-Artefakte mit `pnpm contracts:gen` und pruefe sie mit `pnpm contracts:check`
 
 **Checkpoint**: Der Grundvertrag fuer genau eine aktive Agent-Umgebung und deren Agent-Artefaktsatz ist vorhanden
@@ -63,14 +63,14 @@
 
 - [x] T011 [P] [US2] Ergaenze Config-Check-Tests in `packages/engine/tests/config/` fuer Claude- und Copilot-spezifische Agent-Artefakte
 - [x] T012 [P] [US2] Ergaenze Doctor-Tests in `packages/engine/tests/install/` oder passenden Testpfaden fuer environment-spezifische Pflicht-, Warn- und Hinweispruefungen
-- [ ] T012a [P] [US2] Ergaenze Tests dafuer, dass bewusste Copilot-Abweichungen von Claude als `approximate` oder `full` klassifiziert und nicht als unbeabsichtigte Defekte behandelt werden
+- [x] T012a [P] [US2] Ergaenze Tests dafuer, dass bewusste Copilot-Abweichungen von Claude als `approximate` oder `full` klassifiziert und nicht als unbeabsichtigte Defekte behandelt werden
 
 ### Implementation for User Story 2
 
 - [x] T013 [US2] Entkopple `packages/engine/src/spec_agent_kit/config/check.py` von festen Claude-Pfaden und fuehre environment-spezifische Agent-Artefaktpruefungen ein
 - [x] T014 [US2] Passe `packages/engine/src/spec_agent_kit/install/doctor.py` so an, dass nur die Artefakte und Faehigkeiten der aktiven Agent-Umgebung validiert werden
 - [x] T015 [US2] Modelliere Hook-Unterstuetzung in `packages/engine/src/spec_agent_kit/` als environment-spezifischen Agent-System-Baustein mit nativer oder nativ integrierter Ersatzmechanik; fuer Copilot ist ein Lueckenstatus ausgeschlossen
-- [ ] T015a [US2] Fuehre in den Validierungsmodulen eine explizite Kennzeichnung fuer bewusste Claude-Abweichungen ein, damit Constitution VI spaeter nachvollziehbar umgesetzt wird
+- [x] T015a [US2] Fuehre in den Validierungsmodulen eine explizite Kennzeichnung fuer bewusste Claude-Abweichungen ein, damit Constitution VI spaeter nachvollziehbar umgesetzt wird
 
 **Checkpoint**: Validierung und Betrieb haengen nicht mehr implizit an Claude-Dateimustern
 
@@ -86,14 +86,14 @@
 
 - [x] T016 [P] [US3] Ergaenze Tests in `packages/engine/tests/` oder passenden Testpfaden, die die erwarteten Copilot-Bausteine `agents`, `skills`, `hooks`, `instructions` und `settings` pruefen
 - [x] T017 [P] [US3] Ergaenze Tests fuer Copilot-Approximationen, insbesondere die Hook-Ersatzmechanik, damit diese nicht still regressieren
-- [ ] T017a [P] [US3] Ergaenze Tests fuer die Paritaetskriterien `full` und `approximate`, insbesondere fuer gleiche Pflichtfunktion, benannte Ersatzmechanik und pruefbare Restdifferenz
+- [x] T017a [P] [US3] Ergaenze Tests fuer die Paritaetskriterien `full` und `approximate`, insbesondere fuer gleiche Pflichtfunktion, benannte Ersatzmechanik und pruefbare Restdifferenz
 
 ### Implementation for User Story 3
 
-- [ ] T018 [US3] Definiere in den agentbezogenen Engine-Modulen und Vorlagen eine bausteinbezogene Paritaetsmatrix fuer Copilot gegenueber Claude mit expliziten Feldern fuer `capability`, `parity_level`, `claude_mechanism`, `copilot_mechanism`, `verification_expectation` und `intentional_deviation`
+- [x] T018 [US3] Definiere in den agentbezogenen Engine-Modulen und Vorlagen eine bausteinbezogene Paritaetsmatrix fuer Copilot gegenueber Claude mit expliziten Feldern fuer `capability`, `parity_level`, `claude_mechanism`, `copilot_mechanism`, `verification_expectation` und `intentional_deviation`
 - [x] T019 [US3] Implementiere fuer Copilot benoetigte Ersatz- oder Annaeherungsmechaniken in den betroffenen Agent-System-Modulen und Vorlagen
-- [ ] T020 [US3] Stelle sicher, dass `sak doctor` Copilot nicht pauschal als teilweise unterstuetzt meldet, sondern bausteinbezogen auf Pflicht und Annaeherung verweist; die Hook-Mechanik muss als vorhanden und pruefbar erscheinen
-- [ ] T020a [US3] Lege fuer `agents`, `skills`, `instructions`, `settings` und `hooks` mindestens `approximate` verbindlich fest; `hooks` duerfen nur als `full` oder `approximate` klassifiziert werden
+- [x] T020 [US3] Stelle sicher, dass `sak doctor` Copilot nicht pauschal als teilweise unterstuetzt meldet, sondern bausteinbezogen auf Pflicht und Annaeherung verweist; die Hook-Mechanik muss als vorhanden und pruefbar erscheinen
+- [x] T020a [US3] Lege fuer `agents`, `skills`, `instructions`, `settings` und `hooks` mindestens `approximate` verbindlich fest; `hooks` duerfen nur als `full` oder `approximate` klassifiziert werden
 
 **Checkpoint**: Copilot-Paritaet ist im Agentensystem konkret und pruefbar beschrieben
 
@@ -103,7 +103,7 @@
 
 **Purpose**: Wechsel der Agent-Umgebung absichern und Gesamtvalidierung vorbereiten
 
-- [ ] T021 [P] Fuehre Tests fuer den geplanten Wechsel `claude -> copilot` und `copilot -> claude` in `packages/engine/tests/install/` oder passenden Testpfaden ein
+- [x] T021 [P] Fuehre Tests fuer den geplanten Wechsel `claude -> copilot` und `copilot -> claude` in `packages/engine/tests/install/` oder passenden Testpfaden ein
 - [ ] T021a [P] Fuehre Tests dafuer ein, dass der Switch-Fall als eigener Migrationsplan mit `artifacts_to_add`, `artifacts_to_replace`, Konflikten und Betreiberaktionen erscheint statt als stilles Re-Init
 - [x] T022 Implementiere oder verfeinere in `packages/engine/src/spec_agent_kit/install/` den konfliktbewussten Wechsel der aktiv verwalteten Agent-Umgebung
 - [ ] T022a Implementiere fuer den Switch-Fall eine explizite Plan- oder Doctor-Ausgabe, die bewusste Claude-Abweichungen, dokumentierte Copilot-Approximationen und notwendige manuelle Betreiberaktionen sichtbar macht
@@ -113,10 +113,10 @@
 ## Stand 2026-10-23
 
 - Abgehakt ist nur, was im Repo-Code und in vorhandenen Tests bereits direkt belegbar ist.
-- Nicht abgehakt bleiben Contract-Beispiele und Contract-Tests in `packages/contracts/examples/` bzw. `packages/contracts/test/`; dafuer liegt aktuell keine belegbare Umsetzung im Worktree vor.
-- Nicht abgehakt bleiben die explizite Paritaetsmatrix und Kennzeichnung bewusster Claude-Abweichungen in der Engine-Ausgabe. Copilot-Hook-Ersatz ist implementiert, aber noch nicht als formale, bausteinbezogene Paritaetsstruktur modelliert.
-- Der environment switch ist funktional bereits in `sak upgrade` angelegt und fuer `claude -> copilot` getestet; die Rueckrichtung sowie eine eigene, reichhaltigere Migrationsausgabe bleiben offen.
-- T023 und T024 bleiben offen, weil die lokale Engine-Validierung zwar weitgehend lief, `pnpm contracts:check` in dieser Umgebung aber mangels installierter Node-Abhaengigkeiten nicht ausfuehrbar war und keine separate Zielprojekt-Importsimulation durchgefuehrt wurde.
+- Contract-Beispiele und zugehoerige Contract-Tests fuer `agent_environment` sowie den artefaktbezogenen Zielprojekt-Pruefgegenstand liegen jetzt im Repo vor; sie beschreiben bewusst nur genau eine aktive Agent-Umgebung je Beispiel.
+- Die Engine hat jetzt eine explizite, bausteinbezogene Paritaetsstruktur; `sak doctor` und `sak config show` koennen diese pro aktiver Agent-Umgebung ausgeben. Copilot-Hooks erscheinen dort explizit als `approximate` mit benannter VS-Code-Task-Mechanik.
+- Der environment switch ist jetzt fuer beide Richtungen testseitig belegt; offen bleibt eine noch reichhaltigere Migrationsausgabe mit eigenen Betreiberaktionen jenseits des bestehenden Plan-/Doctor-Niveaus.
+- T023 und T024 bleiben offen, weil die lokale Validierung in dieser Umgebung nur teilweise moeglich war: `pnpm --dir packages/contracts test` scheitert ohne `node_modules` bereits am fehlenden `vitest`, `pnpm --dir packages/contracts check` scheitert am fehlenden Paket `json-schema-to-zod`, und Engine-Pytests scheitern vor Testausfuehrung an der fehlenden Python-Abhaengigkeit `jsonschema`. Keine dieser Huerden wurde mit Workarounds versteckt.
 
 ---
 

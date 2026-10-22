@@ -520,3 +520,36 @@ def test_switch_from_claude_to_copilot_is_planned_as_replace_and_delete(
     assert actions[".vscode/tasks.json"] == "create"
     assert actions[".claude/agents/sak-builder.md"] == "delete"
     assert actions[".claude/skills/sak-pipeline/SKILL.md"] == "delete"
+
+
+def test_switch_from_copilot_to_claude_is_planned_as_replace_and_delete(
+    target: Path, sak: Sak
+) -> None:
+    args = [
+        "init",
+        str(target),
+        "--key",
+        "ai-forge",
+        "--name",
+        "AI-Forge",
+        "--base-branch",
+        "main",
+        "--no-ui",
+        "--agent-environment",
+        "copilot",
+        "--apply",
+        "--no-sync",
+    ]
+    code, out = sak(*args)
+    assert code == 0, out
+    git(target, "add", "-A")
+    git(target, "commit", "-q", "-m", "sak init copilot")
+    config = (target / ".spec-agent/config.yml").read_text(encoding="utf-8")
+    write(target, ".spec-agent/config.yml", config.replace("agent_environment: copilot", "agent_environment: claude"))
+    git(target, "commit", "-q", "-am", "switch to claude")
+    plan = _upgrade(sak, target)
+    actions = _actions(plan)
+    assert actions[".claude/agents/sak-builder.md"] == "create"
+    assert actions[".claude/skills/sak-pipeline/SKILL.md"] == "create"
+    assert actions[".github/copilot/agents/sak-builder.md"] == "delete"
+    assert actions[".vscode/tasks.json"] == "delete"

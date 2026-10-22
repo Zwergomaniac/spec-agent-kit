@@ -1,0 +1,11 @@
+{
+  "schema": "sak.config/1",
+  "project": { "key": "copilot-demo", "name": "Copilot Demo", "base_branch": "main" },
+  "agent_environment": "copilot",
+  "pipeline": {
+    "roles": {
+      "builder": { "enabled": true, "agent": "sak-builder", "model": "gpt-5", "effort": "medium" },
+      "code_review": { "enabled": true, "agent": "sak-code-reviewer", "model": "gpt-5", "effort": "high" }
+    }
+  }
+}

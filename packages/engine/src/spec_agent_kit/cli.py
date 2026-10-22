@@ -31,6 +31,7 @@ from spec_agent_kit.board.serve import (
 from spec_agent_kit.board.text import render_text
 from spec_agent_kit.config import ConfigError, NotInitializedError, load_config
 from spec_agent_kit.config.check import check as check_config
+from spec_agent_kit.parity import parity_for
 from spec_agent_kit.dashboard import connect as dashboard_connect
 from spec_agent_kit.dashboard import status as dashboard_status
 from spec_agent_kit.install import InstallError
@@ -115,7 +116,10 @@ def _config_show() -> int:
         return _not_initialized()
     except ConfigError as exc:
         return _reject(exc.errors)
-    _emit(effective.to_dict())
+    data = effective.to_dict()
+    environment = str(effective.data.get("agent_environment", "claude"))
+    data["agent_parity"] = parity_for(environment)
+    _emit(data)
     return EXIT_OK
 
 

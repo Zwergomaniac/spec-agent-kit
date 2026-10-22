@@ -1,0 +1,5 @@
+{
+  "schema": "sak.config/1",
+  "project": { "key": "demo-app", "name": "Demo App" },
+  "agent_environment": "gemini"
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "sak.config/1",
+  "project": { "key": "claude-demo", "name": "Claude Demo", "base_branch": "main" },
+  "agent_environment": "claude",
+  "pipeline": {
+    "roles": {
+      "builder": { "enabled": true, "agent": "sak-builder", "model": "sonnet", "effort": "medium" },
+      "code_review": { "enabled": true, "agent": "sak-code-reviewer", "model": "opus", "effort": "high" }
+    }
+  }
+}
