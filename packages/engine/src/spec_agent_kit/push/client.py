@@ -16,6 +16,7 @@ from typing import Any, Final
 from urllib.parse import urlsplit
 
 from spec_agent_kit import contracts
+from spec_agent_kit.push import cloud
 
 TIMEOUT_S: Final[float] = 3.0
 INGEST_PATH: Final[str] = "/api/ingest"
@@ -94,6 +95,9 @@ def _opener(url: str) -> urllib.request.OpenerDirector:
     handlers: list[urllib.request.BaseHandler] = [_NoRedirect()]
     if (urlsplit(url).hostname or "").lower() in _LOCAL_HTTP_HOSTS:
         handlers.append(urllib.request.ProxyHandler({}))  # lokal nie über einen Proxy
+    context = cloud.ssl_context()  # CA-Bundle aus der Umgebung, sonst None (Spec 013 FR-004)
+    if context is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=context))
     return urllib.request.build_opener(*handlers)
 
 
@@ -110,34 +114,37 @@ def _error_text(body: bytes) -> str:
 
 
 def post_ingest(
-    url: str, key: str, payload: dict[str, Any], timeout: float = TIMEOUT_S
+    url: str, key: str | None, payload: dict[str, Any], timeout: float = TIMEOUT_S
 ) -> dict[str, Any]:
     """Sendet ``payload`` und gibt die Antwort ``sak.ingest_result/1`` zurück.
 
     ``url`` ist die fertige Ingest-URL (``check_url``). Wirft eine ``PushError``-Unterklasse.
+
+    ``key=None`` ist der Proxy-Modus (Spec 013): dann geht nie ein ``Authorization``-Header raus,
+    ein Network Secret des Proxys ergänzt ihn außerhalb der VM.
     """
     body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     limit = contracts.LIMITS["INGEST_MAX_BYTES"]
     if len(body) > limit:
         raise RequestRejected(f"Anfrage mit {len(body)} Bytes überschreitet {limit} Bytes")
-    request = urllib.request.Request(
-        url,
-        data=body,
-        method="POST",
-        headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": f"Bearer {key}",
-            "Accept": "application/json",
-            "User-Agent": "spec-agent-kit",
-        },
-    )
+    headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        "Accept": "application/json",
+        "User-Agent": "spec-agent-kit",
+    }
+    if key is not None:
+        headers["Authorization"] = f"Bearer {key}"
+    request = urllib.request.Request(url, data=body, method="POST", headers=headers)
     try:
         with _opener(url).open(request, timeout=timeout) as response:
             raw = response.read(_MAX_RESPONSE + 1)
     except urllib.error.HTTPError as exc:
-        _raise_for_status(exc, sent_project=payload.get("project"))
+        _raise_for_status(exc, sent_project=payload.get("project"), proxy_mode=key is None)
         raise  # pragma: no cover - _raise_for_status wirft immer
     except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+        explained = cloud.explain(exc, urlsplit(url).hostname or "das Dashboard")
+        if explained:
+            raise NetworkError(explained) from exc
         reason = getattr(exc, "reason", exc)
         raise NetworkError(f"Dashboard nicht erreichbar: {type(reason).__name__}") from exc
     try:
@@ -164,7 +171,9 @@ def _expected_project(body: bytes) -> str | None:
     return value if isinstance(value, str) and 0 < len(value) <= 80 else None
 
 
-def _raise_for_status(exc: urllib.error.HTTPError, sent_project: Any = None) -> None:
+def _raise_for_status(
+    exc: urllib.error.HTTPError, sent_project: Any = None, proxy_mode: bool = False
+) -> None:
     try:
         body = exc.read(_MAX_ERROR_BODY)
     except OSError:
@@ -185,6 +194,9 @@ def _raise_for_status(exc: urllib.error.HTTPError, sent_project: Any = None) -> 
             f"HTTP 403: project mismatch (gesendet als {sent}, {wanted}); project.key in der "
             "Config bzw. den Schlüssel prüfen"
         ) from exc
+    if code == 401 and proxy_mode:
+        host = urlsplit(exc.geturl() or "").hostname or "das Dashboard"
+        raise AuthError(f"HTTP 401: {cloud.no_network_secret_message(host)}") from exc
     if code in {401, 403}:
         raise AuthError(f"HTTP {code}: {text or 'Schlüssel abgelehnt'}") from exc
     if any(marker in text.lower() for marker in VERSION_MARKERS):

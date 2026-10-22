@@ -112,6 +112,7 @@ def defaults() -> dict[str, Any]:
         "dashboard": {
             "url": None,
             "token_env": "SAK_DASHBOARD_TOKEN",
+            "auth": "key",
             "share_commit_subjects": False,
         },
         "autonomy": {"push": "manual", "deploy": "after_approval", "remote": "origin"},

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://spec-agent-kit.local/schema/v1/config.schema.json",
   "title": "sak.config/1",
-  "$comment": "Projektkonfiguration .spec-agent/config.yml (Spec 004). YAML wird mit safe_load gelesen und als JSON-Dokument gegen dieses Schema geprüft. Defaults und der Kern-Schutz stehen in der Engine (spec_agent_kit.config), nicht hier. effort und dashboard.push sind bewusst als Konstanten-Alternativen (anyOf) modelliert: sie gehören nicht zum Statusvokabular (Spec 001). Die Rollenschlüssel unter pipeline.roles sind ausgeschrieben (damit Zod sie abbildet) und müssen der Ebene role des Vokabulars entsprechen; ein Test erzwingt das.",
+  "$comment": "Projektkonfiguration .spec-agent/config.yml (Spec 004). YAML wird mit safe_load gelesen und als JSON-Dokument gegen dieses Schema geprüft. Defaults und der Kern-Schutz stehen in der Engine (spec_agent_kit.config), nicht hier. effort, dashboard.push und dashboard.auth sind bewusst als Konstanten-Alternativen (anyOf) modelliert: sie gehören nicht zum Statusvokabular (Spec 001). Die Rollenschlüssel unter pipeline.roles sind ausgeschrieben (damit Zod sie abbildet) und müssen der Ebene role des Vokabulars entsprechen; ein Test erzwingt das.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -229,6 +229,16 @@
             },
             {
               "const": "off"
+            }
+          ]
+        },
+        "auth": {
+          "anyOf": [
+            {
+              "const": "key"
+            },
+            {
+              "const": "proxy"
             }
           ]
         },

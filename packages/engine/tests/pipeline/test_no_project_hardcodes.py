@@ -17,6 +17,7 @@ FORBIDDEN = (
     ".venv/scripts",
     "pythonioencoding",
     "bypasspermissions",
+    "prozessfit",  # Spec 013: Hosts gehören in die Doku, nie in Engine oder Vorlagen
 )
 SUFFIXES = {".py", ".md", ".json", ".yml", ".yaml", ".toml", ".txt"}
 

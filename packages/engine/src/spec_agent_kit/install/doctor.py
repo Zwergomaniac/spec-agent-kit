@@ -10,9 +10,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Final
+from urllib.parse import urlsplit
 
 from spec_agent_kit import __version__
-from spec_agent_kit.config import ConfigError, key_source, load_config
+from spec_agent_kit.config import AuthModeError, ConfigError, key_source, load_config, resolve_auth
 from spec_agent_kit.config.check import check as check_config
 from spec_agent_kit.install import InstallError
 from spec_agent_kit.install.kit import (
@@ -32,6 +33,7 @@ from spec_agent_kit.install.settings import (
 )
 from spec_agent_kit.install.speckit import detect_version
 from spec_agent_kit.install.tools import find_sh
+from spec_agent_kit.push import cloud
 
 DASHBOARD_TIMEOUT_SECONDS: Final[float] = 3.0
 HOOK_TIMEOUT_SECONDS: Final[float] = 10.0
@@ -382,26 +384,47 @@ def _check_speckit(root: Path) -> Check:
 
 
 def _check_dashboard(root: Path, url: str) -> Check:
-    """Erreichbar und Schlüssel vorhanden (Spec 011 B15); ohne Schlüssel ist es nicht ok."""
+    """Erreichbar und Schlüssel vorhanden (Spec 011 B15); ohne Schlüssel ist es nicht ok.
+
+    Im Proxy-Modus (Spec 013) genügt ein erreichbares ``/healthz``: der Schlüssel liegt dann beim
+    Proxy. Typische Cloud-Fehler (Proxy-Ablehnung, TLS) werden erklärt.
+    """
     target = url.rstrip("/") + "/healthz"
+    host = urlsplit(url).hostname or "das Dashboard"
     try:
-        with urllib.request.urlopen(target, timeout=DASHBOARD_TIMEOUT_SECONDS) as response:
+        cfg = load_config(root)
+        mode, _source = resolve_auth(cfg)
+        source = key_source(root, cfg)
+    except AuthModeError as exc:
+        return _entry("dashboard", False, str(exc), required=False)
+    except ConfigError:
+        mode, source = "key", None
+    try:
+        with urllib.request.urlopen(
+            target, timeout=DASHBOARD_TIMEOUT_SECONDS, context=cloud.ssl_context()
+        ) as response:
             status = response.status
     except urllib.error.HTTPError as exc:
         status = exc.code
     except (urllib.error.URLError, OSError, ValueError) as exc:
+        explained = cloud.explain(exc, host)
+        if explained:
+            return _entry("dashboard", False, explained, required=False)
         return _entry("dashboard", False, f"{target} nicht erreichbar: {exc}", required=False)
     reachable = status < 500
-    try:
-        source = key_source(root, load_config(root))
-    except ConfigError:
-        source = None
+    if mode == "proxy":
+        suffix = "; auth: proxy (Network Secret beim Proxy)"
+        if source is not None:
+            suffix += "; der lokale Schlüssel wird nicht gesendet"
+        return _entry(
+            "dashboard", reachable, f"{target} antwortet mit {status}{suffix}", required=False
+        )
     if reachable and source is None:
         return _entry(
             "dashboard",
             False,
             f"{target} antwortet mit {status}, aber es gibt keinen Schlüssel "
-            "(sak dashboard connect oder die Umgebungsvariable setzen)",
+            "(sak dashboard connect oder die Umgebungsvariable setzen)" + cloud.proxy_mode_hint(),
             required=False,
         )
     suffix = f"; Schlüssel vorhanden ({source})" if source else ""

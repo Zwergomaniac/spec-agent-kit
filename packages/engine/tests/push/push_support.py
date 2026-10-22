@@ -28,6 +28,8 @@ class FakeDashboard:
         self.reject: Callable[[dict[str, Any]], str | None] = lambda event: None
         self.board_error: str | None = None
         self.redirect_to: str | None = None
+        self.auth_headers: list[str | None] = []  # Authorization je Anfrage (None = fehlt)
+        self.proxy_injects = False  # wie ein Proxy mit Network Secret: setzt den Bearer selbst
         self.lock = threading.Lock()
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
@@ -39,6 +41,18 @@ class FakeDashboard:
     def start(self) -> FakeDashboard:
         self.thread.start()
         return self
+
+    def enable_tls(self, certfile: Path, keyfile: Path) -> None:
+        """Vor ``start`` aufrufen: der Server spricht dann HTTPS (nur Loopback)."""
+        import ssl
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(str(certfile), str(keyfile))
+        self.httpd.socket = context.wrap_socket(self.httpd.socket, server_side=True)
+
+    @property
+    def tls_url(self) -> str:
+        return f"https://127.0.0.1:{self.httpd.server_address[1]}"
 
     def stop(self) -> None:
         self.httpd.shutdown()
@@ -63,13 +77,18 @@ class FakeDashboard:
             def do_POST(self) -> None:
                 length = int(self.headers.get("Content-Length") or 0)
                 raw = self.rfile.read(length)
+                received = self.headers.get("Authorization")
+                outer.auth_headers.append(received)
+                effective = (
+                    f"Bearer {KEY}" if outer.proxy_injects and received is None else received
+                )
                 if outer.redirect_to:
                     self.send_response(302)
                     self.send_header("Location", outer.redirect_to)
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
-                if outer.auth_status or self.headers.get("Authorization") != f"Bearer {KEY}":
+                if outer.auth_status or effective != f"Bearer {KEY}":
                     self._json(outer.auth_status or 401, {"error": "unauthorized"})
                     return
                 if outer.raw_status:
@@ -147,3 +166,42 @@ def write_config(root: Path, url: str | None, push: str | None = "manual") -> No
     }
     (root / ".spec-agent").mkdir(parents=True, exist_ok=True)
     (root / ".spec-agent" / "config.yml").write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+class RefusingProxy:
+    """Minimaler Test-Proxy auf 127.0.0.1: beantwortet jedes CONNECT mit ``403 Forbidden``.
+
+    Er spielt den ausgehenden Proxy einer Cloud-Umgebung nach, der einen Host nicht freigibt.
+    ``connects`` merkt sich die angefragten Ziele (``host:port``).
+    """
+
+    def __init__(self) -> None:
+        self.connects: list[str] = []
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format: str, *args: Any) -> None:
+                return
+
+            def do_CONNECT(self) -> None:
+                outer.connects.append(self.path)
+                self.send_response(403, "Forbidden")
+                self.send_header("Content-Length", "0")
+                self.send_header("Connection", "close")
+                self.end_headers()
+
+        self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.httpd.server_address[1]}"
+
+    def start(self) -> RefusingProxy:
+        self.thread.start()
+        return self
+
+    def stop(self) -> None:
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.thread.join(timeout=5)

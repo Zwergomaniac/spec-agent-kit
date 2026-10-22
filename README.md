@@ -1,6 +1,6 @@
 # spec-agent-kit
 
-> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
+> **Status:** v1 der Specs 001 bis 007 und Spec 009 (lokale Bedienung und Betrieb) sind umgesetzt, ebenso die Robustheits-Härtung aus dem ImmoAgent-Trial (Spec 011, Kit 0.2.0) sowie die Autonomie-Stufen für Merge, Push und Deploy (Spec 012, Kit 0.3.0). Der Betrieb in Claude Cloud (Spec 013, Kit 0.4.0) ist umgesetzt, die manuelle Abnahme (SC-003) durch den Betreiber steht aus. Der Pilot in einem echten Projekt (Spec 008, AI-Forge) steht aus. Offene Punkte: [docs/follow-ups.md](docs/follow-ups.md).
 
 Ein gemeinsames Mixed Repo für zwei eng gekoppelte Systeme:
 
@@ -145,6 +145,18 @@ SAK dashboard status                                                         # S
 
 Für den Push braucht das Projekt `dashboard.url` in der Config und den Projekt-Schlüssel in der Umgebungsvariable `SAK_DASHBOARD_TOKEN` oder in der Datei `.spec-agent/dashboard.key` (gitignoriert). Bei `push: auto` startet der Push nach Hooks und Run-Befehlen im Hintergrund und blockiert nie die Pipeline.
 
+### Kit in Claude Cloud
+
+In einer Claude-Code-Cloud-Sitzung fehlt die gitignorierte `.spec-agent/dashboard.key`, und ausgehende Verbindungen laufen über einen Proxy mit Allowlist. Ausführlich: [docs/cloud.md](docs/cloud.md). Kurzfassung:
+
+1. Netzzugriff: „Network access“ auf Custom stellen und den Dashboard-Host eintragen, oder ein Network Secret für den Host anlegen (umgeht die Allowlist).
+2. Network Secret (empfohlen): Host des Dashboards, Typ Bearer, Wert = Projekt-Schlüssel. In der Umgebung `SAK_DASHBOARD_AUTH=proxy` setzen (oder `dashboard.auth: proxy` in der Config, z. B. via `sak dashboard connect --url … --auth proxy --yes`). Im Proxy-Modus sendet das Kit nie einen eigenen `Authorization`-Header.
+3. Alternative: `SAK_DASHBOARD_TOKEN` in der Umgebung. Achtung: Umgebungsvariablen sind für den Agenten und alle Nutzer der Umgebung lesbar.
+4. Für `autonomy.push: after_merge` braucht die Sitzung Push-Rechte auf GitHub (Branches ja, Tags und Löschen nein). Empfehlung: Branch-Protection bzw. Rulesets.
+5. Hooks und Board laufen im Container (lokale Monitore sehen nichts). Das Ergebnis liegt erst nach einem Push auf GitHub.
+
+`sak doctor` und `sak dashboard status` erklären typische Cloud-Fehler (Proxy lehnt den Host ab, fehlendes Network Secret, TLS hinter dem Proxy).
+
 ## Dashboard betreiben und entwickeln
 
 Betrieb (Image, Umgebungsvariablen, Secrets, Projekt anlegen, Caddy): [deploy/dashboard/README.md](deploy/dashboard/README.md).
@@ -194,6 +206,7 @@ specs/              spec-kit-Artefakte 001 bis 009 (Dogfooding)
 ## Dokumente
 
 - [docs/architecture.md](docs/architecture.md) – Architektur, Laufzeitregeln, Umsetzungsstand und Abweichungen vom Plan
+- [docs/cloud.md](docs/cloud.md) – Betrieb in Claude Cloud (Proxy-Modus, Network Secret, Diagnose)
 - [docs/follow-ups.md](docs/follow-ups.md) – offene Punkte
 - [docs/ui/dashboard-concept.md](docs/ui/dashboard-concept.md) – Ansichten und URL-Modell
 - [docs/adr/0001-framework-grundsatzentscheidungen.md](docs/adr/0001-framework-grundsatzentscheidungen.md) – Grundsatzentscheidungen

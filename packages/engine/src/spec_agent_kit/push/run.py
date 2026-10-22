@@ -22,15 +22,18 @@ from typing import Any, Final
 from spec_agent_kit.board import BoardError
 from spec_agent_kit.board.build import build_board
 from spec_agent_kit.config import (
+    AuthModeError,
     ConfigError,
     EffectiveConfig,
     NotInitializedError,
+    key_source,
     load_config,
     read_dashboard_key,
+    resolve_auth,
 )
 from spec_agent_kit.pipeline import runs
 from spec_agent_kit.pipeline.events import clip
-from spec_agent_kit.push import client, outbox
+from spec_agent_kit.push import client, cloud, outbox
 
 LOCK_FILE: Final[str] = "push.lock"
 LOCK_TTL_S: Final[float] = 60.0
@@ -39,7 +42,7 @@ DETACHED_PROCESS: Final[int] = 0x00000008
 CREATE_NEW_PROCESS_GROUP: Final[int] = 0x00000200
 CREATE_NO_WINDOW: Final[int] = 0x08000000
 
-Poster = Callable[[str, str, dict[str, Any], float], dict[str, Any]]
+Poster = Callable[[str, str | None, dict[str, Any], float], dict[str, Any]]
 Result = tuple[int, dict[str, Any]]
 
 
@@ -165,13 +168,27 @@ def _push(
     dashboard = cfg.data["dashboard"]
     if not dashboard["url"] or dashboard["push"] == "off":
         return 0, {"ok": True, "status": "disabled", "message": "Push deaktiviert"}
-    key = read_dashboard_key(root, cfg, env)
-    if not key:
-        return _fail(
-            "no_key",
-            f"Schlüssel fehlt: Umgebungsvariable {dashboard['token_env']} (token_env) oder "
-            "Datei .spec-agent/dashboard.key",
-        )
+    try:
+        mode, _source = resolve_auth(cfg, env)
+    except AuthModeError as exc:
+        return _fail("invalid_auth", str(exc))
+    warnings: list[str] = []
+    key: str | None = None
+    if mode == "proxy":
+        # Proxy-Modus (Spec 013): nie ein eigener Authorization-Header, auch nicht mit Schlüssel.
+        if key_source(root, cfg, env) is not None:
+            warnings.append(
+                "auth ist proxy: der lokale Schlüssel wird nicht gesendet "
+                "(Network Secret des Proxys gilt)"
+            )
+    else:
+        key = read_dashboard_key(root, cfg, env)
+        if not key:
+            return _fail(
+                "no_key",
+                f"Schlüssel fehlt: Umgebungsvariable {dashboard['token_env']} (token_env) oder "
+                "Datei .spec-agent/dashboard.key" + cloud.proxy_mode_hint(env),
+            )
     try:
         url = client.check_url(str(dashboard["url"]))
     except client.PushError as exc:
@@ -181,10 +198,13 @@ def _push(
     with _locked(root) as got:
         if not got:
             return 0, {"ok": True, "status": "locked", "message": "ein Push läuft bereits"}
-        return _drain(root, cfg, url, key, send)
+        code, outcome = _drain(root, cfg, url, key, send)
+    if warnings:
+        outcome["warnings"] = warnings
+    return code, outcome
 
 
-def _drain(root: Path, cfg: EffectiveConfig, url: str, key: str, send: Poster) -> Result:
+def _drain(root: Path, cfg: EffectiveConfig, url: str, key: str | None, send: Poster) -> Result:
     cursor = outbox.read_cursor(root)
     project = str(cfg.data["project"]["key"])
     totals = {"sent": 0, "accepted": 0, "duplicates": 0, "rejected": 0}

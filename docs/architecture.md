@@ -201,3 +201,11 @@ Alle Specs 001 bis 007 sind umgesetzt (Spec 008, der Pilot, steht aus). Die Deta
 - Vertrag: Ereignis `run.pushed` mit `data: {remote, branch, commit}`; kein neuer Lauf-Zustand (`merged` bleibt). Board-Feld `runs[].pushed` (nur gesetzt, wenn ein `run.pushed` vorliegt).
 - „Push abgelehnt“ (non-fast-forward): `run.escalated` mit Gate `release` ohne Zustandswechsel. Die Board-Ableitung hält diese Eskalation an einem `merged`-Lauf offen und listet sie als Aufmerksamkeit der Art `escalation`, bis ein späteres `run.pushed` sie schließt. Andere Fehler (Netz, Zugang, Zeitlimit) lehnen nur ab.
 - Die Deny-Regel `Bash(git push)` im Settings-Fragment bleibt. Der Push über `sak` ist durch die Allowlist `… sak *` gedeckt.
+
+**Betrieb in Claude Cloud (Spec 013, Kit 0.4.0)**
+
+- Config: `dashboard.auth: key|proxy` (Default `key`), Laufzeit-Übersteuerung `SAK_DASHBOARD_AUTH` (`config.resolve_auth`; ungültiger Wert: Fehler ohne Wert in der Meldung).
+- Push-Client: Im Proxy-Modus ruft `push.run` den Poster mit `key=None` auf; `client.post_ingest` setzt dann keinen `Authorization`-Header, auch nicht mit lokalem Schlüssel (Warnung unter `warnings`). 401 im Proxy-Modus nennt das fehlende Network Secret. Weiterleitungen und die https-Pflicht (außer Loopback) bleiben.
+- `push/cloud.py`: Proxy-Variablen (nur ob gesetzt), Erkennung „Tunnel connection failed … 403“ plus gesetzte Proxy-Variablen, TLS-Hinweis, CA-Bundle aus `SSL_CERT_FILE`/`REQUESTS_CA_BUNDLE` (zusätzlich zum System-Store). Die Erkennung ändert nur Meldungen.
+- `doctor`: Im Proxy-Modus genügt ein erreichbares `/healthz`. `dashboard status` zeigt `auth`, `auth_source` und `proxy_env`; der Cloud-Fehler steht über `last_error` in `problems`. `dashboard connect --auth proxy` schreibt URL und Modus, keinen Schlüssel.
+- Betriebsanleitung: [cloud.md](cloud.md).

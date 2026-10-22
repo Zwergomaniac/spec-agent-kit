@@ -32,6 +32,7 @@ __all__ = [
     "CONFIG_RELATIVE_PATH",
     "CORE_CLEAN_IGNORE",
     "CORE_PROTECTED",
+    "AuthModeError",
     "ConfigError",
     "EffectiveConfig",
     "NotInitializedError",
@@ -41,6 +42,7 @@ __all__ = [
     "load_config",
     "read_dashboard_key",
     "read_raw",
+    "resolve_auth",
     "schema_errors",
 ]
 
@@ -51,6 +53,10 @@ class ConfigError(Exception):
     def __init__(self, errors: list[dict[str, str]]) -> None:
         super().__init__("; ".join(f"{e['path']}: {e['message']}" for e in errors))
         self.errors = errors
+
+
+class AuthModeError(ValueError):
+    """``SAK_DASHBOARD_AUTH`` hat einen ungültigen Wert. Die Meldung nennt den Wert nie."""
 
 
 class NotInitializedError(ConfigError):
@@ -200,6 +206,8 @@ def _inherit_dashboard(root: Path, raw: dict[str, Any]) -> tuple[dict[str, Any],
     merged = {**own, "url": main_section["url"]}
     if "push" not in merged and "push" in main_section:
         merged["push"] = main_section["push"]
+    if "auth" not in merged and "auth" in main_section:
+        merged["auth"] = main_section["auth"]
     return {**raw, "dashboard": merged}, main
 
 
@@ -259,3 +267,18 @@ def read_dashboard_key(
         return own
     main = worktree.main_checkout(root)
     return _read_key_file(main / DASHBOARD_KEY_RELATIVE_PATH) if main is not None else None
+
+
+def resolve_auth(config: EffectiveConfig, env: Mapping[str, str] | None = None) -> tuple[str, str]:
+    """Der Auth-Modus ``key`` oder ``proxy`` und seine Quelle (``env`` oder ``config``).
+
+    ``SAK_DASHBOARD_AUTH`` hat Vorrang vor ``dashboard.auth`` (Spec 013 FR-002). Ein ungültiger
+    Wert wirft ``AuthModeError``, ohne den Wert zu nennen.
+    """
+    environment = os.environ if env is None else env
+    value = environment.get("SAK_DASHBOARD_AUTH", "").strip()
+    if value:
+        if value not in {"key", "proxy"}:
+            raise AuthModeError("SAK_DASHBOARD_AUTH ist ungültig: erlaubt sind key und proxy")
+        return value, "env"
+    return str(config.data["dashboard"].get("auth", "key")), "config"
