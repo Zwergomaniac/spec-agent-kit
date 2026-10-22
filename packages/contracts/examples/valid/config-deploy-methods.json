@@ -1,0 +1,11 @@
+{
+  "schema": "sak.config/1",
+  "project": { "key": "demo", "name": "Demo" },
+  "deploy": {
+    "methods": {
+      "github": { "command": "gh workflow run deploy.yml -f spec={spec}", "marker": "workflow" },
+      "local": { "command": "bash deploy/deploy.sh", "marker": "agent", "local_only": true }
+    },
+    "default": "github"
+  }
+}
