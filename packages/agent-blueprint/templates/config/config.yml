@@ -74,6 +74,8 @@ dashboard:
   url: null                   # https://... des Dashboards, oder null
   token_env: SAK_DASHBOARD_TOKEN   # Name der Umgebungsvariable; Alternative: Datei .spec-agent/dashboard.key (gitignoriert)
   # push: auto | manual | off   # Default: auto, sobald url gesetzt ist, sonst manual
+  # auth: key | proxy           # Default key. proxy (Claude Cloud): kein eigener Schlüssel, ein Network Secret
+  #                             # des Proxys ergänzt den Bearer. SAK_DASHBOARD_AUTH=key|proxy übersteuert (docs/cloud.md)
   share_commit_subjects: false
 
 # Autonomie-Stufen (Spec 012): was der Orchestrator nach einem Lauf in `approved` selbst tun darf.
